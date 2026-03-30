@@ -133,6 +133,11 @@ export default defineConfig({
           "cargo run --release -p tsgo-rs --bin bench_real_tsgo -- --cold-iterations 5 --warm-iterations 20 --json-output .cache/bench_native.json",
         dependsOn: ["build_tsgo"],
       },
+      bench_native_deep: {
+        command:
+          "cargo run --release -p tsgo-rs --bin bench_real_tsgo -- --cold-iterations 10 --warm-iterations 80 --json-output .cache/bench_native_deep.json",
+        dependsOn: ["build_tsgo"],
+      },
       bench_ts: {
         command: "vp test bench --config ./vite.config.ts --outputJson .cache/bench_ts.json",
         dependsOn: ["build_tsgo", "build_node_release"],

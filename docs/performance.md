@@ -3,6 +3,7 @@
 `tsgo-rs` ships with two benchmark layers:
 
 - Native real-tsgo benchmark: `vp run -w bench_native`
+- Native deep benchmark: `vp run -w bench_native_deep`
 - Node binding benchmark: `vp run -w bench_ts`
 - Combined benchmark + budget guard: `vp run -w bench_verify`
 
@@ -12,6 +13,7 @@ and `vp check`. Those go through Vite+'s `oxfmt` / `oxlint` toolchain. The
 
 The TS benchmark writes its report to `.cache/bench_ts.json`.
 The native benchmark writes its report to `.cache/bench_native.json`.
+The native deep benchmark writes its report to `.cache/bench_native_deep.json`.
 
 The native runner is still the main source of truth for transport-level speed because it measures the Rust client directly against the pinned upstream worker.
 
@@ -26,7 +28,32 @@ cargo run --release -p tsgo-rs --bin bench_real_tsgo -- \
   --json-output .cache/bench_native.json
 ```
 
+For a heavier pass that is better suited to before/after comparisons, use:
+
+```bash
+cargo run --release -p tsgo-rs --bin bench_real_tsgo -- \
+  --cold-iterations 10 \
+  --warm-iterations 80 \
+  --json-output .cache/bench_native_deep.json
+```
+
 Warm scenarios perform one untimed warm-up call before sampling.
+The runner now emits sample count, `p99`, standard deviation, coefficient of variation, and per-scenario msgpack-vs-jsonrpc comparison rows in both stdout and JSON output.
+
+Default native scenarios now cover both transport and type-query hot paths:
+
+- `spawn_initialize`
+- `parse_config`
+- `update_snapshot_cold`
+- `update_snapshot_warm`
+- `default_project`
+- `get_source_file`
+- `get_symbol_at_position`
+- `get_type_at_position`
+- `get_type_of_symbol`
+- `get_string_type`
+- `type_to_string`
+- `resolve_type_text`
 
 ## Datasets
 

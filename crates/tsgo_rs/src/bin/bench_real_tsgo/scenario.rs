@@ -1,6 +1,6 @@
 use tsgo_rs::{
-    Result,
-    api::{ApiClient, ApiMode, ApiSpawnConfig, UpdateSnapshotParams},
+    Result, TsgoError,
+    api::{ApiClient, ApiMode, ApiSpawnConfig, SymbolHandle, UpdateSnapshotParams},
     fast::{CompactString, SmallVec},
 };
 
@@ -24,6 +24,12 @@ struct ProjectSession {
     snapshot: tsgo_rs::api::ManagedSnapshot,
     project: tsgo_rs::api::ProjectHandle,
     file: CompactString,
+    target: BenchTarget,
+}
+
+struct BenchTarget {
+    position: u32,
+    symbol: SymbolHandle,
 }
 
 pub async fn run(cli: &Cli, datasets: &[DatasetCase]) -> Result<SmallVec<[ScenarioRow; 64]>> {
@@ -40,8 +46,8 @@ async fn run_dataset(
     cli: &Cli,
     dataset: &DatasetCase,
     mode: ApiMode,
-) -> Result<SmallVec<[ScenarioRow; 10]>> {
-    let mut rows = SmallVec::<[ScenarioRow; 10]>::new();
+) -> Result<SmallVec<[ScenarioRow; 16]>> {
+    let mut rows = SmallVec::<[ScenarioRow; 16]>::new();
     rows.push(row(
         mode,
         dataset,
@@ -82,6 +88,24 @@ async fn run_dataset(
     rows.push(row(
         mode,
         dataset,
+        "get_symbol_at_position",
+        get_symbol_at_position(&session, cli.warm_iterations).await?,
+    ));
+    rows.push(row(
+        mode,
+        dataset,
+        "get_type_at_position",
+        get_type_at_position(&session, cli.warm_iterations).await?,
+    ));
+    rows.push(row(
+        mode,
+        dataset,
+        "get_type_of_symbol",
+        get_type_of_symbol(&session, cli.warm_iterations).await?,
+    ));
+    rows.push(row(
+        mode,
+        dataset,
         "get_string_type",
         get_string_type(&session, cli.warm_iterations).await?,
     ));
@@ -90,6 +114,12 @@ async fn run_dataset(
         dataset,
         "type_to_string",
         type_to_string(&session, cli.warm_iterations).await?,
+    ));
+    rows.push(row(
+        mode,
+        dataset,
+        "resolve_type_text",
+        resolve_type_text(&session, cli.warm_iterations).await?,
     ));
     session.snapshot.release().await?;
     session.client.close().await?;
@@ -186,11 +216,14 @@ async fn open_project_session(
         })
         .await?;
     let project = snapshot.projects[0].id.clone();
+    let target =
+        discover_bench_target(&client, &snapshot, &project, dataset.primary_file.as_str()).await?;
     Ok(ProjectSession {
         client,
         snapshot,
         project,
         file: dataset.primary_file.clone(),
+        target,
     })
 }
 
@@ -231,6 +264,53 @@ async fn get_string_type(session: &ProjectSession, iterations: usize) -> Result<
     .await
 }
 
+async fn get_symbol_at_position(session: &ProjectSession, iterations: usize) -> Result<Stats> {
+    measure_warm(iterations, || async {
+        let _ = session
+            .client
+            .get_symbol_at_position(
+                session.snapshot.handle.clone(),
+                session.project.clone(),
+                session.file.as_str(),
+                session.target.position,
+            )
+            .await?;
+        Ok(())
+    })
+    .await
+}
+
+async fn get_type_at_position(session: &ProjectSession, iterations: usize) -> Result<Stats> {
+    measure_warm(iterations, || async {
+        let _ = session
+            .client
+            .get_type_at_position(
+                session.snapshot.handle.clone(),
+                session.project.clone(),
+                session.file.as_str(),
+                session.target.position,
+            )
+            .await?;
+        Ok(())
+    })
+    .await
+}
+
+async fn get_type_of_symbol(session: &ProjectSession, iterations: usize) -> Result<Stats> {
+    measure_warm(iterations, || async {
+        let _ = session
+            .client
+            .get_type_of_symbol(
+                session.snapshot.handle.clone(),
+                session.project.clone(),
+                session.target.symbol.clone(),
+            )
+            .await?;
+        Ok(())
+    })
+    .await
+}
+
 async fn type_to_string(session: &ProjectSession, iterations: usize) -> Result<Stats> {
     let ty = session
         .client
@@ -250,4 +330,126 @@ async fn type_to_string(session: &ProjectSession, iterations: usize) -> Result<S
         Ok(())
     })
     .await
+}
+
+async fn resolve_type_text(session: &ProjectSession, iterations: usize) -> Result<Stats> {
+    measure_warm(iterations, || async {
+        let ty = session
+            .client
+            .get_type_at_position(
+                session.snapshot.handle.clone(),
+                session.project.clone(),
+                session.file.as_str(),
+                session.target.position,
+            )
+            .await?
+            .ok_or(TsgoError::Protocol(
+                "benchmark target no longer resolves to a type".into(),
+            ))?;
+        let _ = session
+            .client
+            .type_to_string(
+                session.snapshot.handle.clone(),
+                session.project.clone(),
+                ty.id,
+                None,
+                None,
+            )
+            .await?;
+        Ok(())
+    })
+    .await
+}
+
+async fn discover_bench_target(
+    client: &ApiClient,
+    snapshot: &tsgo_rs::api::ManagedSnapshot,
+    project: &tsgo_rs::api::ProjectHandle,
+    file: &str,
+) -> Result<BenchTarget> {
+    let source = client
+        .get_source_file(snapshot.handle.clone(), project.clone(), file)
+        .await?
+        .ok_or(TsgoError::Protocol(
+            "benchmark dataset is missing its primary file".into(),
+        ))?;
+    let text = String::from_utf8_lossy(source.as_bytes());
+    for (position, token) in identifier_positions(text.as_ref()) {
+        if token.len() <= 1 || is_noise_identifier(token) {
+            continue;
+        }
+        if let Some(symbol) = client
+            .get_symbol_at_position(snapshot.handle.clone(), project.clone(), file, position)
+            .await?
+        {
+            return Ok(BenchTarget {
+                position,
+                symbol: symbol.id,
+            });
+        }
+    }
+    Err(TsgoError::Protocol(
+        "failed to discover a benchmarkable symbol in the primary file".into(),
+    ))
+}
+
+fn identifier_positions(text: &str) -> impl Iterator<Item = (u32, &str)> {
+    let mut items = SmallVec::<[(u32, &str); 128]>::new();
+    let bytes = text.as_bytes();
+    let mut index = 0_usize;
+    while index < bytes.len() {
+        if !is_identifier_start(bytes[index]) {
+            index += 1;
+            continue;
+        }
+        let start = index;
+        index += 1;
+        while index < bytes.len() && is_identifier_continue(bytes[index]) {
+            index += 1;
+        }
+        items.push((
+            u32::try_from(start).unwrap_or(u32::MAX),
+            &text[start..index],
+        ));
+    }
+    items.into_iter()
+}
+
+fn is_identifier_start(byte: u8) -> bool {
+    byte.is_ascii_alphabetic() || matches!(byte, b'_' | b'$')
+}
+
+fn is_identifier_continue(byte: u8) -> bool {
+    is_identifier_start(byte) || byte.is_ascii_digit()
+}
+
+fn is_noise_identifier(token: &str) -> bool {
+    matches!(
+        token,
+        "const"
+            | "let"
+            | "var"
+            | "function"
+            | "class"
+            | "interface"
+            | "type"
+            | "import"
+            | "export"
+            | "from"
+            | "return"
+            | "if"
+            | "else"
+            | "for"
+            | "while"
+            | "switch"
+            | "case"
+            | "default"
+            | "extends"
+            | "implements"
+            | "new"
+            | "true"
+            | "false"
+            | "null"
+            | "undefined"
+    )
 }

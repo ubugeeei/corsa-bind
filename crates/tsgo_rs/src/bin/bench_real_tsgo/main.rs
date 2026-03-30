@@ -46,19 +46,30 @@ async fn run(cli: args::Cli) -> tsgo_rs::Result<()> {
         );
     }
     println!();
-    println!("mode\tdataset\tscenario\tmedian_ms\tp95_ms\tmean_ms\tmin_ms\tmax_ms");
+    println!(
+        "mode\tdataset\tscenario\tsamples\tmedian_ms\tp95_ms\tp99_ms\tmean_ms\tstddev_ms\tcv_pct\tmin_ms\tmax_ms"
+    );
     for row in &results {
         println!(
-            "{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}",
+            "{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.3}\t{:.2}\t{:.3}\t{:.3}",
             row.mode,
             row.dataset,
             row.scenario,
+            row.stats.sample_count(),
             row.stats.median_ms(),
             row.stats.p95_ms(),
+            row.stats.p99_ms(),
             row.stats.mean_ms(),
+            row.stats.stddev_ms(),
+            row.stats.cv_percent(),
             row.stats.min_ms(),
             row.stats.max_ms()
         );
+    }
+    println!();
+    println!("dataset\tscenario\tmsgpack_median_ms\tjsonrpc_median_ms\tspeedup_x\tp95_ratio");
+    for line in report::comparison_lines(&results) {
+        println!("{line}");
     }
     if let Some(path) = &cli.json_output_path {
         report::write(path, &cli, &datasets, &results)?;
