@@ -44,8 +44,24 @@ pub fn lsp_config() -> LspSpawnConfig {
     LspSpawnConfig::new(mock_binary()).with_cwd(test_cwd())
 }
 
+pub fn resolved_real_tsgo_binary() -> Option<PathBuf> {
+    if let Some(path) = std::env::var_os("TSGO_EXECUTABLE") {
+        let path = PathBuf::from(path);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    [
+        workspace_root().join(".cache/tsgo"),
+        workspace_root().join("ref/typescript-go/.cache/tsgo"),
+        workspace_root().join("ref/typescript-go/built/local/tsgo"),
+    ]
+    .into_iter()
+    .find(|path| path.exists())
+}
+
 pub fn real_tsgo_binary() -> PathBuf {
-    workspace_root().join(".cache/tsgo")
+    resolved_real_tsgo_binary().unwrap_or_else(|| workspace_root().join(".cache/tsgo"))
 }
 
 pub fn real_dataset() -> PathBuf {
@@ -53,9 +69,9 @@ pub fn real_dataset() -> PathBuf {
 }
 
 pub fn real_api_config(mode: ApiMode) -> Option<ApiSpawnConfig> {
-    let binary = real_tsgo_binary();
+    let binary = resolved_real_tsgo_binary()?;
     let dataset = real_dataset();
-    if !binary.exists() || !dataset.exists() {
+    if !dataset.exists() {
         return None;
     }
     Some(
