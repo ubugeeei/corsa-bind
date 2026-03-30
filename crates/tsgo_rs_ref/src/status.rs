@@ -1,30 +1,45 @@
 use crate::{LockedRepository, RepositorySnapshot, canonical_repository_id};
 use tsgo_rs_core::fast::{CompactString, SmallVec, compact_format};
 
+/// Specific kinds of drift that can make the managed ref invalid.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RepositoryProblem {
+    /// The lockfile and checkout point at different upstream repositories.
     RepositoryMismatch {
+        /// Repository normalized from the lockfile.
         expected: CompactString,
+        /// Repository normalized from the checkout's `origin` remote.
         actual: CompactString,
     },
+    /// The checkout points at a different commit than the lockfile pin.
     CommitMismatch {
+        /// Commit recorded in the lockfile.
         expected: CompactString,
+        /// Commit currently checked out.
         actual: CompactString,
     },
+    /// The checkout still has a named branch checked out.
     AttachedHead {
+        /// Branch currently attached to `HEAD`.
         branch: CompactString,
     },
+    /// The worktree contains uncommitted or untracked changes.
     DirtyWorktree,
 }
 
+/// Combined live snapshot and drift diagnostics for the managed ref.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RepositoryStatus {
+    /// Whether the checkout matches the lockfile exactly.
     pub exact: bool,
+    /// Collected drift problems, empty when [`exact`](Self::exact) is `true`.
     pub problems: SmallVec<[RepositoryProblem; 4]>,
+    /// Raw repository metadata captured from the checkout.
     pub snapshot: RepositorySnapshot,
 }
 
 impl RepositoryStatus {
+    /// Builds a status object by comparing a lockfile entry with a live snapshot.
     pub fn from_snapshot(lock: &LockedRepository, snapshot: RepositorySnapshot) -> Self {
         let mut problems = SmallVec::<[RepositoryProblem; 4]>::new();
         let expected_repository = canonical_repository_id(&lock.repository);
@@ -56,6 +71,7 @@ impl RepositoryStatus {
         }
     }
 
+    /// Returns a human-readable multi-line description of the status.
     pub fn describe(&self) -> CompactString {
         if self.exact {
             return compact_format(format_args!(

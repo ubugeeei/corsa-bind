@@ -19,6 +19,8 @@ The tooling benchmark writes its report to `.cache/bench_tooling_compare.json`.
 
 The native runner is still the main source of truth for transport-level speed because it measures the Rust client directly against the pinned upstream worker.
 
+For the reasoning behind these benchmark layers, implementation notes, and extension tips, see [benchmarking_guide.md](./benchmarking_guide.md).
+
 ## Tooling Runner
 
 The tooling benchmark is the `bench_tooling_compare` binary. It tracks two workloads:
@@ -102,11 +104,11 @@ vp run -w bench_tooling_compare
 
 ### Project Check
 
-| dataset      | `tsc` | `tsgo` | `typescript-eslint` |
-| ------------ | ----: | -----: | ------------------: |
-| `ast`        | 425.527 | 23.995 | 1690.141 |
-| `api`        | 440.209 | 35.783 | 1341.204 |
-| `_extension` | 612.055 | 58.801 | 1136.773 |
+| dataset      |   `tsc` | `tsgo` | `typescript-eslint` |
+| ------------ | ------: | -----: | ------------------: |
+| `ast`        | 425.527 | 23.995 |            1690.141 |
+| `api`        | 440.209 | 35.783 |            1341.204 |
+| `_extension` | 612.055 | 58.801 |            1136.773 |
 
 ### Editor Workflow
 
@@ -115,9 +117,9 @@ They model a `tsgo-rs` session that opens a project once and then runs a represe
 
 | dataset      | `tsgo` CLI project check | `tsgo-rs` cold workflow | `tsgo-rs` warm workflow |
 | ------------ | -----------------------: | ----------------------: | ----------------------: |
-| `ast`        | 23.995 | 19.666 | 0.376 |
-| `api`        | 35.783 | 30.049 | 0.181 |
-| `_extension` | 58.801 | 45.811 | 0.186 |
+| `ast`        |                   23.995 |                  19.666 |                   0.376 |
+| `api`        |                   35.783 |                  30.049 |                   0.181 |
+| `_extension` |                   58.801 |                  45.811 |                   0.186 |
 
 The interesting part is not that `tsgo-rs` somehow beats the underlying engine on identical work.
 It does not.

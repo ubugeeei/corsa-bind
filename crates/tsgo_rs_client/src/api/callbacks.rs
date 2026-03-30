@@ -26,25 +26,35 @@ enum CallbackKind {
 /// Declares which filesystem callbacks are implemented by an [`ApiFileSystem`].
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct FileSystemCapabilities {
+    /// Enables the `readFile` callback.
     pub read_file: bool,
+    /// Enables the `fileExists` callback.
     pub file_exists: bool,
+    /// Enables the `directoryExists` callback.
     pub directory_exists: bool,
+    /// Enables the `getAccessibleEntries` callback.
     pub get_accessible_entries: bool,
+    /// Enables the `realpath` callback.
     pub realpath: bool,
 }
 
 /// Result of a `readFile` callback.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ReadFileResult {
+    /// Defer to the server's default filesystem behavior.
     Fallback,
+    /// Report that the file does not exist.
     NotFound,
+    /// Return virtualized file contents.
     Content(CompactString),
 }
 
 /// Directory listing returned by `getAccessibleEntries`.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct DirectoryEntries {
+    /// Visible file entries.
     pub files: SmallVec<[CompactString; 8]>,
+    /// Visible subdirectory entries.
     pub directories: SmallVec<[CompactString; 8]>,
 }
 
@@ -53,19 +63,34 @@ pub struct DirectoryEntries {
 /// Implementations can opt into individual callbacks via
 /// [`capabilities`](Self::capabilities).
 pub trait ApiFileSystem: Send + Sync + 'static {
+    /// Returns the set of callbacks this implementation supports.
     fn capabilities(&self) -> FileSystemCapabilities;
+
+    /// Returns file contents for `path`, or [`ReadFileResult::Fallback`] to let
+    /// `tsgo` read from disk directly.
     fn read_file(&self, _path: &str) -> ReadFileResult {
         ReadFileResult::Fallback
     }
+
+    /// Returns whether `path` exists as a file, or `None` to fall back to the
+    /// server's native filesystem lookup.
     fn file_exists(&self, _path: &str) -> Option<bool> {
         None
     }
+
+    /// Returns whether `path` exists as a directory, or `None` to fall back to
+    /// the server's native filesystem lookup.
     fn directory_exists(&self, _path: &str) -> Option<bool> {
         None
     }
+
+    /// Returns directory entries visible from `path`, or `None` to fall back
+    /// to the server's native directory scan.
     fn get_accessible_entries(&self, _path: &str) -> Option<DirectoryEntries> {
         None
     }
+
+    /// Returns a canonicalized path, or `None` to defer to the server.
     fn realpath(&self, _path: &str) -> Option<CompactString> {
         None
     }

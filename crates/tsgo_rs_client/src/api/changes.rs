@@ -7,10 +7,13 @@ use super::{DocumentIdentifier, ProjectHandle, SnapshotHandle};
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileChangeSummary {
+    /// Files whose contents changed but whose identity stayed the same.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub changed: Vec<DocumentIdentifier>,
+    /// Newly created files that should enter the snapshot graph.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub created: Vec<DocumentIdentifier>,
+    /// Deleted files that should be removed from the snapshot graph.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub deleted: Vec<DocumentIdentifier>,
 }
@@ -19,9 +22,12 @@ pub struct FileChangeSummary {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum FileChanges {
+    /// Apply an incremental file-by-file delta.
     Summary(FileChangeSummary),
     #[serde(rename_all = "camelCase")]
+    /// Discard all prior file state and force a full invalidation.
     InvalidateAll {
+        /// When `true`, the server invalidates all tracked file state.
         invalidate_all: bool,
     },
 }
@@ -47,8 +53,10 @@ pub enum FileChanges {
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateSnapshotParams {
+    /// Preferred project to open eagerly, usually a `tsconfig` path.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub open_project: Option<String>,
+    /// Incremental file invalidation payload, or `None` for a no-op refresh.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_changes: Option<FileChanges>,
 }
@@ -57,8 +65,10 @@ pub struct UpdateSnapshotParams {
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectFileChanges {
+    /// Files inside the project that changed contents.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub changed_files: Vec<String>,
+    /// Files inside the project that were removed.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub deleted_files: Vec<String>,
 }
@@ -67,8 +77,10 @@ pub struct ProjectFileChanges {
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SnapshotChanges {
+    /// Project-scoped change details keyed by project handle.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub changed_projects: BTreeMap<ProjectHandle, ProjectFileChanges>,
+    /// Projects removed from the snapshot as part of the update.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub removed_projects: Vec<ProjectHandle>,
 }
@@ -77,8 +89,11 @@ pub struct SnapshotChanges {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateSnapshotResponse {
+    /// Newly created or refreshed snapshot handle.
     pub snapshot: SnapshotHandle,
+    /// Projects currently known inside the snapshot.
     pub projects: Vec<super::ProjectResponse>,
+    /// Project-level delta information when the server computed it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub changes: Option<SnapshotChanges>,
 }

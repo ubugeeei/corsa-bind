@@ -174,7 +174,13 @@ export class TsgoProjectSession {
     if (!this.#config) {
       this.#config = this.client().parseConfigFile(this.project.configPath);
     }
-    return this.#config;
+    const config = this.#config;
+    if (!config) {
+      throw new Error(
+        `typescript-oxlint could not parse a tsgo config for ${this.project.configPath}`,
+      );
+    }
+    return config;
   }
 
   private fileState(fileName: string): FileCache {

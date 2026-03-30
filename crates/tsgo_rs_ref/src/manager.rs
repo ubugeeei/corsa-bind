@@ -4,17 +4,32 @@ use crate::{CommitMetadata, LockedRepository, RepositoryStatus, TsgoRefLock};
 use std::path::{Path, PathBuf};
 use tsgo_rs_core::{Result, TsgoError, fast::compact_format};
 
+/// High-level manager for the pinned `ref/typescript-go` checkout.
+///
+/// The manager reads [`TsgoRefLock`](crate::TsgoRefLock), locates the managed
+/// repository relative to that lockfile, and provides the small set of
+/// operations needed by CI and contributor workflows:
+///
+/// - [`status`](Self::status) inspects drift
+/// - [`verify`](Self::verify) fails fast when drift exists
+/// - [`sync`](Self::sync) restores the checkout to the pinned commit
+/// - [`pin_current`](Self::pin_current) intentionally rewrites the lockfile
 pub struct TsgoRefManager {
     lock_path: PathBuf,
 }
 
 impl TsgoRefManager {
+    /// Creates a new manager rooted at the given lockfile path.
     pub fn new(lock_path: impl Into<PathBuf>) -> Self {
         Self {
             lock_path: lock_path.into(),
         }
     }
 
+    /// Computes the current status of the managed reference.
+    ///
+    /// The returned [`RepositoryStatus`] describes both the live repository
+    /// snapshot and any problems relative to the lockfile pin.
     pub fn status(&self) -> Result<RepositoryStatus> {
         let lock = TsgoRefLock::load(&self.lock_path)?;
         let repository = lock.root();
@@ -31,6 +46,10 @@ impl TsgoRefManager {
         ))
     }
 
+    /// Verifies that the managed reference matches the lockfile exactly.
+    ///
+    /// This requires the expected repository, commit, detached HEAD, and a
+    /// clean worktree.
     pub fn verify(&self) -> Result<()> {
         let status = self.status()?;
         if status.exact {
@@ -39,6 +58,10 @@ impl TsgoRefManager {
         Err(TsgoError::Protocol(status.describe()))
     }
 
+    /// Synchronizes the managed reference to the lockfile pin.
+    ///
+    /// Existing tracked drift is rejected unless the worktree is clean and the
+    /// repository identity still matches the expected upstream.
     pub fn sync(&self) -> Result<()> {
         let lock = TsgoRefLock::load(&self.lock_path)?;
         let repository = lock.root();
@@ -66,6 +89,10 @@ impl TsgoRefManager {
         self.verify()
     }
 
+    /// Rewrites the lockfile to pin the current managed repository state.
+    ///
+    /// This is an intentional action used when updating the workspace's pinned
+    /// upstream reference.
     pub fn pin_current(&self) -> Result<()> {
         let existing = TsgoRefLock::load(&self.lock_path).ok();
         let path = existing

@@ -3,6 +3,10 @@ use tsgo_rs_core::fast::CompactString;
 
 /// File or URI identifier accepted by tsgo API endpoints.
 ///
+/// Most endpoints accept either an on-disk file name or a URI. The enum keeps
+/// both forms explicit while still serializing to the wire shape that `tsgo`
+/// expects.
+///
 /// # Examples
 ///
 /// ```
@@ -14,7 +18,9 @@ use tsgo_rs_core::fast::CompactString;
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum DocumentIdentifier {
+    /// Plain file path form used by most filesystem-backed requests.
     FileName(CompactString),
+    /// URI form used by LSP-style or virtual-document workflows.
     Uri { uri: CompactString },
 }
 
@@ -43,6 +49,8 @@ impl From<String> for DocumentIdentifier {
 /// A UTF-16 position inside a document.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct DocumentPosition {
+    /// Document that owns the position.
     pub document: DocumentIdentifier,
+    /// Offset expressed in UTF-16 code units, matching TypeScript/LSP APIs.
     pub position: u32,
 }

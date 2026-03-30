@@ -34,10 +34,14 @@ impl EncodedPayload {
 /// Formatting knobs accepted by the `printNode` endpoint.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub struct PrintNodeOptions {
+    /// Preserve original source newlines where the printer can do so safely.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub preserve_source_newlines: bool,
+    /// Avoid ASCII-escaping non-ASCII characters in emitted text.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub never_ascii_escape: bool,
+    /// Force literal termination when the source text would otherwise be
+    /// unterminated.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub terminate_unterminated_literals: bool,
 }

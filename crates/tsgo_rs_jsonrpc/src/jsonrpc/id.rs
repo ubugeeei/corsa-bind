@@ -14,7 +14,9 @@ use tsgo_rs_core::fast::CompactString;
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum RequestId {
+    /// Numeric request identifier.
     Integer(i64),
+    /// String request identifier.
     String(CompactString),
 }
 

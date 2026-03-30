@@ -80,7 +80,8 @@ export default defineConfig({
         command: "cargo build -p tsgo-rs --bin mock_tsgo",
       },
       build_tsgo: {
-        command: "go build -o ../../.cache/tsgo ./cmd/tsgo",
+        command:
+          'mkdir -p ../../.cache/go-build && GOCACHE="$PWD/../../.cache/go-build" go build -o ../../.cache/tsgo ./cmd/tsgo',
         cwd: "ref/typescript-go",
       },
       build_node_debug: {

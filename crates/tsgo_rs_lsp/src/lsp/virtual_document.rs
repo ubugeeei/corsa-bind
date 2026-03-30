@@ -24,10 +24,13 @@ use tsgo_rs_core::fast::{CompactString, SmallVec, compact_format};
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VirtualChange {
+    /// UTF-16 range being replaced, or `None` for a full-document replacement.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub range: Option<Range>,
+    /// Optional range length field accepted by LSP.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub range_length: Option<u32>,
+    /// Replacement text.
     pub text: CompactString,
 }
 
@@ -47,9 +50,13 @@ pub struct VirtualChange {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VirtualDocument {
+    /// Canonical document URI used in LSP payloads.
     pub uri: Uri,
+    /// Language identifier such as `"typescript"` or `"javascript"`.
     pub language_id: CompactString,
+    /// Monotonic document version used in `didChange`.
     pub version: i32,
+    /// Full current text of the document.
     pub text: CompactString,
 }
 
@@ -64,6 +71,8 @@ impl VirtualChange {
     }
 
     /// Replaces a UTF-16 range with new text.
+    ///
+    /// Offsets follow standard LSP UTF-16 coordinate rules.
     pub fn splice(range: Range, text: impl Into<CompactString>) -> Self {
         Self {
             range: Some(range),
@@ -94,6 +103,9 @@ impl From<TextDocumentContentChangeEvent> for VirtualChange {
 
 impl VirtualDocument {
     /// Creates a virtual document from an arbitrary URI.
+    ///
+    /// New documents start at version `1`, matching LSP expectations for
+    /// freshly opened in-memory documents.
     pub fn new(
         uri: Uri,
         language_id: impl Into<CompactString>,
@@ -118,6 +130,8 @@ impl VirtualDocument {
     }
 
     /// Creates an `untitled:` virtual document.
+    ///
+    /// This is a convenient fit for editor-style scratch buffers.
     pub fn untitled(
         path: impl AsRef<str>,
         language_id: impl Into<CompactString>,
@@ -134,6 +148,9 @@ impl VirtualDocument {
     }
 
     /// Creates an in-memory `tsgo://` virtual document.
+    ///
+    /// This scheme is helpful when replicated or synthetic documents should be
+    /// clearly distinguishable from user-owned workspace files.
     pub fn in_memory(
         authority: impl AsRef<str>,
         path: impl AsRef<str>,
@@ -172,6 +189,9 @@ impl VirtualDocument {
     }
 
     /// Applies a batch of changes and returns the LSP payloads that were emitted.
+    ///
+    /// The payloads are returned in the same order as the input changes, and
+    /// the document version is incremented exactly once for the batch.
     pub fn apply_changes(
         &mut self,
         changes: &[VirtualChange],

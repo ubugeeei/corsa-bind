@@ -111,6 +111,10 @@ impl TsgoCommand {
 }
 
 /// Owns a child process and guarantees it is eventually terminated.
+///
+/// This guard exists to keep long-running editors, tests, and benchmarks from
+/// leaking `tsgo` subprocesses. Shutdown attempts a graceful wait first and
+/// then forcefully kills and reaps the child when necessary.
 #[derive(Debug)]
 pub struct AsyncChildGuard {
     child: Mutex<Option<Child>>,
@@ -125,6 +129,8 @@ impl AsyncChildGuard {
     }
 
     /// Waits for graceful exit and force-kills the process when the deadline expires.
+    ///
+    /// The process is always reaped before this method returns successfully.
     pub async fn shutdown(&self, wait_for: Duration) -> Result<()> {
         let mut child = self.child.lock().unwrap();
         let Some(mut child) = child.take() else {
@@ -146,6 +152,9 @@ impl Drop for AsyncChildGuard {
 }
 
 /// Waits for a child process to exit and forcefully terminates it after a timeout.
+///
+/// This helper is safe to use in cleanup code because it guarantees that a
+/// killed child is reaped before returning.
 pub fn wait_for_child_exit(child: &mut Child, wait_for: Duration) -> std::io::Result<()> {
     let deadline = Instant::now() + wait_for;
     loop {
@@ -160,6 +169,9 @@ pub fn wait_for_child_exit(child: &mut Child, wait_for: Duration) -> std::io::Re
 }
 
 /// Terminates a child process if it is still running and always reaps it before returning.
+///
+/// Reaping matters just as much as killing: without the final `wait`, exited
+/// children can remain as zombies on Unix-like systems.
 pub fn terminate_child_process(child: &mut Child) -> std::io::Result<()> {
     if child.try_wait()?.is_some() {
         return Ok(());

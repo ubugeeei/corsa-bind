@@ -15,6 +15,10 @@ pub enum ApiMode {
 
 /// Process configuration for spawning a tsgo API worker.
 ///
+/// A single config describes both the executable to launch and the transport
+/// strategy used to communicate with it. The default is sync msgpack because
+/// it minimizes framing overhead for latency-sensitive, repeated requests.
+///
 /// # Examples
 ///
 /// ```
@@ -29,8 +33,14 @@ pub enum ApiMode {
 /// ```
 #[derive(Clone)]
 pub struct ApiSpawnConfig {
+    /// Reusable command template used to launch the worker.
     pub command: TsgoCommand,
+    /// Wire protocol used between the client and `tsgo`.
     pub mode: ApiMode,
+    /// Optional filesystem callback implementation exposed to `tsgo`.
+    ///
+    /// This is primarily useful when the worker should consult an overlay or a
+    /// virtualized filesystem instead of only reading from disk.
     pub filesystem: Option<Arc<dyn ApiFileSystem>>,
 }
 
@@ -68,6 +78,10 @@ impl ApiSpawnConfig {
 
 /// Named API profile reused by orchestrators and caches.
 ///
+/// Profiles give a stable identifier to a spawn configuration so higher-level
+/// layers can pool, cache, or replicate work by profile name rather than by
+/// comparing full command structures.
+///
 /// # Examples
 ///
 /// ```
@@ -78,7 +92,9 @@ impl ApiSpawnConfig {
 /// ```
 #[derive(Clone)]
 pub struct ApiProfile {
+    /// Stable profile identifier used as the cache/fleet key.
     pub id: CompactString,
+    /// Spawn configuration for workers in this profile.
     pub spawn: ApiSpawnConfig,
 }
 

@@ -9,6 +9,10 @@ use std::sync::Arc;
 use tsgo_rs_core::fast::{CompactString, FastMap, SmallVec, compact_format};
 
 /// In-memory virtual document overlay synchronized with an [`LspClient`].
+///
+/// The overlay is intentionally stateful: it remembers which documents are
+/// currently open so it can emit valid `didOpen` / `didChange` / `didClose`
+/// sequences and keep version numbers monotonic.
 #[derive(Clone)]
 pub struct LspOverlay {
     client: LspClient,
@@ -35,11 +39,15 @@ impl LspOverlay {
     }
 
     /// Returns a snapshot of all open virtual documents.
+    ///
+    /// The returned collection is detached from the internal lock-protected map.
     pub fn documents(&self) -> SmallVec<[VirtualDocument; 8]> {
         self.documents.read().values().cloned().collect()
     }
 
     /// Opens a virtual document and emits `textDocument/didOpen`.
+    ///
+    /// Fails if the URI is already open in the overlay.
     pub fn open(&self, document: VirtualDocument) -> Result<VirtualDocument> {
         let key = document.key();
         if self.documents.read().contains_key(key.as_str()) {
@@ -56,11 +64,18 @@ impl LspOverlay {
     }
 
     /// Replaces the full contents of a virtual document.
+    ///
+    /// This is a convenience wrapper around [`change`](Self::change) using a
+    /// single full-document replacement.
     pub fn replace(&self, uri: &Uri, text: impl Into<CompactString>) -> Result<VirtualDocument> {
         self.change(uri, [VirtualChange::replace(text)])
     }
 
     /// Applies one or more incremental changes to a virtual document.
+    ///
+    /// The overlay mutates its stored [`VirtualDocument`] first, then emits a
+    /// single `textDocument/didChange` notification that preserves the exact
+    /// change list passed in.
     pub fn change<I>(&self, uri: &Uri, changes: I) -> Result<VirtualDocument>
     where
         I: IntoIterator<Item = VirtualChange>,
@@ -88,6 +103,9 @@ impl LspOverlay {
     }
 
     /// Closes a virtual document and emits `textDocument/didClose`.
+    ///
+    /// Returns the removed document so callers can persist or inspect its last
+    /// known state.
     pub fn close(&self, uri: &Uri) -> Result<Option<VirtualDocument>> {
         let removed = self.documents.write().remove(uri.as_str());
         if let Some(document) = &removed {

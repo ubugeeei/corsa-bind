@@ -5,24 +5,36 @@ use tsgo_rs_core::{
     fast::{CompactString, compact_format},
 };
 
+/// Lockfile describing the pinned `typescript-go` repository.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct TsgoRefLock {
+    /// Lockfile schema version.
     pub version: u32,
+    /// Pinned upstream repository entry.
     pub typescript_go: LockedRepository,
 }
 
+/// Repository pin stored inside [`TsgoRefLock`].
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct LockedRepository {
+    /// Relative path to the managed checkout.
     pub path: CompactString,
+    /// Canonical upstream repository URL.
     pub repository: CompactString,
+    /// Pinned commit SHA.
     pub commit: CompactString,
+    /// Tree SHA for the pinned commit.
     pub tree: CompactString,
+    /// Committer timestamp in ISO-8601 form.
     pub committer_date: CompactString,
+    /// Commit author name.
     pub author: CompactString,
+    /// Commit subject line.
     pub subject: CompactString,
 }
 
 impl TsgoRefLock {
+    /// Loads and parses the lockfile from disk.
     pub fn load(path: &Path) -> Result<Self> {
         let body = fs::read_to_string(path)?;
         toml::from_str(&body).map_err(|err| {
@@ -30,6 +42,7 @@ impl TsgoRefLock {
         })
     }
 
+    /// Serializes and writes the lockfile to disk.
     pub fn save(&self, path: &Path) -> Result<()> {
         let body = toml::to_string_pretty(self).map_err(|err| {
             TsgoError::Protocol(compact_format(format_args!(
@@ -40,6 +53,7 @@ impl TsgoRefLock {
         Ok(())
     }
 
+    /// Returns the primary managed repository entry.
     pub fn root(&self) -> &LockedRepository {
         &self.typescript_go
     }

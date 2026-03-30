@@ -1,7 +1,25 @@
+//! LSP-focused client helpers for `typescript-go`.
+//!
+//! This crate complements `tsgo_rs_client` with Language Server Protocol
+//! utilities:
+//!
+//! - [`LspClient`] talks to `tsgo --lsp --stdio`
+//! - [`LspOverlay`] keeps a mirrored set of virtual documents
+//! - [`VirtualDocument`] and [`VirtualChange`] model in-memory edits in LSP
+//!   coordinates
+//! - custom request types expose the extra protocol extensions that `tsgo`
+//!   layers on top of standard LSP
+//!
+//! These types are most useful for editor integrations, benchmarks that mimic
+//! editor workflows, and orchestration layers that need to replicate
+//! virtual-document state.
+
+/// Re-exports JSON-RPC transport primitives used by the LSP client.
 pub mod jsonrpc {
     pub use tsgo_rs_jsonrpc::*;
 }
 
+/// Re-exports child-process helpers used to launch `tsgo --lsp`.
 pub mod process {
     pub use tsgo_rs_core::{AsyncChildGuard, TsgoCommand};
 }
@@ -9,6 +27,7 @@ pub mod process {
 pub use tsgo_rs_core::{Result, TsgoError};
 
 #[path = "lsp/mod.rs"]
+/// LSP client, overlay, and custom-request types.
 pub mod lsp;
 
 pub use lsp::*;

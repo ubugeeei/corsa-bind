@@ -200,9 +200,11 @@ The repo ships two benchmark layers:
 
 The TS benchmark writes machine-readable output to `.cache/bench_ts.json`.
 The native benchmark writes machine-readable output to `.cache/bench_native.json`.
-The native Rust benchmark uses the real pinned tsgo binary through [`bench_real_tsgo`](/Users/nishimura/Code/github.com/ubugeeei/tsgo-rs/crates/tsgo_rs/src/bin/bench_real_tsgo/main.rs).
+The native Rust benchmark uses the real pinned tsgo binary through [`bench_real_tsgo`](./crates/tsgo_rs/src/bin/bench_real_tsgo/main.rs).
 
-Latest native measurements are documented in [docs/performance.md](/Users/nishimura/Code/github.com/ubugeeei/tsgo-rs/docs/performance.md).
+Latest native measurements are documented in [docs/performance.md](./docs/performance.md).
+Benchmarking rationale, implementation notes, and usage tips are documented in [docs/benchmarking_guide.md](./docs/benchmarking_guide.md).
+CI structure, local reproduction steps, and troubleshooting notes are documented in [docs/ci_guide.md](./docs/ci_guide.md).
 On the pinned upstream commit and bundled datasets, `msgpack` was consistently faster than async JSON-RPC, which is why `ApiSpawnConfig::new()` defaults to `SyncMsgpackStdio`.
 
 ## Regression Strategy
@@ -216,6 +218,7 @@ The repository is intentionally aggressive about change detection because `types
 - `vp run -w bench_native` and `vp run -w bench_ts` give repeatable transport-level measurements for Rust and Node
 - `vp run -w bench_verify` regenerates both reports and fails if benchmark samples disappear or hot-path budgets regress
 - `tsgo-rs-ref` enforces detached-HEAD exact-commit verification for `ref/typescript-go`
+- CI structure and local reproduction notes live in [`docs/ci_guide.md`](./docs/ci_guide.md)
 
 ## Upstream Tracking
 
@@ -223,6 +226,7 @@ The repository is intentionally aggressive about change detection because `types
 
 - exact commit metadata lives in [`tsgo_ref.lock.toml`](./tsgo_ref.lock.toml)
 - sync and drift tooling lives in [`docs/tsgo_dependency.md`](./docs/tsgo_dependency.md)
+- CI and local reproduction details live in [`docs/ci_guide.md`](./docs/ci_guide.md)
 - `ref/typescript-go` must remain on detached `HEAD`
 - dirty upstream worktrees fail verification
 

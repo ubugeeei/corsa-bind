@@ -15,6 +15,11 @@ use tsgo_rs_core::fast::{CompactString, SmallVec, compact_format};
 
 /// Distributed orchestrator that mirrors state through an in-process Raft core.
 ///
+/// This type layers replication and leader-based mutation ordering on top of
+/// the local [`ApiOrchestrator`]. It is primarily intended for experiments,
+/// tests, and documentation of how `tsgo-rs` can coordinate stateful workflows
+/// across nodes.
+///
 /// # Examples
 ///
 /// ```
@@ -53,6 +58,9 @@ impl DistributedApiOrchestrator {
     }
 
     /// Returns the underlying Raft cluster.
+    ///
+    /// Advanced callers can inspect roles and replicated state directly through
+    /// the returned handle.
     pub fn raft(&self) -> &RaftCluster {
         &self.raft
     }
@@ -91,6 +99,8 @@ impl DistributedApiOrchestrator {
     }
 
     /// Replicates a newly opened virtual document.
+    ///
+    /// The supplied `leader_id` must currently be allowed to append commands.
     pub fn open_virtual_document(
         &self,
         leader_id: &str,
@@ -106,6 +116,9 @@ impl DistributedApiOrchestrator {
     }
 
     /// Applies and replicates incremental changes for a virtual document.
+    ///
+    /// The change is first validated locally against the current replicated
+    /// document contents, then appended to the Raft log.
     pub fn change_virtual_document(
         &self,
         leader_id: &str,
@@ -150,6 +163,9 @@ impl DistributedApiOrchestrator {
     }
 
     /// Performs a cached computation and replicates the result through Raft.
+    ///
+    /// Reads prefer the replicated cache first. On a miss, the value is
+    /// computed locally and then published to the cluster log.
     pub async fn cached<T, F, Fut>(
         &self,
         profile: &ApiProfile,
@@ -184,6 +200,9 @@ impl DistributedApiOrchestrator {
     }
 
     /// Creates or reuses a snapshot locally and mirrors its record to the cluster.
+    ///
+    /// Only the snapshot metadata is replicated. The underlying live snapshot
+    /// handle remains local to the current process.
     pub async fn cached_snapshot(
         &self,
         profile: &ApiProfile,
@@ -207,6 +226,9 @@ impl DistributedApiOrchestrator {
     }
 
     /// Invalidates a replicated snapshot record.
+    ///
+    /// This removes both the local snapshot cache entry and the replicated
+    /// record associated with `key`.
     pub fn invalidate_snapshot(&self, leader_id: &str, key: &str) -> Result<()> {
         self.local.invalidate_snapshot(key);
         self.raft.append(

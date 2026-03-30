@@ -199,9 +199,7 @@ export function typeTextsAtNode(
     if (!type) {
       return;
     }
-    const texts = Array.isArray((type as { texts?: unknown }).texts)
-      ? ((type as { texts: readonly string[] }).texts ?? [])
-      : [];
+    const texts = Array.isArray(type.texts) ? type.texts : [];
     for (const text of [...texts, checker.typeToString(type)]) {
       if (text) {
         values.add(text);

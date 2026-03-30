@@ -4,27 +4,43 @@ use tsgo_rs_core::{
     fast::{CompactString, compact_format},
 };
 
+/// Commit metadata recorded in the lockfile and repository snapshots.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CommitMetadata {
+    /// Commit SHA.
     pub commit: CompactString,
+    /// Tree SHA for the commit.
     pub tree: CompactString,
+    /// Committer timestamp in ISO-8601 form.
     pub committer_date: CompactString,
+    /// Commit author name.
     pub author: CompactString,
+    /// Commit subject line.
     pub subject: CompactString,
 }
 
+/// Snapshot of the current state of a repository checkout.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RepositorySnapshot {
+    /// URL of the `origin` remote.
     pub remote_url: CompactString,
+    /// Currently checked-out commit SHA.
     pub commit: CompactString,
+    /// Tree SHA for the checked-out commit.
     pub tree: CompactString,
+    /// Committer timestamp in ISO-8601 form.
     pub committer_date: CompactString,
+    /// Commit author name.
     pub author: CompactString,
+    /// Commit subject line.
     pub subject: CompactString,
+    /// Attached branch name, or `None` when `HEAD` is detached.
     pub branch: Option<CompactString>,
+    /// Whether the worktree has tracked or untracked changes.
     pub dirty: bool,
 }
 
+/// Normalizes an upstream URL into a host/path identifier.
 pub fn canonical_repository_id(url: &str) -> CompactString {
     let trimmed = url.trim().trim_end_matches(".git");
     let ssh = trimmed
@@ -39,6 +55,7 @@ pub fn canonical_repository_id(url: &str) -> CompactString {
         .unwrap_or_else(|| CompactString::from(trimmed))
 }
 
+/// Converts a repository URL into the canonical HTTPS form used in the lockfile.
 pub fn canonical_repository_url(url: &str) -> CompactString {
     let repository = canonical_repository_id(url);
     let mut canonical = CompactString::from("https://");
@@ -47,6 +64,7 @@ pub fn canonical_repository_url(url: &str) -> CompactString {
     canonical
 }
 
+/// Captures a live snapshot of a git checkout.
 pub fn snapshot(path: &Path) -> Result<RepositorySnapshot> {
     let commit = run_git(path, &["rev-parse", "HEAD"])?;
     let metadata = metadata(path, "HEAD")?;
@@ -62,6 +80,7 @@ pub fn snapshot(path: &Path) -> Result<RepositorySnapshot> {
     })
 }
 
+/// Reads metadata for a specific revision.
 pub fn metadata(path: &Path, revision: &str) -> Result<CommitMetadata> {
     let body = run_git(
         path,
@@ -82,6 +101,7 @@ pub fn metadata(path: &Path, revision: &str) -> Result<CommitMetadata> {
     })
 }
 
+/// Clones a repository without checking out a working tree.
 pub fn clone_no_checkout(repository: &str, path: &Path) -> Result<()> {
     run_git_inherit(
         None,
@@ -97,11 +117,13 @@ pub fn clone_no_checkout(repository: &str, path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Fetches a specific commit into the local repository.
 pub fn fetch_commit(path: &Path, commit: &str) -> Result<()> {
     run_git_inherit(Some(path), &["fetch", "--depth", "1", "origin", commit])?;
     Ok(())
 }
 
+/// Switches the repository to a detached `HEAD` at `commit`.
 pub fn switch_detached(path: &Path, commit: &str) -> Result<()> {
     run_git_inherit(Some(path), &["switch", "--detach", commit])?;
     Ok(())

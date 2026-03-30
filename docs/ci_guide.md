@@ -1,0 +1,368 @@
+# CI and Local Reproduction Guide
+
+This document explains how the repository's CI is structured, how to reproduce it locally, and what changed to make it reliable.
+
+It is intentionally operational.
+If [benchmarking_guide.md](./benchmarking_guide.md) explains why the benchmark model exists, this guide explains how the day-to-day CI path is supposed to work.
+
+## Why This Exists
+
+This repository has a slightly unusual shape:
+
+- Rust crates
+- Node bindings through `napi-rs`
+- JS and TS code checked through Vite+ and Oxlint
+- a pinned upstream `typescript-go` checkout under `ref/typescript-go`
+- regression tests and benchmarks that talk to the real pinned upstream binary
+
+That means "CI is green" is not just one compiler succeeding.
+It means several layers agree on:
+
+- workspace type and lint state
+- Rust correctness
+- Node wrapper correctness
+- upstream pin cleanliness
+- real `tsgo` integration behavior
+- benchmark report availability
+
+## CI Topology
+
+The workflow lives in [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+
+It currently has two jobs:
+
+- `quality`
+- `tsgo-ref`
+
+## `quality`
+
+The `quality` job answers:
+
+- does the workspace format cleanly?
+- do JS and TS lint and type checks pass?
+- does Rust pass `fmt` and `clippy`?
+- can the workspace build?
+- do unit, integration, and JS tests pass?
+
+The important commands are:
+
+```bash
+vp check
+vp run -w fmt_check_rust
+vp run -w lint_rust
+vp run -w build
+vp run -w test
+```
+
+## `tsgo-ref`
+
+The `tsgo-ref` job answers:
+
+- is the pinned upstream checkout exactly where the lockfile says it should be?
+- can the pinned upstream `tsgo` binary actually build?
+- do real-server regression tests pass against that binary?
+- can benchmark reports be regenerated and validated?
+
+The important commands are:
+
+```bash
+vp run -w sync_ref
+vp run -w verify_ref
+vp run -w build_tsgo
+cargo test -p tsgo-rs --test real_tsgo_baseline --test real_tsgo_regression
+vp run -w bench_verify
+```
+
+## Local Reproduction
+
+## Recommended Environment
+
+The easiest local reproduction path is a shell that provides:
+
+- `node`
+- `pnpm`
+- `go 1.26`
+
+In this repository, the most reliable one-shot reproduction command is:
+
+```bash
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp check'
+```
+
+The same pattern works for the rest of the CI commands.
+
+Examples:
+
+```bash
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w build'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w test'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w bench_verify'
+```
+
+Using `sh -c` instead of a login shell matters here.
+It makes the tool resolution deterministic, especially for `go`, which would otherwise be shadowed by a preexisting shell profile on some machines.
+
+## Reproducing the Full Workflow
+
+This sequence mirrors the current CI most closely:
+
+```bash
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp check'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'cargo fmt --all --check'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'cargo clippy --workspace --all-targets -- -D warnings'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w build'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w test'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w sync_ref'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w verify_ref'
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w build_tsgo'
+cargo test -p tsgo-rs --test real_tsgo_baseline --test real_tsgo_regression
+nix shell nixpkgs#nodejs_22 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w bench_verify'
+```
+
+## What Broke and Why
+
+The CI work that made this path reliable fell into three buckets:
+
+- JS and TS check-time correctness
+- upstream Go toolchain correctness
+- reproducible benchmark build behavior
+
+## 1. `vp check` Failed Before the Node Wrapper Was Built
+
+The first failure mode came from `typescript_oxlint`.
+
+The original `tsconfig` path mapping for `@tsgo-rs/tsgo-rs-node` pointed at:
+
+- `../tsgo_rs_node/dist/index.d.mts`
+
+That works after the wrapper package has already been built.
+It is the wrong dependency edge for `vp check`, because `vp check` is supposed to validate source state before build artifacts exist.
+
+The fix was to map the package name to source instead:
+
+- [`../npm/typescript_oxlint/tsconfig.json`](../npm/typescript_oxlint/tsconfig.json)
+
+This makes `vp check` depend on the checked-in TypeScript source surface rather than on generated output.
+
+That is an important distinction:
+
+- `check` should validate source
+- `build` should generate artifacts
+
+If `check` depends on `dist/`, the repository can look broken even when the source is correct.
+
+## 2. `typescript_oxlint` Had Drifted from the Current Type Shape
+
+After module resolution was fixed, several TypeScript errors remained in `typescript_oxlint`.
+
+The important ones were:
+
+- `TsgoType` access patterns assuming an `id` path while the checker only knew a narrower local shape
+- an unnecessary cast around `texts`
+- a cached config path that could be inferred as `undefined`
+
+These were corrected in:
+
+- [`../npm/typescript_oxlint/ts/session.ts`](../npm/typescript_oxlint/ts/session.ts)
+- [`../npm/typescript_oxlint/ts/rules/type_utils.ts`](../npm/typescript_oxlint/ts/rules/type_utils.ts)
+
+The practical lesson is that `typescript_oxlint` is part compatibility layer and part consumer.
+It needs to follow the real wrapper API shape closely, otherwise CI fails long before runtime tests do.
+
+## 3. The Pinned Upstream Checkout Requires Go 1.26
+
+The pinned upstream ref now declares:
+
+- `go 1.26`
+
+in:
+
+- [`../ref/typescript-go/go.mod`](../ref/typescript-go/go.mod)
+
+That means CI cannot rely on whatever `go` version happens to be preinstalled on a runner.
+Without an explicit setup step, `vp run -w build_tsgo` can fail even if the repository itself is otherwise correct.
+
+The workflow now sets Go explicitly through:
+
+- [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+
+using `actions/setup-go` and `go-version-file: ref/typescript-go/go.mod`.
+
+This keeps the workflow aligned with the actual upstream requirement instead of duplicating a version string elsewhere.
+
+## 4. `build_tsgo` Needed a Repository-Local Build Cache
+
+Once the Go version was correct, another issue appeared locally:
+
+- `go build` tried to use a cache path outside the repository
+- that cache path was not always writable in the execution environment
+
+The fix was not to disable caching.
+The correct fix was to make the cache explicit and local to the repository:
+
+- [`../vite.config.ts`](../vite.config.ts)
+
+`build_tsgo` now creates `.cache/go-build` and passes an absolute `GOCACHE` path to `go build`.
+
+That matters for two reasons:
+
+- it avoids permission-dependent failures
+- it makes the build behavior more reproducible across developer machines and CI runners
+
+One subtle detail here is that `GOCACHE` must be absolute.
+A relative path looks harmless but is rejected by the Go toolchain.
+
+## 5. `verify_ref` Is Supposed to Be Strict
+
+The `tsgo-rs-ref` checks are intentionally unforgiving.
+
+They enforce that `ref/typescript-go` is:
+
+- on the exact pinned commit
+- detached at `HEAD`
+- clean in tracked files
+
+This is not overkill.
+It is what makes real regression tests and performance claims auditable.
+
+While reproducing CI locally, `verify_ref` briefly failed because a tracked file inside the managed ref had drifted:
+
+- `ref/typescript-go/package-lock.json`
+
+That drift came from local package-manager behavior, not from intended upstream changes.
+The correct response was to restore the tracked file, not to weaken verification.
+
+Ignored files such as these are fine:
+
+- `ref/typescript-go/.cache/`
+- `ref/typescript-go/node_modules/`
+- generated `*.tsbuildinfo`
+
+Tracked changes are not.
+
+## 6. Benchmark Tasks Must Also Be Operationally Safe
+
+This repository already treated process cleanup as a correctness property.
+The CI pass validated that expectation under real benchmark execution too.
+
+The benchmark path:
+
+- rebuilt the real pinned `tsgo`
+- regenerated `.cache/bench_native.json`
+- regenerated `.cache/bench_ts.json`
+- ran the benchmark guard tests
+
+After the run, no leftover `tsgo`, `bench_real_tsgo`, or related benchmark worker processes remained.
+
+That matters because benchmark pipelines that leak processes are not just untidy.
+They are measurement bugs waiting to happen.
+
+## Design Intent Behind the Fixes
+
+The changes were not random CI band-aids.
+They reflect a few design rules.
+
+## Source Checks Should Depend on Source, Not Generated Artifacts
+
+This was the core reason to change `typescript_oxlint`'s path mapping.
+
+If `vp check` depends on a generated declaration file, then the logical order becomes:
+
+1. build
+2. then check
+
+That is backwards for CI.
+Checks should be able to fail before build, because that is how they protect the source tree.
+
+## Version Truth Should Come from the Upstream Ref
+
+The CI workflow should not hardcode a Go version if the upstream ref already declares one.
+
+Using `go-version-file` means:
+
+- the lock is in one place
+- CI follows upstream automatically when the pinned ref moves
+- there is less room for silent drift
+
+## Reproducibility Beats Convenience
+
+Repo-local caches, explicit shell environments, and strict ref verification all make the workflow a little more opinionated.
+That is intentional.
+
+The goal is not to create the shortest possible happy path.
+The goal is to make failures explainable and successes trustworthy.
+
+## Files Involved
+
+The most important files for this CI stabilization work are:
+
+- [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+- [`../vite.config.ts`](../vite.config.ts)
+- [`../npm/typescript_oxlint/tsconfig.json`](../npm/typescript_oxlint/tsconfig.json)
+- [`../npm/typescript_oxlint/ts/session.ts`](../npm/typescript_oxlint/ts/session.ts)
+- [`../npm/typescript_oxlint/ts/rules/type_utils.ts`](../npm/typescript_oxlint/ts/rules/type_utils.ts)
+- [`../ref/typescript-go/go.mod`](../ref/typescript-go/go.mod)
+
+## Troubleshooting
+
+## `vp check` says `@tsgo-rs/tsgo-rs-node` cannot be found
+
+Check whether `typescript_oxlint` is resolving the package to source or to `dist/`.
+For source validation, it should resolve to the source TypeScript entrypoint, not to generated declarations.
+
+## `build_tsgo` fails with a Go version error
+
+Check:
+
+- `go version`
+- whether the shell actually exposes Go 1.26
+- whether CI is using `actions/setup-go` with `ref/typescript-go/go.mod`
+
+If a login shell is overriding the toolchain, prefer the `nix shell ... -c sh -c '...'` pattern.
+
+## `build_tsgo` fails with a cache permission error
+
+Check whether `GOCACHE` is:
+
+- set explicitly
+- absolute
+- inside a writable path
+
+This repository now uses `.cache/go-build` under the workspace for that reason.
+
+## `verify_ref` fails even though `sync_ref` just ran
+
+Look specifically for tracked file drift inside `ref/typescript-go`:
+
+```bash
+git -C ref/typescript-go status --short
+git -C ref/typescript-go diff --stat
+```
+
+Ignored files are usually not the problem.
+Tracked files are.
+
+## `bench_verify` takes a while and looks stuck
+
+That is normal as long as it is still progressing through:
+
+- Node benches
+- native benches
+- report guard tests
+
+The slowest part is usually rebuilding or rerunning the real pinned upstream binary and then collecting benchmark samples.
+
+## Practical Tips
+
+- Run CI repro commands in a non-login shell when you need deterministic tool resolution.
+- Treat `ref/typescript-go` as managed state, not as a normal workspace directory.
+- Keep generated outputs out of source-time type checking.
+- Use repo-local caches when external cache directories may be sandboxed or permission-sensitive.
+- If benchmark jobs pass but leave child processes behind, treat that as a bug, not as cleanup debt.
+
+## Related Documents
+
+- [README.md](../README.md)
+- [performance.md](./performance.md)
+- [benchmarking_guide.md](./benchmarking_guide.md)
+- [tsgo_dependency.md](./tsgo_dependency.md)

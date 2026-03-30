@@ -4,33 +4,50 @@ use crate::{
 };
 use std::io;
 
+/// Workspace-wide error type for process, transport, and protocol failures.
 #[derive(Debug, thiserror::Error)]
 pub enum TsgoError {
+    /// Underlying OS or process I/O failure.
     #[error(transparent)]
     Io(#[from] io::Error),
+    /// JSON serialization or deserialization failure.
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    /// Base64 decoding failure for binary JSON payloads.
     #[error(transparent)]
     Base64(#[from] base64::DecodeError),
+    /// Error returned by the remote JSON-RPC peer.
     #[error("rpc error {}: {}", .0.code, .0.message)]
     Rpc(RpcResponseError),
+    /// Protocol-level invariant violation or user-facing contract error.
     #[error("protocol error: {0}")]
     Protocol(CompactString),
+    /// Message shape did not match what the transport expected.
     #[error("unexpected message: {0}")]
     UnexpectedMessage(CompactString),
+    /// Opaque handle payload could not be parsed.
     #[error("invalid handle: {0}")]
     InvalidHandle(CompactString),
+    /// Operation could not continue because the underlying resource is closed.
     #[error("process is closed: {0}")]
     Closed(&'static str),
+    /// Requested feature or transport is not supported.
     #[error("unsupported: {0}")]
     Unsupported(&'static str),
+    /// Thread/task join failure surfaced as a stable string.
     #[error("join error: {0}")]
     Join(CompactString),
 }
 
+/// Standard result alias used across the workspace.
 pub type Result<T, E = TsgoError> = std::result::Result<T, E>;
 
 impl TsgoError {
+    /// Clones an error into a form safe to send to pending waiters.
+    ///
+    /// Some inner error types are not cheaply cloneable, so this method
+    /// preserves the important semantics while normalizing them into owned
+    /// variants.
     pub fn clone_for_pending(&self) -> Self {
         match self {
             Self::Io(err) => Self::Io(std::io::Error::new(

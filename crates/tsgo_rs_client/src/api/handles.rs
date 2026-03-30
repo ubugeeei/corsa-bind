@@ -43,9 +43,13 @@ handle_type!(NodeHandle);
 /// Parsed representation of a [`NodeHandle`].
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ParsedNodeHandle {
+    /// Start offset in UTF-16 code units.
     pub pos: u32,
+    /// End offset in UTF-16 code units.
     pub end: u32,
+    /// TypeScript syntax kind numeric tag.
     pub kind: u16,
+    /// Path component encoded into the handle.
     pub path: CompactString,
 }
 

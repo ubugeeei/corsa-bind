@@ -24,6 +24,18 @@ use super::{
 
 /// High-level client for the tsgo stdio API.
 ///
+/// `ApiClient` owns a single worker connection and memoizes the result of the
+/// `initialize` handshake so later requests can assume the session is ready.
+/// Clone values are cheap and refer to the same underlying process/transport.
+///
+/// # Lifecycle
+///
+/// 1. Create a client with [`spawn`](Self::spawn) or [`connect_pipe`](Self::connect_pipe).
+/// 2. Call [`initialize`](Self::initialize) explicitly, or let endpoint helpers
+///    do it lazily on first use.
+/// 3. Reuse the same client for multiple snapshot and query operations.
+/// 4. Call [`close`](Self::close) when the worker is no longer needed.
+///
 /// # Examples
 ///
 /// ```no_run
@@ -44,6 +56,10 @@ pub struct ApiClient {
 
 impl ApiClient {
     /// Spawns a new tsgo API worker using the supplied configuration.
+    ///
+    /// The underlying transport depends on [`ApiSpawnConfig::mode`]. For
+    /// production and benchmark workflows, sync msgpack is typically the
+    /// preferred choice because it reduces per-request overhead.
     pub async fn spawn(config: ApiSpawnConfig) -> Result<Self> {
         let driver = match config.mode {
             ApiMode::AsyncJsonRpcStdio => {
@@ -64,11 +80,16 @@ impl ApiClient {
 
     #[cfg(unix)]
     /// Connects to an already-running JSON-RPC socket.
+    ///
+    /// This is useful when another process owns the server lifecycle and this
+    /// client should only attach to the transport.
     pub async fn connect_pipe(path: impl Into<PathBuf>) -> Result<Self> {
         connect_pipe_socket(path.into()).await
     }
 
     /// Initializes the worker and returns the cached `initialize` response.
+    ///
+    /// Repeated calls are cheap: only the first call performs network I/O.
     pub async fn initialize(&self) -> Result<Arc<InitializeResponse>> {
         if self.initialized.lock().is_none() {
             let value = self.driver.request_json("initialize", Value::Null).await?;
@@ -85,7 +106,10 @@ impl ApiClient {
             .ok_or(TsgoError::Closed("api initialize"))
     }
 
-    /// Parses a `tsconfig` file through tsgo.
+    /// Parses a `tsconfig` file through `tsgo`.
+    ///
+    /// The returned [`ConfigResponse`] contains the normalized compiler options
+    /// and the file set that `tsgo` resolved for that config file.
     pub async fn parse_config_file(
         &self,
         file: impl Into<DocumentIdentifier>,
@@ -100,6 +124,11 @@ impl ApiClient {
     }
 
     /// Applies file changes and returns a managed snapshot handle.
+    ///
+    /// Snapshots are the unit of reuse for project graphs inside `tsgo`. The
+    /// returned [`ManagedSnapshot`] automatically releases its remote handle
+    /// when dropped, but can also be released eagerly via
+    /// [`ManagedSnapshot::release`](crate::ManagedSnapshot::release).
     pub async fn update_snapshot(&self, params: UpdateSnapshotParams) -> Result<ManagedSnapshot> {
         self.initialize().await?;
         let request = UpdateSnapshotRequest {
@@ -118,6 +147,9 @@ impl ApiClient {
     }
 
     /// Resolves the default project for a file inside a snapshot.
+    ///
+    /// Returns `Ok(None)` when the file does not belong to any known project in
+    /// the snapshot.
     pub async fn get_default_project_for_file(
         &self,
         snapshot: super::SnapshotHandle,
@@ -139,6 +171,9 @@ impl ApiClient {
     }
 
     /// Fetches a source file via a binary endpoint.
+    ///
+    /// Binary endpoints avoid JSON/base64 expansion and are a good fit for
+    /// large payloads such as serialized source files.
     pub async fn get_source_file(
         &self,
         snapshot: super::SnapshotHandle,
@@ -159,17 +194,26 @@ impl ApiClient {
     }
 
     /// Closes the client and shuts down the underlying worker process.
+    ///
+    /// This is idempotent. After closing, further requests return
+    /// [`TsgoError::Closed`].
     pub async fn close(&self) -> Result<()> {
         self.driver.close().await
     }
 
     /// Sends a raw JSON endpoint request after initialization.
+    ///
+    /// Prefer the typed helpers where available, and use this escape hatch when
+    /// experimenting with new upstream endpoints.
     pub async fn raw_json_request(&self, method: &str, params: Value) -> Result<Value> {
         self.initialize().await?;
         self.driver.request_json(method, params).await
     }
 
     /// Sends a raw binary endpoint request after initialization.
+    ///
+    /// The returned payload is wrapped in [`EncodedPayload`] for zero-surprise
+    /// ownership semantics.
     pub async fn raw_binary_request(
         &self,
         method: &str,

@@ -13,7 +13,12 @@ use super::{
     InitializeApiSessionParams, InitializeApiSessionRequest, InitializeApiSessionResult, LspOverlay,
 };
 
-/// LSP client backed by the tsgo stdio server.
+/// LSP client backed by the `tsgo` stdio server.
+///
+/// `LspClient` is the transport-facing half of editor-style workflows. It owns
+/// the server process, provides typed request/notification helpers via
+/// [`lsp_types`], and can create an [`LspOverlay`] for mirrored in-memory
+/// document state.
 #[derive(Clone)]
 pub struct LspClient {
     rpc: JsonRpcConnection,
@@ -35,7 +40,9 @@ pub struct LspClient {
 /// ```
 #[derive(Clone, Debug)]
 pub struct LspSpawnConfig {
+    /// Reusable command template used to launch `tsgo --lsp --stdio`.
     pub command: TsgoCommand,
+    /// Additional CLI flags appended after `--lsp --stdio`.
     pub extra_args: SmallVec<[CompactString; 4]>,
 }
 
@@ -63,6 +70,9 @@ impl LspSpawnConfig {
 
 impl LspClient {
     /// Spawns a tsgo LSP server over stdio.
+    ///
+    /// The client owns the spawned process and will terminate it when
+    /// [`close`](Self::close) is called.
     pub async fn spawn(config: LspSpawnConfig) -> Result<Self> {
         let mut args = SmallVec::<[CompactString; 6]>::new();
         args.push(CompactString::from("--lsp"));
@@ -80,16 +90,24 @@ impl LspClient {
     }
 
     /// Subscribes to inbound requests and notifications from the server.
+    ///
+    /// Only messages without a local handler are forwarded to subscribers.
     pub fn subscribe(&self) -> BroadcastReceiver<InboundEvent> {
         self.rpc.subscribe()
     }
 
     /// Creates a virtual-document overlay synchronized with this client.
+    ///
+    /// The overlay helps keep `didOpen`, `didChange`, and `didClose`
+    /// notifications consistent with local in-memory state.
     pub fn overlay(&self) -> LspOverlay {
         LspOverlay::new(self.clone())
     }
 
     /// Sends a typed LSP request.
+    ///
+    /// Request/response payloads are described by the [`lsp_types::request::Request`]
+    /// implementation supplied as `R`.
     pub async fn request<R>(&self, params: R::Params) -> Result<R::Result>
     where
         R: Request,
@@ -100,6 +118,9 @@ impl LspClient {
     }
 
     /// Sends a typed LSP notification.
+    ///
+    /// This is the preferred way to emit standard protocol notifications such
+    /// as `textDocument/didOpen`.
     pub fn notify<N>(&self, params: N::Params) -> Result<()>
     where
         N: Notification,
@@ -109,6 +130,9 @@ impl LspClient {
     }
 
     /// Responds to an inbound request.
+    ///
+    /// Use this when consuming [`InboundEvent::Request`](crate::jsonrpc::InboundEvent::Request)
+    /// from [`subscribe`](Self::subscribe).
     pub fn respond<ResultBody>(&self, id: RequestId, body: ResultBody) -> Result<()>
     where
         ResultBody: Serialize,
@@ -116,7 +140,10 @@ impl LspClient {
         self.rpc.respond(id, body)
     }
 
-    /// Calls the custom `initializeAPISession` request exposed by tsgo.
+    /// Calls the custom `initializeAPISession` request exposed by `tsgo`.
+    ///
+    /// This is useful when an LSP session needs to bootstrap a separate API
+    /// session and exchange its pipe information with another component.
     pub async fn initialize_api_session(
         &self,
         params: InitializeApiSessionParams,
@@ -125,6 +152,9 @@ impl LspClient {
     }
 
     /// Closes the LSP transport and terminates the server process.
+    ///
+    /// The underlying process is shut down safely through [`AsyncChildGuard`],
+    /// which ensures the child is reaped even if it needs to be killed.
     pub async fn close(&self) -> Result<()> {
         self.rpc.close().await?;
         self.process

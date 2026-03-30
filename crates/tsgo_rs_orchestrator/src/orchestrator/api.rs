@@ -14,7 +14,18 @@ use std::{
 use tsgo_rs_core::fast::{CompactString, FastMap, SmallVec};
 use tsgo_rs_runtime::block_on;
 
-/// Local pool/cache orchestrator for multiple tsgo API workers.
+/// Local pool/cache orchestrator for multiple `tsgo` API workers.
+///
+/// This type is where session reuse becomes a first-class concept. It can:
+///
+/// - prewarm multiple workers for a named [`ApiProfile`]
+/// - round-robin lease clients for parallel work
+/// - cache snapshots by a caller-provided key
+/// - memoize arbitrary JSON-serializable results with an optional TTL
+/// - fan work out across multiple workers while preserving input order
+///
+/// In other words, it optimizes for end-to-end workflow latency rather than
+/// trying to outperform `tsgo`'s own compiler internals directly.
 #[derive(Default)]
 pub struct ApiOrchestrator {
     fleets: RwLock<FastMap<CompactString, Arc<ClientFleet>>>,
@@ -34,6 +45,9 @@ struct CachedValue {
 
 impl ApiOrchestrator {
     /// Ensures that at least `replicas` workers have been started for `profile`.
+    ///
+    /// This is useful for benchmark setup or for services that want to pay
+    /// startup cost ahead of the first user request.
     pub async fn prewarm(&self, profile: &ApiProfile, replicas: usize) -> Result<()> {
         let fleet = self.fleet(profile).await?;
         while fleet.clients.read().len() < replicas {
@@ -44,6 +58,9 @@ impl ApiOrchestrator {
     }
 
     /// Leases a worker using round-robin selection.
+    ///
+    /// The returned client is shared and cheaply clonable; leasing does not
+    /// transfer ownership of the underlying process.
     pub async fn lease(&self, profile: &ApiProfile) -> Result<ApiClient> {
         self.prewarm(profile, 1).await?;
         let fleet = self.fleet(profile).await?;
@@ -53,6 +70,9 @@ impl ApiOrchestrator {
     }
 
     /// Returns a cached snapshot or creates one lazily.
+    ///
+    /// Snapshot keys are application-defined. Reusing a stable key for the same
+    /// logical workspace lets callers amortize project graph construction.
     pub async fn cached_snapshot(
         &self,
         profile: &ApiProfile,
@@ -70,11 +90,17 @@ impl ApiOrchestrator {
     }
 
     /// Invalidates a cached snapshot by key.
+    ///
+    /// This only removes the local cache entry. Existing `Arc<ManagedSnapshot>`
+    /// clones continue to live until all references are dropped.
     pub fn invalidate_snapshot(&self, key: &str) {
         self.snapshots.write().remove(key);
     }
 
     /// Memoizes the result of an async task for an optional TTL.
+    ///
+    /// Values are stored as JSON bytes so cache hits do not need the original
+    /// worker process or closure again.
     pub async fn cached<T, F, Fut>(
         &self,
         profile: &ApiProfile,
@@ -108,6 +134,9 @@ impl ApiOrchestrator {
     }
 
     /// Executes the same task across a batch using multiple workers.
+    ///
+    /// Results preserve the original input order even though execution may
+    /// happen concurrently across different workers.
     pub async fn execute_all<T, F, Fut, I, R>(
         &self,
         profile: &ApiProfile,

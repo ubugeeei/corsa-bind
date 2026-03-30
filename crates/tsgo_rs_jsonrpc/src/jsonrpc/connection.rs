@@ -28,13 +28,20 @@ pub type RpcHandlerMap = FastMap<CompactString, RpcHandler>;
 /// Inbound JSON-RPC events that are not handled locally.
 #[derive(Clone, Debug)]
 pub enum InboundEvent {
+    /// Request that did not match a locally registered handler.
     Request {
+        /// Request identifier to answer with [`JsonRpcConnection::respond`].
         id: RequestId,
+        /// JSON-RPC method name.
         method: CompactString,
+        /// Raw JSON parameters payload.
         params: Value,
     },
+    /// Notification that did not match a locally registered handler.
     Notification {
+        /// JSON-RPC method name.
         method: CompactString,
+        /// Raw JSON parameters payload.
         params: Value,
     },
 }
@@ -44,6 +51,9 @@ pub enum InboundEvent {
 /// The connection owns a reader thread, a writer thread, and a pending-request
 /// table. Requests and notifications are serialized on the writer thread, while
 /// inbound frames are decoded on the reader thread.
+///
+/// Local handlers are useful for request/notification callbacks such as the
+/// filesystem bridge used by the `tsgo` API client.
 #[derive(Clone)]
 pub struct JsonRpcConnection {
     inner: Arc<Inner>,
@@ -62,6 +72,8 @@ struct Inner {
 
 impl JsonRpcConnection {
     /// Spawns a connection around a buffered reader and writer.
+    ///
+    /// The connection starts background reader/writer threads immediately.
     pub fn spawn<R, W>(reader: R, writer: W, handlers: RpcHandlerMap) -> Self
     where
         R: BufRead + Send + 'static,
@@ -94,6 +106,8 @@ impl JsonRpcConnection {
     }
 
     /// Sends a JSON-RPC request and deserializes the response.
+    ///
+    /// Each request is assigned a monotonically increasing integer ID.
     pub async fn request<Params, Response>(&self, method: &str, params: Params) -> Result<Response>
     where
         Params: Serialize,
@@ -105,6 +119,8 @@ impl JsonRpcConnection {
     }
 
     /// Sends a JSON-RPC request and returns the raw JSON value.
+    ///
+    /// Use this when a typed response model is not available yet.
     pub async fn request_value(&self, method: &str, params: Value) -> Result<Value> {
         if self.inner.closed.load(Ordering::SeqCst) {
             return Err(TsgoError::Closed("jsonrpc connection"));
@@ -147,6 +163,8 @@ impl JsonRpcConnection {
     }
 
     /// Closes the connection and fails outstanding requests.
+    ///
+    /// After closure, new requests fail immediately with [`TsgoError::Closed`].
     pub async fn close(&self) -> Result<()> {
         if self.inner.closed.swap(true, Ordering::SeqCst) {
             return Ok(());

@@ -20,16 +20,22 @@ use super::RequestId;
 /// ```
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RawMessage {
+    /// JSON-RPC protocol version, normally `"2.0"`.
     #[serde(default = "jsonrpc_version")]
     pub jsonrpc: CompactString,
+    /// Request/response identifier, absent for notifications.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<RequestId>,
+    /// Method name for requests and notifications.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub method: Option<CompactString>,
+    /// Request or notification parameters.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<Value>,
+    /// Successful response body.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
+    /// Error response body.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<RpcResponseError>,
 }
@@ -114,18 +120,29 @@ impl RawMessage {
 /// Parsed view of a [`RawMessage`].
 #[derive(Clone, Debug)]
 pub enum MessageKind {
+    /// JSON-RPC request envelope.
     Request {
+        /// Request identifier.
         id: RequestId,
+        /// Method name.
         method: CompactString,
+        /// Request parameters.
         params: Value,
     },
+    /// JSON-RPC notification envelope.
     Notification {
+        /// Method name.
         method: CompactString,
+        /// Notification parameters.
         params: Value,
     },
+    /// JSON-RPC response envelope.
     Response {
+        /// Request identifier being answered.
         id: RequestId,
+        /// Successful result body, when present.
         result: Option<Value>,
+        /// Error body, when present.
         error: Option<RpcResponseError>,
     },
 }
