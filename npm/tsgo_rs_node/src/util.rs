@@ -10,6 +10,10 @@ pub struct SpawnOptions {
     pub executable: String,
     pub cwd: Option<String>,
     pub mode: Option<String>,
+    pub request_timeout_ms: Option<u64>,
+    pub shutdown_timeout_ms: Option<u64>,
+    pub outbound_capacity: Option<usize>,
+    pub allow_unstable_upstream_calls: Option<bool>,
 }
 
 pub fn build_spawn_config(options: SpawnOptions) -> Result<ApiSpawnConfig> {
@@ -19,6 +23,18 @@ pub fn build_spawn_config(options: SpawnOptions) -> Result<ApiSpawnConfig> {
     }
     if let Some(mode) = options.mode {
         config = config.with_mode(parse_mode(mode.as_str())?);
+    }
+    if let Some(timeout_ms) = options.request_timeout_ms {
+        config = config.with_request_timeout(Some(std::time::Duration::from_millis(timeout_ms)));
+    }
+    if let Some(timeout_ms) = options.shutdown_timeout_ms {
+        config = config.with_shutdown_timeout(std::time::Duration::from_millis(timeout_ms));
+    }
+    if let Some(capacity) = options.outbound_capacity {
+        config = config.with_outbound_capacity(capacity);
+    }
+    if let Some(allow) = options.allow_unstable_upstream_calls {
+        config = config.with_allow_unstable_upstream_calls(allow);
     }
     Ok(config)
 }
@@ -80,5 +96,24 @@ mod tests {
             parse_json::<SpawnOptions>(r#"{"executable":"./tsgo","mode":"jsonrpc"}"#).unwrap();
         let config = build_spawn_config(options).unwrap();
         assert_eq!(config.mode, ApiMode::AsyncJsonRpcStdio);
+    }
+
+    #[test]
+    fn spawn_config_accepts_transport_limits() {
+        let options = parse_json::<SpawnOptions>(
+            r#"{"executable":"./tsgo","requestTimeoutMs":5000,"shutdownTimeoutMs":250,"outboundCapacity":8,"allowUnstableUpstreamCalls":true}"#,
+        )
+        .unwrap();
+        let config = build_spawn_config(options).unwrap();
+        assert_eq!(
+            config.request_timeout,
+            Some(std::time::Duration::from_secs(5))
+        );
+        assert_eq!(
+            config.shutdown_timeout,
+            std::time::Duration::from_millis(250)
+        );
+        assert_eq!(config.outbound_capacity, 8);
+        assert!(config.allow_unstable_upstream_calls);
     }
 }

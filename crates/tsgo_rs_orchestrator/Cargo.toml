@@ -2,13 +2,20 @@
 name = "tsgo-rs-orchestrator"
 version = "0.1.0"
 edition = "2024"
+description = "Worker pooling, caching, and experimental replicated orchestration for tsgo-rs"
+documentation.workspace = true
+homepage.workspace = true
 license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [lib]
 name = "tsgo_rs_orchestrator"
 path = "src/lib.rs"
 
 [dependencies]
+log = { workspace = true }
 lsp-types = "0.97"
 parking_lot = "0.12"
 serde = { version = "1", features = ["derive"] }

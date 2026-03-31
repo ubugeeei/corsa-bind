@@ -83,6 +83,7 @@ export default [
           tsgo: {
             executable: "./.cache/tsgo",
             mode: "msgpack",
+            requestTimeoutMs: 30000,
           },
         },
       },
@@ -135,6 +136,19 @@ Current native coverage includes:
 The remaining upstream rules stay listed in `pendingNativeRuleNames`, and
 `native_rules.test.ts` fails if implemented + pending drift away from the
 tracked upstream rule list.
+
+## Runtime Safety Controls
+
+The underlying `@tsgo-rs/tsgo-rs-node` client now exposes a few production-oriented
+runtime controls:
+
+- `requestTimeoutMs`
+- `shutdownTimeoutMs`
+- `outboundCapacity`
+- `allowUnstableUpstreamCalls`
+
+Leaving `allowUnstableUpstreamCalls` unset keeps unstable upstream endpoints
+such as `printNode` disabled by default.
 
 ## Development
 

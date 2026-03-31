@@ -17,8 +17,15 @@ env:
 
 jobs:
   quality:
-    name: Quality
-    runs-on: ubuntu-latest
+    name: Quality (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -30,12 +37,6 @@ jobs:
 
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@v2
-
-      - name: Setup Go for pinned tsgo ref
-        uses: actions/setup-go@v6
-        with:
-          go-version: "1.26.0"
-          cache: false
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1

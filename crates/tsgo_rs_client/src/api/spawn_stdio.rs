@@ -11,7 +11,7 @@ use super::{
 };
 use crate::{
     Result, TsgoError,
-    jsonrpc::JsonRpcConnection,
+    jsonrpc::{JsonRpcConnection, JsonRpcConnectionOptions},
     process::{AsyncChildGuard, TsgoCommand},
 };
 use std::{
@@ -23,6 +23,9 @@ use tsgo_rs_core::fast::{CompactString, SmallVec};
 pub(super) async fn spawn_jsonrpc_stdio(
     command: &TsgoCommand,
     filesystem: Option<Arc<dyn super::ApiFileSystem>>,
+    request_timeout: Option<std::time::Duration>,
+    shutdown_timeout: std::time::Duration,
+    outbound_capacity: usize,
 ) -> Result<ClientDriver> {
     // JSON-RPC mode is used for callback-capable, async request/response
     // flows. The worker process is wrapped in `AsyncChildGuard` so shutdown
@@ -32,22 +35,37 @@ pub(super) async fn spawn_jsonrpc_stdio(
     let stdin = child.stdin.take().ok_or(TsgoError::Closed("api stdin"))?;
     let stdout = child.stdout.take().ok_or(TsgoError::Closed("api stdout"))?;
     let handlers = filesystem.map(jsonrpc_handlers).unwrap_or_default();
-    let rpc = JsonRpcConnection::spawn(BufReader::new(stdout), BufWriter::new(stdin), handlers);
+    let rpc = JsonRpcConnection::spawn_with_options(
+        BufReader::new(stdout),
+        BufWriter::new(stdin),
+        handlers,
+        JsonRpcConnectionOptions::new()
+            .with_request_timeout(request_timeout)
+            .with_outbound_capacity(outbound_capacity),
+    );
     Ok(ClientDriver::JsonRpc {
         rpc,
         process: Some(Arc::new(AsyncChildGuard::new(child))),
+        shutdown_timeout,
     })
 }
 
 pub(super) fn spawn_msgpack_stdio(
     command: &TsgoCommand,
     filesystem: Option<Arc<dyn super::ApiFileSystem>>,
+    request_timeout: Option<std::time::Duration>,
+    outbound_capacity: usize,
 ) -> Result<ClientDriver> {
     // Msgpack mode keeps a dedicated worker thread around the blocking stdio
     // pipes. This avoids async framing overhead on the hot path.
     let args = stdio_args(command, filesystem.as_deref(), false);
     let child = command.spawn_blocking(args.iter().map(CompactString::as_str))?;
-    let worker = super::msgpack_worker::MsgpackWorker::spawn(child, filesystem)?;
+    let worker = super::msgpack_worker::MsgpackWorker::spawn(
+        child,
+        filesystem,
+        request_timeout,
+        outbound_capacity,
+    )?;
     Ok(ClientDriver::Msgpack {
         worker: Arc::new(worker),
     })

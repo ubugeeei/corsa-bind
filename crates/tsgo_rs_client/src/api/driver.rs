@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::{Result, error::TsgoError, jsonrpc::JsonRpcConnection, process::AsyncChildGuard};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde_json::Value;
@@ -10,6 +12,7 @@ pub(crate) enum ClientDriver {
     JsonRpc {
         rpc: JsonRpcConnection,
         process: Option<Arc<AsyncChildGuard>>,
+        shutdown_timeout: Duration,
     },
     Msgpack {
         worker: Arc<MsgpackWorker>,
@@ -59,12 +62,14 @@ impl ClientDriver {
     }
     pub(crate) async fn close(&self) -> Result<()> {
         match self {
-            Self::JsonRpc { rpc, process } => {
+            Self::JsonRpc {
+                rpc,
+                process,
+                shutdown_timeout,
+            } => {
                 rpc.close().await?;
                 if let Some(process) = process {
-                    process
-                        .shutdown(std::time::Duration::from_millis(500))
-                        .await?;
+                    process.shutdown(*shutdown_timeout).await?;
                 }
                 Ok(())
             }

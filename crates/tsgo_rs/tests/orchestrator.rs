@@ -9,9 +9,12 @@ use std::{
     time::Duration,
 };
 use tsgo_rs::{
-    api::{ApiMode, UpdateSnapshotParams},
+    api::{ApiClient, ApiMode, UpdateSnapshotParams},
     lsp::{VirtualChange, VirtualDocument},
-    orchestrator::{ApiOrchestrator, DistributedApiOrchestrator, RaftCluster, ReplicatedCommand},
+    orchestrator::{
+        ApiOrchestrator, ApiOrchestratorConfig, DistributedApiOrchestrator, RaftCluster,
+        ReplicatedCommand,
+    },
     runtime::block_on,
 };
 
@@ -217,5 +220,113 @@ fn distributed_orchestrator_replicates_snapshot_records() {
             let state = orchestrator.node_state(node).unwrap();
             assert_eq!(state.snapshots["workspace"].handle, snapshot.handle);
         }
+    });
+}
+
+#[test]
+fn orchestrator_enforces_cache_limits() {
+    block_on(async {
+        let orchestrator = ApiOrchestrator::new(ApiOrchestratorConfig {
+            max_workers_per_profile: 2,
+            max_cached_snapshots: 1,
+            max_cached_results: 1,
+            work_queue_capacity: 2,
+        });
+        let profile = support::api_profile("limited-cache", ApiMode::AsyncJsonRpcStdio);
+
+        let snapshot_a = orchestrator
+            .cached_snapshot(
+                &profile,
+                "workspace-a",
+                UpdateSnapshotParams {
+                    open_project: Some("/workspace/a/tsconfig.json".into()),
+                    file_changes: None,
+                },
+            )
+            .await
+            .unwrap();
+        let _snapshot_b = orchestrator
+            .cached_snapshot(
+                &profile,
+                "workspace-b",
+                UpdateSnapshotParams {
+                    open_project: Some("/workspace/b/tsconfig.json".into()),
+                    file_changes: None,
+                },
+            )
+            .await
+            .unwrap();
+        let snapshot_a_again = orchestrator
+            .cached_snapshot(
+                &profile,
+                "workspace-a",
+                UpdateSnapshotParams {
+                    open_project: Some("/workspace/a/tsconfig.json".into()),
+                    file_changes: None,
+                },
+            )
+            .await
+            .unwrap();
+        assert!(!Arc::ptr_eq(&snapshot_a, &snapshot_a_again));
+
+        let calls = Arc::new(AtomicUsize::new(0));
+        let compute = |calls: Arc<AtomicUsize>, key: &'static str| {
+            move |client: ApiClient| async move {
+                calls.fetch_add(1, Ordering::SeqCst);
+                client
+                    .raw_json_request("echo", json!({ "value": key }))
+                    .await
+            }
+        };
+        let _: Value = orchestrator
+            .cached(
+                &profile,
+                "result-a",
+                Some(Duration::from_secs(30)),
+                compute(calls.clone(), "a"),
+            )
+            .await
+            .unwrap();
+        let _: Value = orchestrator
+            .cached(
+                &profile,
+                "result-b",
+                Some(Duration::from_secs(30)),
+                compute(calls.clone(), "b"),
+            )
+            .await
+            .unwrap();
+        let _: Value = orchestrator
+            .cached(
+                &profile,
+                "result-a",
+                Some(Duration::from_secs(30)),
+                compute(calls.clone(), "a"),
+            )
+            .await
+            .unwrap();
+        assert_eq!(calls.load(Ordering::SeqCst), 3);
+
+        let stats = orchestrator.stats();
+        assert_eq!(stats.cached_snapshot_count, 1);
+        assert_eq!(stats.cached_result_count, 1);
+    });
+}
+
+#[test]
+fn orchestrator_rejects_worker_requests_above_limit() {
+    block_on(async {
+        let orchestrator = ApiOrchestrator::new(ApiOrchestratorConfig {
+            max_workers_per_profile: 1,
+            max_cached_snapshots: 4,
+            max_cached_results: 4,
+            work_queue_capacity: 4,
+        });
+        let profile = support::api_profile("limited-workers", ApiMode::AsyncJsonRpcStdio);
+        let error = orchestrator.prewarm(&profile, 2).await.unwrap_err();
+        assert!(matches!(
+            error,
+            tsgo_rs::TsgoError::Protocol(message) if message.contains("exceeds the configured maximum")
+        ));
     });
 }

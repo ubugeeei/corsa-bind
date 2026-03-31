@@ -7,9 +7,12 @@ use tsgo_rs::runtime::block_on;
 #[test]
 fn async_api_roundtrip_core() {
     block_on(async {
-        let client = ApiClient::spawn(support::api_config(ApiMode::AsyncJsonRpcStdio))
-            .await
-            .unwrap();
+        let client = ApiClient::spawn(
+            support::api_config(ApiMode::AsyncJsonRpcStdio)
+                .with_allow_unstable_upstream_calls(true),
+        )
+        .await
+        .unwrap();
         let init = client.initialize().await.unwrap();
         assert_eq!(
             init.current_directory,
@@ -82,6 +85,27 @@ fn async_api_roundtrip_core() {
             .unwrap();
         assert_eq!(printed, "print:hello");
         snapshot.release().await.unwrap();
+        client.close().await.unwrap();
+    });
+}
+
+#[test]
+fn async_api_rejects_unstable_print_node_by_default() {
+    block_on(async {
+        let client = ApiClient::spawn(support::api_config(ApiMode::AsyncJsonRpcStdio))
+            .await
+            .unwrap();
+        let error = client
+            .print_node(
+                &tsgo_rs::api::EncodedPayload::new(b"hello".to_vec()),
+                PrintNodeOptions::default(),
+            )
+            .await
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            tsgo_rs::TsgoError::Unsupported(message) if message.contains("printNode is disabled by default")
+        ));
         client.close().await.unwrap();
     });
 }

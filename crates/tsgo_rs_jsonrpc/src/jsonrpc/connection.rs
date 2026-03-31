@@ -1,16 +1,19 @@
 use crate::{Result, TsgoError};
+use log::warn;
 use parking_lot::Mutex;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{
     io::{BufRead, Write},
-    sync::mpsc,
+    sync::mpsc::{self, TrySendError},
     sync::{
         Arc,
         atomic::{AtomicBool, AtomicI64, Ordering},
     },
     thread,
+    time::Duration,
 };
+use tsgo_rs_core::fast::compact_format;
 use tsgo_rs_core::fast::{CompactString, FastMap};
 use tsgo_rs_runtime::{BroadcastReceiver, BroadcastSender, broadcast};
 
@@ -46,6 +49,43 @@ pub enum InboundEvent {
     },
 }
 
+/// Runtime policy applied to a [`JsonRpcConnection`].
+#[derive(Clone, Copy, Debug)]
+pub struct JsonRpcConnectionOptions {
+    /// Maximum time to wait for a response before surfacing a timeout.
+    pub request_timeout: Option<Duration>,
+    /// Maximum number of queued outbound messages waiting on the writer thread.
+    pub outbound_capacity: usize,
+}
+
+impl JsonRpcConnectionOptions {
+    /// Creates the default production-oriented JSON-RPC transport policy.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets the per-request timeout.
+    pub fn with_request_timeout(mut self, timeout: Option<Duration>) -> Self {
+        self.request_timeout = timeout;
+        self
+    }
+
+    /// Sets the maximum number of queued outbound messages.
+    pub fn with_outbound_capacity(mut self, capacity: usize) -> Self {
+        self.outbound_capacity = capacity.max(1);
+        self
+    }
+}
+
+impl Default for JsonRpcConnectionOptions {
+    fn default() -> Self {
+        Self {
+            request_timeout: Some(Duration::from_secs(30)),
+            outbound_capacity: 256,
+        }
+    }
+}
+
 /// Thread-backed stdio JSON-RPC connection.
 ///
 /// The connection owns a reader thread, a writer thread, and a pending-request
@@ -62,9 +102,10 @@ pub struct JsonRpcConnection {
 struct Inner {
     closed: AtomicBool,
     next_id: AtomicI64,
+    request_timeout: Option<Duration>,
     events: BroadcastSender<InboundEvent>,
     handlers: RpcHandlerMap,
-    outbound: Mutex<Option<mpsc::Sender<RawMessage>>>,
+    outbound: Mutex<Option<mpsc::SyncSender<RawMessage>>>,
     pending: Mutex<FastMap<RequestId, mpsc::SyncSender<Result<Value>>>>,
     read_task: Mutex<Option<thread::JoinHandle<()>>>,
     write_task: Mutex<Option<thread::JoinHandle<()>>>,
@@ -79,11 +120,31 @@ impl JsonRpcConnection {
         R: BufRead + Send + 'static,
         W: Write + Send + 'static,
     {
-        let (outbound_tx, outbound_rx) = mpsc::channel();
+        Self::spawn_with_options(
+            reader,
+            writer,
+            handlers,
+            JsonRpcConnectionOptions::default(),
+        )
+    }
+
+    /// Spawns a connection around a buffered reader and writer with runtime options.
+    pub fn spawn_with_options<R, W>(
+        reader: R,
+        writer: W,
+        handlers: RpcHandlerMap,
+        options: JsonRpcConnectionOptions,
+    ) -> Self
+    where
+        R: BufRead + Send + 'static,
+        W: Write + Send + 'static,
+    {
+        let (outbound_tx, outbound_rx) = mpsc::sync_channel(options.outbound_capacity.max(1));
         let (events, _) = broadcast();
         let inner = Arc::new(Inner {
             closed: AtomicBool::new(false),
             next_id: AtomicI64::new(0),
+            request_timeout: options.request_timeout,
             events,
             handlers,
             outbound: Mutex::new(Some(outbound_tx)),
@@ -128,8 +189,23 @@ impl JsonRpcConnection {
         let id = RequestId::integer(self.inner.next_id.fetch_add(1, Ordering::SeqCst) + 1);
         let (tx, rx) = mpsc::sync_channel(1);
         self.inner.pending.lock().insert(id.clone(), tx);
-        self.inner
-            .send_outbound(RawMessage::request(id, CompactString::from(method), params))?;
+        if let Err(error) = self.inner.send_outbound(RawMessage::request(
+            id.clone(),
+            CompactString::from(method),
+            params,
+        )) {
+            self.inner.pending.lock().remove(&id);
+            return Err(error);
+        }
+        if let Some(timeout) = self.inner.request_timeout {
+            return rx.recv_timeout(timeout).map_err(|_| {
+                self.inner.pending.lock().remove(&id);
+                TsgoError::timeout(
+                    compact_format(format_args!("jsonrpc request `{method}`")).as_str(),
+                    timeout,
+                )
+            })?;
+        }
         rx.recv().map_err(|_| TsgoError::Closed("jsonrpc waiter"))?
     }
 
@@ -260,15 +336,25 @@ impl Inner {
     }
 
     fn send_outbound(&self, message: RawMessage) -> Result<()> {
-        self.outbound
+        match self
+            .outbound
             .lock()
             .as_ref()
             .ok_or(TsgoError::Closed("jsonrpc writer"))?
-            .send(message)
-            .map_err(|_| TsgoError::Closed("jsonrpc writer"))
+            .try_send(message)
+        {
+            Ok(()) => Ok(()),
+            Err(TrySendError::Full(_)) => {
+                Err(TsgoError::Protocol("jsonrpc outbound queue is full".into()))
+            }
+            Err(TrySendError::Disconnected(_)) => Err(TsgoError::Closed("jsonrpc writer")),
+        }
     }
 
     fn fail_pending(&self, error: TsgoError) {
+        if !matches!(error, TsgoError::Closed(_)) {
+            warn!("jsonrpc transport failing pending requests: {error}");
+        }
         for (_, tx) in self.pending.lock().drain() {
             let _ = tx.send(Err(error.clone_for_pending()));
         }

@@ -1,7 +1,10 @@
 use super::{MAX_HEADER_BYTES, read_frame, write_frame};
 use crate::TsgoError;
-use std::{io::BufReader, os::unix::net::UnixStream, thread};
+use std::io::BufReader;
+#[cfg(unix)]
+use std::{os::unix::net::UnixStream, thread};
 
+#[cfg(unix)]
 #[test]
 fn roundtrip_frame() {
     let (writer, reader) = UnixStream::pair().unwrap();

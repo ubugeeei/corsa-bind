@@ -10,7 +10,7 @@ mod raft;
 mod state;
 
 /// Local worker-pool orchestrator with snapshot and result caches.
-pub use api::ApiOrchestrator;
+pub use api::{ApiOrchestrator, ApiOrchestratorConfig, ApiOrchestratorStats};
 /// Distributed wrapper that replicates overlay and cache state.
 pub use distributed::DistributedApiOrchestrator;
 /// Raft topology and leadership state used by the distributed orchestrator.

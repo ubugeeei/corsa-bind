@@ -43,6 +43,7 @@ The `quality` job answers:
 - does Rust pass `fmt` and `clippy`?
 - can the workspace build?
 - do unit, integration, and JS tests pass?
+- does the main path stay healthy across Linux, macOS, and Windows?
 
 The important commands are:
 
