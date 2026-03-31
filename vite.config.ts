@@ -71,7 +71,7 @@ export default defineConfig({
       },
       build: {
         command: noopCommand,
-        dependsOn: ["build_mock", "build_tsgo", "build_wrapper", "build_typescript_oxlint"],
+        dependsOn: ["build_mock", "build_wrapper", "build_typescript_oxlint"],
       },
       build_rust: {
         command: "cargo build --workspace",
