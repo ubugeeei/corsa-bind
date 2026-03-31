@@ -34,7 +34,7 @@ jobs:
       - name: Setup Go for pinned tsgo ref
         uses: actions/setup-go@v6
         with:
-          go-version-file: ref/typescript-go/go.mod
+          go-version: '1.26.0'
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
@@ -74,7 +74,7 @@ jobs:
       - name: Setup Go for pinned tsgo ref
         uses: actions/setup-go@v6
         with:
-          go-version-file: ref/typescript-go/go.mod
+          go-version: '1.26.0'
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
