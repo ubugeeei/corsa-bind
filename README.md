@@ -3,9 +3,9 @@
 Rust bindings, orchestration layers, and Node bindings for `typescript-go` over stdio.
 
 > [!WARNING]
-> This repository is still an early WIP.
-> Public APIs, crate boundaries, benchmark budgets, and distributed orchestration details are still evolving.
-> The current direction is production-oriented, but the project should not be treated as a frozen stable interface yet.
+> This repository is still evolving.
+> The local Rust and Node API/LSP surfaces are now hardened for production-style use,
+> but distributed orchestration and some upstream-facing endpoints remain explicitly experimental.
 
 > [!IMPORTANT]
 > `tsgo-rs` is intentionally built around upstream-supported `typescript-go`
@@ -46,6 +46,10 @@ Current focus:
 - JS toolchain: `pnpm` + Vite+ (`vp`) with `oxfmt` / `oxlint`
 - Node bindings: `npm/tsgo_rs_node` (`ESM-only` public JS surface)
 - TS benchmark project: `bench`
+- Default request timeout: `30s`
+- Default graceful shutdown timeout: `2s`
+- Default outbound queue capacity: `256`
+- Unstable upstream endpoints such as `printNode` are opt-in
 
 Pinned upstream at the time of writing:
 
@@ -68,6 +72,7 @@ Pinned upstream at the time of writing:
 - `bench`: Vitest benchmark project for the Node binding
 
 For a detailed architecture walkthrough, design strategy, and implementation tips, see [docs/project_guide.md](./docs/project_guide.md).
+For deployment-oriented defaults, supported scope, and release checks, see [docs/production_readiness.md](./docs/production_readiness.md).
 
 ## Quick Start
 
@@ -234,8 +239,8 @@ The repository is intentionally aggressive about change detection because `types
 
 ## Known Limitations
 
-- This is still early WIP, so public APIs may change without notice.
-- `printNode` is excluded from the default real-server benchmark suite because the pinned upstream `tsgo` commit can panic in `internal/printer` on real project data.
+- Public APIs are still `0.x`, so compatibility should be treated as conservative rather than frozen.
+- `printNode` is disabled by default because the pinned upstream `tsgo` commit can panic in `internal/printer` on real project data; opt in only when you accept that risk.
 - The distributed layer currently includes an in-process Raft core; full network transport between nodes is not finished yet.
 - Some binary API surfaces are still exposed as opaque encoded payloads rather than fully decoded Rust AST types.
 

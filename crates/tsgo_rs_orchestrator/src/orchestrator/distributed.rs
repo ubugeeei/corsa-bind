@@ -1,5 +1,5 @@
 use super::{
-    api::ApiOrchestrator,
+    api::{ApiOrchestrator, ApiOrchestratorConfig},
     raft::RaftCluster,
     state::{ReplicatedCacheEntry, ReplicatedCommand, ReplicatedSnapshot, ReplicatedState},
 };
@@ -51,8 +51,17 @@ impl DistributedApiOrchestrator {
         I: IntoIterator<Item = S>,
         S: Into<CompactString>,
     {
+        Self::with_local_config(node_ids, ApiOrchestratorConfig::default())
+    }
+
+    /// Creates a new distributed orchestrator with explicit local cache limits.
+    pub fn with_local_config<I, S>(node_ids: I, local_config: ApiOrchestratorConfig) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<CompactString>,
+    {
         Self {
-            local: Arc::new(ApiOrchestrator::default()),
+            local: Arc::new(ApiOrchestrator::new(local_config)),
             raft: RaftCluster::new(node_ids),
         }
     }
@@ -234,6 +243,18 @@ impl DistributedApiOrchestrator {
         self.raft.append(
             leader_id,
             ReplicatedCommand::RemoveSnapshot {
+                key: CompactString::from(key),
+            },
+        )?;
+        Ok(())
+    }
+
+    /// Invalidates a replicated cached result.
+    pub fn invalidate_cached(&self, leader_id: &str, key: &str) -> Result<()> {
+        self.local.invalidate_cached(key);
+        self.raft.append(
+            leader_id,
+            ReplicatedCommand::RemoveResult {
                 key: CompactString::from(key),
             },
         )?;

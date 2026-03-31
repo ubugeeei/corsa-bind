@@ -13,7 +13,9 @@ mod message;
 
 pub use crate::RpcResponseError;
 /// Thread-backed JSON-RPC connection and inbound event stream.
-pub use connection::{InboundEvent, JsonRpcConnection, RpcHandler, RpcHandlerMap};
+pub use connection::{
+    InboundEvent, JsonRpcConnection, JsonRpcConnectionOptions, RpcHandler, RpcHandlerMap,
+};
 /// Low-level Content-Length frame helpers.
 pub use frame::{read_frame, write_frame};
 /// JSON-RPC request identifier.

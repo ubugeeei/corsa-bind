@@ -6,11 +6,14 @@
 //! async-friendly without pulling in a full async runtime.
 
 use crate::{Result, TsgoError};
+use log::warn;
 use parking_lot::Mutex;
 use std::{
     io::{BufReader, BufWriter},
+    process::Child,
     sync::{Arc, mpsc},
     thread,
+    time::Duration,
 };
 use tsgo_rs_core::fast::{CompactString, compact_format};
 use tsgo_rs_core::terminate_child_process;
@@ -28,8 +31,10 @@ use super::{
 /// Requests are serialized through a single worker thread because the
 /// underlying stdio protocol is strictly ordered.
 pub(crate) struct MsgpackWorker {
-    tx: mpsc::Sender<WorkerCommand>,
+    tx: Mutex<Option<mpsc::SyncSender<WorkerCommand>>>,
     join: Mutex<Option<thread::JoinHandle<()>>>,
+    process: Arc<std::sync::Mutex<Option<Child>>>,
+    request_timeout: Option<Duration>,
 }
 
 /// Successful response returned from the worker thread.
@@ -49,8 +54,10 @@ enum WorkerCommand {
 
 impl MsgpackWorker {
     pub(crate) fn spawn(
-        mut child: std::process::Child,
+        mut child: Child,
         filesystem: Option<Arc<dyn ApiFileSystem>>,
+        request_timeout: Option<Duration>,
+        queue_capacity: usize,
     ) -> Result<Self> {
         let stdin = child
             .stdin
@@ -60,7 +67,9 @@ impl MsgpackWorker {
             .stdout
             .take()
             .ok_or(TsgoError::Closed("msgpack stdout"))?;
-        let (tx, rx) = mpsc::channel::<WorkerCommand>();
+        let process = Arc::new(std::sync::Mutex::new(Some(child)));
+        let worker_process = process.clone();
+        let (tx, rx) = mpsc::sync_channel::<WorkerCommand>(queue_capacity.max(1));
         let join = thread::spawn(move || {
             let mut writer = BufWriter::new(stdin);
             let mut reader = BufReader::new(stdout);
@@ -89,11 +98,17 @@ impl MsgpackWorker {
                     WorkerCommand::Shutdown => break,
                 }
             }
-            let _ = terminate_child_process(&mut child);
+            if let Ok(mut child) = worker_process.lock()
+                && let Some(child) = child.as_mut()
+            {
+                let _ = terminate_child_process(child);
+            }
         });
         Ok(Self {
-            tx,
+            tx: Mutex::new(Some(tx)),
             join: Mutex::new(Some(join)),
+            process,
+            request_timeout,
         })
     }
 
@@ -101,26 +116,59 @@ impl MsgpackWorker {
         // A sync channel keeps request/response pairing simple: the caller
         // blocks until the worker thread has seen the matching response tuple.
         let (reply_tx, reply_rx) = mpsc::sync_channel(1);
-        self.tx
-            .send(WorkerCommand::Request {
-                method: CompactString::from(method),
-                payload,
-                reply: reply_tx,
-            })
-            .map_err(|_| TsgoError::Closed("msgpack worker"))?;
-        Ok(reply_rx
-            .recv()
-            .map_err(|_| TsgoError::Closed("msgpack worker"))??
-            .bytes)
+        let sender = self
+            .tx
+            .lock()
+            .clone()
+            .ok_or(TsgoError::Closed("msgpack worker"))?;
+        match sender.try_send(WorkerCommand::Request {
+            method: CompactString::from(method),
+            payload,
+            reply: reply_tx,
+        }) {
+            Ok(()) => {}
+            Err(mpsc::TrySendError::Full(_)) => {
+                return Err(TsgoError::Protocol("msgpack worker queue is full".into()));
+            }
+            Err(mpsc::TrySendError::Disconnected(_)) => {
+                return Err(TsgoError::Closed("msgpack worker"));
+            }
+        }
+        let response = if let Some(timeout) = self.request_timeout {
+            reply_rx.recv_timeout(timeout).map_err(|_| {
+                warn!("msgpack request `{method}` timed out; terminating worker");
+                self.terminate_process();
+                TsgoError::timeout(
+                    compact_format(format_args!("msgpack request `{method}`")).as_str(),
+                    timeout,
+                )
+            })??
+        } else {
+            reply_rx
+                .recv()
+                .map_err(|_| TsgoError::Closed("msgpack worker"))??
+        };
+        Ok(response.bytes)
     }
 
     pub(crate) async fn close(&self) -> Result<()> {
-        let _ = self.tx.send(WorkerCommand::Shutdown);
+        if let Some(sender) = self.tx.lock().take() {
+            let _ = sender.try_send(WorkerCommand::Shutdown);
+        }
+        self.terminate_process();
         if let Some(join) = self.join.lock().take() {
             join.join()
                 .map_err(|_| TsgoError::Join("msgpack worker".into()))?;
         }
         Ok(())
+    }
+
+    fn terminate_process(&self) {
+        if let Ok(mut child) = self.process.lock()
+            && let Some(child) = child.as_mut()
+        {
+            let _ = terminate_child_process(child);
+        }
     }
 }
 

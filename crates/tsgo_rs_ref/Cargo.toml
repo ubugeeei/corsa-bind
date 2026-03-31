@@ -2,7 +2,13 @@
 name = "tsgo-rs-ref"
 version = "0.1.0"
 edition = "2024"
+description = "Pinned upstream ref management and verification tooling for tsgo-rs"
+documentation.workspace = true
+homepage.workspace = true
 license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [lib]
 name = "tsgo_rs_ref"

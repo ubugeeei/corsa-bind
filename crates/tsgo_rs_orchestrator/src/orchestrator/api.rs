@@ -1,8 +1,10 @@
 use crate::Result;
 use crate::api::{ApiClient, ApiProfile, ManagedSnapshot, UpdateSnapshotParams};
-use parking_lot::RwLock;
+use log::warn;
+use parking_lot::{Mutex, RwLock};
 use serde::{Serialize, de::DeserializeOwned};
 use std::{
+    collections::VecDeque,
     sync::mpsc,
     sync::{
         Arc,
@@ -11,7 +13,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tsgo_rs_core::fast::{CompactString, FastMap, SmallVec};
+use tsgo_rs_core::fast::{CompactString, FastMap, SmallVec, compact_format};
 use tsgo_rs_runtime::block_on;
 
 /// Local pool/cache orchestrator for multiple `tsgo` API workers.
@@ -26,11 +28,49 @@ use tsgo_rs_runtime::block_on;
 ///
 /// In other words, it optimizes for end-to-end workflow latency rather than
 /// trying to outperform `tsgo`'s own compiler internals directly.
-#[derive(Default)]
+#[derive(Clone, Debug)]
+pub struct ApiOrchestratorConfig {
+    /// Maximum number of workers allowed in a single profile fleet.
+    pub max_workers_per_profile: usize,
+    /// Maximum number of cached snapshots retained at once.
+    pub max_cached_snapshots: usize,
+    /// Maximum number of cached result entries retained at once.
+    pub max_cached_results: usize,
+    /// Maximum number of work items buffered for a batch execution.
+    pub work_queue_capacity: usize,
+}
+
+impl Default for ApiOrchestratorConfig {
+    fn default() -> Self {
+        Self {
+            max_workers_per_profile: 8,
+            max_cached_snapshots: 64,
+            max_cached_results: 256,
+            work_queue_capacity: 256,
+        }
+    }
+}
+
+/// Cheap operational snapshot for the local orchestrator.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ApiOrchestratorStats {
+    /// Number of named worker fleets.
+    pub profile_count: usize,
+    /// Total number of live workers across all fleets.
+    pub worker_count: usize,
+    /// Number of cached snapshots currently retained.
+    pub cached_snapshot_count: usize,
+    /// Number of cached result entries currently retained.
+    pub cached_result_count: usize,
+}
+
 pub struct ApiOrchestrator {
+    config: ApiOrchestratorConfig,
     fleets: RwLock<FastMap<CompactString, Arc<ClientFleet>>>,
     snapshots: RwLock<FastMap<CompactString, Arc<ManagedSnapshot>>>,
+    snapshot_order: Mutex<VecDeque<CompactString>>,
     cached: RwLock<FastMap<CompactString, CachedValue>>,
+    cached_order: Mutex<VecDeque<CompactString>>,
 }
 
 struct ClientFleet {
@@ -43,12 +83,55 @@ struct CachedValue {
     bytes: SmallVec<[u8; 256]>,
 }
 
+impl Default for ApiOrchestrator {
+    fn default() -> Self {
+        Self::new(ApiOrchestratorConfig::default())
+    }
+}
+
 impl ApiOrchestrator {
+    /// Creates a new local orchestrator with explicit resource limits.
+    pub fn new(config: ApiOrchestratorConfig) -> Self {
+        Self {
+            config,
+            fleets: RwLock::new(FastMap::default()),
+            snapshots: RwLock::new(FastMap::default()),
+            snapshot_order: Mutex::new(VecDeque::new()),
+            cached: RwLock::new(FastMap::default()),
+            cached_order: Mutex::new(VecDeque::new()),
+        }
+    }
+
+    /// Returns the configured local safety limits.
+    pub fn config(&self) -> &ApiOrchestratorConfig {
+        &self.config
+    }
+
+    /// Returns a cheap operational snapshot of the orchestrator state.
+    pub fn stats(&self) -> ApiOrchestratorStats {
+        let fleets = self.fleets.read();
+        ApiOrchestratorStats {
+            profile_count: fleets.len(),
+            worker_count: fleets
+                .values()
+                .map(|fleet| fleet.clients.read().len())
+                .sum::<usize>(),
+            cached_snapshot_count: self.snapshots.read().len(),
+            cached_result_count: self.cached.read().len(),
+        }
+    }
+
     /// Ensures that at least `replicas` workers have been started for `profile`.
     ///
     /// This is useful for benchmark setup or for services that want to pay
     /// startup cost ahead of the first user request.
     pub async fn prewarm(&self, profile: &ApiProfile, replicas: usize) -> Result<()> {
+        if replicas > self.config.max_workers_per_profile {
+            return Err(crate::TsgoError::Protocol(compact_format(format_args!(
+                "requested {replicas} workers for profile `{}` exceeds the configured maximum of {}",
+                profile.id, self.config.max_workers_per_profile
+            ))));
+        }
         let fleet = self.fleet(profile).await?;
         while fleet.clients.read().len() < replicas {
             let client = ApiClient::spawn(profile.spawn.clone()).await?;
@@ -85,7 +168,8 @@ impl ApiOrchestrator {
         }
         let client = self.lease(profile).await?;
         let snapshot: Arc<ManagedSnapshot> = Arc::new(client.update_snapshot(params).await?);
-        self.snapshots.write().insert(key, snapshot.clone());
+        self.snapshots.write().insert(key.clone(), snapshot.clone());
+        self.remember_snapshot_key(key);
         Ok(snapshot)
     }
 
@@ -95,6 +179,9 @@ impl ApiOrchestrator {
     /// clones continue to live until all references are dropped.
     pub fn invalidate_snapshot(&self, key: &str) {
         self.snapshots.write().remove(key);
+        self.snapshot_order
+            .lock()
+            .retain(|entry| entry.as_str() != key);
     }
 
     /// Memoizes the result of an async task for an optional TTL.
@@ -124,13 +211,22 @@ impl ApiOrchestrator {
         }
         let value = task(self.lease(profile).await?).await?;
         self.cached.write().insert(
-            key,
+            key.clone(),
             CachedValue {
                 expires_at: ttl.map(|ttl| Instant::now() + ttl),
                 bytes: serde_json::to_vec(&value)?.into_iter().collect(),
             },
         );
+        self.remember_cached_key(key);
         Ok(value)
+    }
+
+    /// Removes a cached result entry by key.
+    pub fn invalidate_cached(&self, key: &str) {
+        self.cached.write().remove(key);
+        self.cached_order
+            .lock()
+            .retain(|entry| entry.as_str() != key);
     }
 
     /// Executes the same task across a batch using multiple workers.
@@ -154,9 +250,10 @@ impl ApiOrchestrator {
         self.prewarm(profile, replicas).await?;
         let inputs = inputs.into_iter().collect::<SmallVec<[T; 8]>>();
         let work_count = inputs.len();
-        let (work_tx, work_rx) = mpsc::channel::<(usize, T)>();
+        let queue_capacity = self.config.work_queue_capacity.max(1);
+        let (work_tx, work_rx) = mpsc::sync_channel::<(usize, T)>(queue_capacity);
         let work_rx = Arc::new(std::sync::Mutex::new(work_rx));
-        let (result_tx, result_rx) = mpsc::channel::<Result<(usize, R)>>();
+        let (result_tx, result_rx) = mpsc::sync_channel::<Result<(usize, R)>>(queue_capacity);
         thread::scope(|scope| {
             for _ in 0..replicas.max(1) {
                 let profile = profile.clone();
@@ -211,5 +308,33 @@ impl ApiOrchestrator {
             .write()
             .insert(profile.id.clone(), fleet.clone());
         Ok(fleet)
+    }
+
+    fn remember_snapshot_key(&self, key: CompactString) {
+        let mut order = self.snapshot_order.lock();
+        order.retain(|existing| existing != key);
+        order.push_back(key);
+        while self.snapshots.read().len() > self.config.max_cached_snapshots.max(1) {
+            let Some(evicted) = order.pop_front() else {
+                break;
+            };
+            if self.snapshots.write().remove(evicted.as_str()).is_some() {
+                warn!("evicted cached snapshot `{evicted}` to stay within configured limits");
+            }
+        }
+    }
+
+    fn remember_cached_key(&self, key: CompactString) {
+        let mut order = self.cached_order.lock();
+        order.retain(|existing| existing != key);
+        order.push_back(key);
+        while self.cached.read().len() > self.config.max_cached_results.max(1) {
+            let Some(evicted) = order.pop_front() else {
+                break;
+            };
+            if self.cached.write().remove(evicted.as_str()).is_some() {
+                warn!("evicted cached result `{evicted}` to stay within configured limits");
+            }
+        }
     }
 }

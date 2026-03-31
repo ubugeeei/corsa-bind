@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use super::ApiFileSystem;
 use crate::process::TsgoCommand;
@@ -42,6 +42,14 @@ pub struct ApiSpawnConfig {
     /// This is primarily useful when the worker should consult an overlay or a
     /// virtualized filesystem instead of only reading from disk.
     pub filesystem: Option<Arc<dyn ApiFileSystem>>,
+    /// Maximum time to wait for a single request before surfacing a timeout.
+    pub request_timeout: Option<Duration>,
+    /// Maximum time to wait for process shutdown before force-killing the worker.
+    pub shutdown_timeout: Duration,
+    /// Maximum number of queued outbound transport messages.
+    pub outbound_capacity: usize,
+    /// Allows calls to upstream endpoints that are known to be unstable.
+    pub allow_unstable_upstream_calls: bool,
 }
 
 impl ApiSpawnConfig {
@@ -54,6 +62,10 @@ impl ApiSpawnConfig {
             command: TsgoCommand::new(executable),
             mode: ApiMode::SyncMsgpackStdio,
             filesystem: None,
+            request_timeout: Some(Duration::from_secs(30)),
+            shutdown_timeout: Duration::from_secs(2),
+            outbound_capacity: 256,
+            allow_unstable_upstream_calls: false,
         }
     }
 
@@ -72,6 +84,30 @@ impl ApiSpawnConfig {
     /// Installs filesystem callbacks that tsgo can call back into.
     pub fn with_filesystem(mut self, filesystem: Arc<dyn ApiFileSystem>) -> Self {
         self.filesystem = Some(filesystem);
+        self
+    }
+
+    /// Sets the per-request timeout applied by the client transport.
+    pub fn with_request_timeout(mut self, timeout: Option<Duration>) -> Self {
+        self.request_timeout = timeout;
+        self
+    }
+
+    /// Sets the graceful shutdown timeout used when closing a worker.
+    pub fn with_shutdown_timeout(mut self, timeout: Duration) -> Self {
+        self.shutdown_timeout = timeout;
+        self
+    }
+
+    /// Sets the maximum number of queued outbound transport messages.
+    pub fn with_outbound_capacity(mut self, capacity: usize) -> Self {
+        self.outbound_capacity = capacity.max(1);
+        self
+    }
+
+    /// Allows calls to upstream endpoints marked unstable by this crate.
+    pub fn with_allow_unstable_upstream_calls(mut self, allow: bool) -> Self {
+        self.allow_unstable_upstream_calls = allow;
         self
     }
 }

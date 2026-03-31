@@ -52,6 +52,7 @@ use super::{
 pub struct ApiClient {
     driver: Arc<ClientDriver>,
     initialized: Arc<Mutex<Option<Arc<InitializeResponse>>>>,
+    allow_unstable_upstream_calls: bool,
 }
 
 impl ApiClient {
@@ -63,18 +64,30 @@ impl ApiClient {
     pub async fn spawn(config: ApiSpawnConfig) -> Result<Self> {
         let driver = match config.mode {
             ApiMode::AsyncJsonRpcStdio => {
-                let driver =
-                    spawn_jsonrpc_stdio(&config.command, config.filesystem.clone()).await?;
+                let driver = spawn_jsonrpc_stdio(
+                    &config.command,
+                    config.filesystem.clone(),
+                    config.request_timeout,
+                    config.shutdown_timeout,
+                    config.outbound_capacity,
+                )
+                .await?;
                 Arc::new(driver)
             }
             ApiMode::SyncMsgpackStdio => {
-                let driver = spawn_msgpack_stdio(&config.command, config.filesystem.clone())?;
+                let driver = spawn_msgpack_stdio(
+                    &config.command,
+                    config.filesystem.clone(),
+                    config.request_timeout,
+                    config.outbound_capacity,
+                )?;
                 Arc::new(driver)
             }
         };
         Ok(Self {
             driver,
             initialized: Arc::new(Mutex::new(None)),
+            allow_unstable_upstream_calls: config.allow_unstable_upstream_calls,
         })
     }
 
@@ -201,6 +214,11 @@ impl ApiClient {
         self.driver.close().await
     }
 
+    /// Returns whether unstable upstream endpoints are allowed for this client.
+    pub fn allows_unstable_upstream_calls(&self) -> bool {
+        self.allow_unstable_upstream_calls
+    }
+
     /// Sends a raw JSON endpoint request after initialization.
     ///
     /// Prefer the typed helpers where available, and use this escape hatch when
@@ -282,7 +300,12 @@ async fn connect_pipe_socket(path: PathBuf) -> Result<ApiClient> {
     let writer = BufWriter::new(stream);
     let rpc = JsonRpcConnection::spawn(reader, writer, Default::default());
     Ok(ApiClient {
-        driver: Arc::new(ClientDriver::JsonRpc { rpc, process: None }),
+        driver: Arc::new(ClientDriver::JsonRpc {
+            rpc,
+            process: None,
+            shutdown_timeout: std::time::Duration::from_secs(2),
+        }),
         initialized: Arc::new(Mutex::new(None)),
+        allow_unstable_upstream_calls: false,
     })
 }

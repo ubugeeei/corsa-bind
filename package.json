@@ -1,6 +1,15 @@
 {
   "name": "tsgo-rs-workspace",
   "private": true,
+  "description": "Rust, Node, and orchestration tooling for production-style typescript-go workflows",
+  "homepage": "https://github.com/ubugeeei/tsgo-rs",
+  "bugs": {
+    "url": "https://github.com/ubugeeei/tsgo-rs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ubugeeei/tsgo-rs.git"
+  },
   "type": "module",
   "devDependencies": {
     "@napi-rs/cli": "2.18.4",
@@ -9,6 +18,9 @@
     "vite": "8.0.3",
     "vite-plus": "^0.1.14",
     "vitest": "4.1.2"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "packageManager": "pnpm@10.0.0"
 }

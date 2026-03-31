@@ -2,6 +2,17 @@
   "name": "typescript-oxlint",
   "version": "0.1.0",
   "private": true,
+  "description": "typescript-eslint-style Oxlint helpers powered by tsgo-rs and typescript-go",
+  "homepage": "https://github.com/ubugeeei/tsgo-rs/tree/main/npm/typescript_oxlint",
+  "bugs": {
+    "url": "https://github.com/ubugeeei/tsgo-rs/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ubugeeei/tsgo-rs.git",
+    "directory": "npm/typescript_oxlint"
+  },
   "files": [
     "dist",
     "README.md"
@@ -48,5 +59,8 @@
     "@oxlint/plugins": "1.57.0",
     "@tsgo-rs/tsgo-rs-node": "workspace:*",
     "oxlint": "1.57.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

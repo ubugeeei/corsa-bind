@@ -695,6 +695,7 @@ name = "tsgo-rs-client"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "log",
  "parking_lot",
  "phf",
  "serde",
@@ -723,6 +724,7 @@ dependencies = [
 name = "tsgo-rs-jsonrpc"
 version = "0.1.0"
 dependencies = [
+ "log",
  "parking_lot",
  "serde",
  "serde_json",
@@ -734,6 +736,7 @@ dependencies = [
 name = "tsgo-rs-lsp"
 version = "0.1.0"
 dependencies = [
+ "log",
  "lsp-types",
  "parking_lot",
  "serde",
@@ -759,6 +762,7 @@ dependencies = [
 name = "tsgo-rs-orchestrator"
 version = "0.1.0"
 dependencies = [
+ "log",
  "lsp-types",
  "parking_lot",
  "serde",

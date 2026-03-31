@@ -2,7 +2,13 @@
 name = "tsgo-rs"
 version = "0.1.0"
 edition = "2024"
+description = "Production-oriented Rust bindings, orchestration layers, and Node integration for typescript-go"
+documentation.workspace = true
+homepage.workspace = true
 license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
 
 [lib]
 name = "tsgo_rs"

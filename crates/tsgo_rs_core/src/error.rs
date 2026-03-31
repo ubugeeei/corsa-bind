@@ -2,7 +2,7 @@ use crate::{
     RpcResponseError,
     fast::{CompactString, compact_format},
 };
-use std::io;
+use std::{io, time::Duration};
 
 /// Workspace-wide error type for process, transport, and protocol failures.
 #[derive(Debug, thiserror::Error)]
@@ -37,6 +37,9 @@ pub enum TsgoError {
     /// Thread/task join failure surfaced as a stable string.
     #[error("join error: {0}")]
     Join(CompactString),
+    /// Operation did not finish before the configured deadline.
+    #[error("timeout: {0}")]
+    Timeout(CompactString),
 }
 
 /// Standard result alias used across the workspace.
@@ -63,6 +66,15 @@ impl TsgoError {
             Self::Closed(err) => Self::Closed(err),
             Self::Unsupported(err) => Self::Unsupported(err),
             Self::Join(err) => Self::Join(err.clone()),
+            Self::Timeout(err) => Self::Timeout(err.clone()),
         }
+    }
+
+    /// Creates a timeout error for a named operation.
+    pub fn timeout(operation: &str, duration: Duration) -> Self {
+        Self::Timeout(compact_format(format_args!(
+            "{operation} timed out after {} ms",
+            duration.as_millis()
+        )))
     }
 }

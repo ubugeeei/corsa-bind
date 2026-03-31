@@ -4,6 +4,10 @@ export interface ApiClientOptions {
   executable: string;
   cwd?: string;
   mode?: ApiMode;
+  requestTimeoutMs?: number;
+  shutdownTimeoutMs?: number;
+  outboundCapacity?: number;
+  allowUnstableUpstreamCalls?: boolean;
 }
 
 export interface InitializeResponse {

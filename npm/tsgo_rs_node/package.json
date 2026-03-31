@@ -2,6 +2,17 @@
   "name": "@tsgo-rs/tsgo-rs-node",
   "version": "0.1.0",
   "private": true,
+  "description": "Native Node.js bindings for tsgo-rs and typescript-go stdio workflows",
+  "homepage": "https://github.com/ubugeeei/tsgo-rs/tree/main/npm/tsgo_rs_node",
+  "bugs": {
+    "url": "https://github.com/ubugeeei/tsgo-rs/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ubugeeei/tsgo-rs.git",
+    "directory": "npm/tsgo_rs_node"
+  },
   "files": [
     "dist",
     "index.d.ts",
@@ -19,5 +30,8 @@
   },
   "napi": {
     "name": "tsgo_rs_node"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

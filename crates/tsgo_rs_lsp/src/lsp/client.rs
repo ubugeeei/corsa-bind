@@ -1,11 +1,11 @@
 use crate::{
     Result, TsgoError,
-    jsonrpc::{InboundEvent, JsonRpcConnection, RequestId},
+    jsonrpc::{InboundEvent, JsonRpcConnection, JsonRpcConnectionOptions, RequestId},
     process::{AsyncChildGuard, TsgoCommand},
 };
 use lsp_types::{notification::Notification, request::Request};
 use serde::{Serialize, de::DeserializeOwned};
-use std::{io::BufReader, path::PathBuf, sync::Arc};
+use std::{io::BufReader, path::PathBuf, sync::Arc, time::Duration};
 use tsgo_rs_core::fast::{CompactString, SmallVec};
 use tsgo_rs_runtime::BroadcastReceiver;
 
@@ -23,6 +23,7 @@ use super::{
 pub struct LspClient {
     rpc: JsonRpcConnection,
     process: Arc<AsyncChildGuard>,
+    shutdown_timeout: Duration,
 }
 
 /// Spawn-time options for [`LspClient`].
@@ -44,6 +45,12 @@ pub struct LspSpawnConfig {
     pub command: TsgoCommand,
     /// Additional CLI flags appended after `--lsp --stdio`.
     pub extra_args: SmallVec<[CompactString; 4]>,
+    /// Maximum time to wait for a single request before surfacing a timeout.
+    pub request_timeout: Option<Duration>,
+    /// Maximum time to wait for process shutdown before force-killing the server.
+    pub shutdown_timeout: Duration,
+    /// Maximum number of queued outbound transport messages.
+    pub outbound_capacity: usize,
 }
 
 impl LspSpawnConfig {
@@ -52,6 +59,9 @@ impl LspSpawnConfig {
         Self {
             command: TsgoCommand::new(executable),
             extra_args: SmallVec::new(),
+            request_timeout: Some(Duration::from_secs(30)),
+            shutdown_timeout: Duration::from_secs(2),
+            outbound_capacity: 256,
         }
     }
 
@@ -64,6 +74,24 @@ impl LspSpawnConfig {
     /// Appends an extra CLI argument passed to tsgo.
     pub fn with_arg(mut self, arg: impl Into<CompactString>) -> Self {
         self.extra_args.push(arg.into());
+        self
+    }
+
+    /// Sets the per-request timeout applied by the JSON-RPC transport.
+    pub fn with_request_timeout(mut self, timeout: Option<Duration>) -> Self {
+        self.request_timeout = timeout;
+        self
+    }
+
+    /// Sets the graceful shutdown timeout used when closing the server.
+    pub fn with_shutdown_timeout(mut self, timeout: Duration) -> Self {
+        self.shutdown_timeout = timeout;
+        self
+    }
+
+    /// Sets the maximum number of queued outbound transport messages.
+    pub fn with_outbound_capacity(mut self, capacity: usize) -> Self {
+        self.outbound_capacity = capacity.max(1);
         self
     }
 }
@@ -84,8 +112,16 @@ impl LspClient {
         let stdin = child.stdin.take().ok_or(TsgoError::Closed("lsp stdin"))?;
         let stdout = child.stdout.take().ok_or(TsgoError::Closed("lsp stdout"))?;
         Ok(Self {
-            rpc: JsonRpcConnection::spawn(BufReader::new(stdout), stdin, Default::default()),
+            rpc: JsonRpcConnection::spawn_with_options(
+                BufReader::new(stdout),
+                stdin,
+                Default::default(),
+                JsonRpcConnectionOptions::new()
+                    .with_request_timeout(config.request_timeout)
+                    .with_outbound_capacity(config.outbound_capacity),
+            ),
             process: Arc::new(AsyncChildGuard::new(child)),
+            shutdown_timeout: config.shutdown_timeout,
         })
     }
 
@@ -157,8 +193,6 @@ impl LspClient {
     /// which ensures the child is reaped even if it needs to be killed.
     pub async fn close(&self) -> Result<()> {
         self.rpc.close().await?;
-        self.process
-            .shutdown(std::time::Duration::from_millis(500))
-            .await
+        self.process.shutdown(self.shutdown_timeout).await
     }
 }
