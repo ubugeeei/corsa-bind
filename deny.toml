@@ -6,12 +6,7 @@ yanked = "deny"
 
 [licenses]
 confidence-threshold = 0.8
-allow = [
-  "Apache-2.0",
-  "ISC",
-  "MIT",
-  "Unicode-3.0",
-]
+allow = ["Apache-2.0", "ISC", "MIT", "Unicode-3.0"]
 
 [bans]
 multiple-versions = "allow"
