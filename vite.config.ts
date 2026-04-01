@@ -73,6 +73,10 @@ export default defineConfig({
         command: noopCommand,
         dependsOn: ["build_mock", "build_wrapper", "build_typescript_oxlint"],
       },
+      build_ci: {
+        command: noopCommand,
+        dependsOn: ["build_mock", "build_wrapper_ci", "build_typescript_oxlint_ci"],
+      },
       build_rust: {
         command: "cargo build --workspace",
       },
@@ -96,11 +100,21 @@ export default defineConfig({
         command: "vp pack",
         dependsOn: ["build_wrapper"],
       },
+      build_typescript_oxlint_ci: {
+        command: "vp pack",
+        dependsOn: ["build_wrapper_ci"],
+      },
       build_wrapper: {
         command:
           "vp pack index.ts types.ts --dts --format esm --out-dir ../dist --sourcemap --tsconfig ../tsconfig.json --root . --deps.neverBundle ../index.js",
         cwd: "npm/tsgo_rs_node/ts",
         dependsOn: ["build_node_release"],
+      },
+      build_wrapper_ci: {
+        command:
+          "vp pack index.ts types.ts --dts --format esm --out-dir ../dist --sourcemap --tsconfig ../tsconfig.json --root . --deps.neverBundle ../index.js",
+        cwd: "npm/tsgo_rs_node/ts",
+        dependsOn: ["build_node_debug"],
       },
       lint_rust: {
         command: "cargo clippy --workspace --all-targets -- -D warnings",

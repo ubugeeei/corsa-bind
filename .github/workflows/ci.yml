@@ -55,7 +55,7 @@ jobs:
         run: vp run -w lint_rust
 
       - name: Build
-        run: vp run -w build
+        run: vp run -w build_ci
 
       - name: Test
         run: vp run -w test
