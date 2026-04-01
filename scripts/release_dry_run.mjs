@@ -4,7 +4,11 @@ import { dirname, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { npmPackages, publishPackedTarball } from "./npm_release_utils.mjs";
+import {
+  publishPackedTarball,
+  typescriptOxlintPackage,
+  withStagedNodeBindingPackages,
+} from "./npm_release_utils.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const crates = [
@@ -103,6 +107,11 @@ for (const crate of crates) {
   }
 }
 
-for (const npmPackage of npmPackages) {
-  publishPackedTarball(npmPackage, { dryRun: true });
-}
+await withStagedNodeBindingPackages(
+  { requireAllTargets: false },
+  async ({ binaryPackages, rootPackage }) => {
+    for (const npmPackage of [...binaryPackages, rootPackage, typescriptOxlintPackage]) {
+      publishPackedTarball(npmPackage, { dryRun: true });
+    }
+  },
+);

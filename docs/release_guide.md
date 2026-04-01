@@ -21,16 +21,22 @@ Internal Rust crates:
 
 Public npm packages:
 
-- `@tsgo-rs/tsgo-rs-node` (`npm/tsgo_rs_node`)
+- `@tsgo-rs/node` (`npm/tsgo_rs_node`)
 - `typescript-oxlint` (`npm/typescript_oxlint`)
 
 The npm packages do not bundle the `typescript-go` executable. Consumers must
 point them at a compatible `tsgo` binary at runtime.
 
-`@tsgo-rs/tsgo-rs-node` is built with `napi-rs`. The publish workflow currently
-keeps the multi-platform fan-out step as an explicit placeholder, so runner-local
-builds are wired up now and the cross-build packaging step can be dropped in
-later without changing the release contract.
+`@tsgo-rs/node` is built with `napi-rs`. The publish workflow now ships
+the root package plus target-specific native binary packages for:
+
+- `darwin-arm64`
+- `darwin-x64`
+- `linux-x64-gnu`
+- `win32-x64-msvc`
+
+The root package stays JS-only at publish time and resolves the correct native
+binding through optional dependencies.
 
 ## Rust Publish Order
 
@@ -48,7 +54,7 @@ Publish crates in dependency order:
 
 Publish npm packages in dependency order:
 
-1. `@tsgo-rs/tsgo-rs-node`
+1. `@tsgo-rs/node`
 2. `typescript-oxlint`
 
 ## Dry Run
@@ -63,7 +69,8 @@ This performs:
 
 - `cargo package` for every public Rust crate
 - a temporary workspace patch overlay so interdependent unpublished crates can be packaged before the first crates.io release
-- `pnpm pack` for each npm workspace package so `workspace:*` ranges are rewritten exactly as they will be for publish
+- staging of the JS-only `@tsgo-rs/node` root package plus any locally available native binary packages
+- `pnpm pack` for each publishable npm package so `workspace:*` ranges are rewritten exactly as they will be for publish
 - `npm publish --dry-run <tarball>` for the packed npm tarballs
 
 CI also runs the same release dry-run workflow.
@@ -80,8 +87,10 @@ Before publishing Rust crates:
 - `cargo deny check advisories bans licenses sources`
 - `vp run -w release_dry_run`
 
-Before publishing npm packages, run the same gates plus a fresh `vp run -w build`
-on the runner or workstation that will create the native `napi-rs` artifact.
+Before publishing npm packages, run the same gates plus a fresh `vp run -w build`.
+The GitHub publish workflow fan-outs native binding builds per target, downloads
+those `.node` artifacts into the publish job, and only then publishes the root
+package and `typescript-oxlint`.
 
 ## Trusted Publishing
 
@@ -137,6 +146,10 @@ node ./scripts/publish_npm.mjs
 This packs each workspace package through `pnpm pack`, then publishes the
 resulting tarballs with `npm publish`, so the packed manifest already contains
 real semver ranges instead of `workspace:*`.
+
+The trusted-publishing workflow follows the same order, but publishes the
+target-specific native binding packages first and the JS-only
+`@tsgo-rs/node` root package after every required artifact is present.
 
 If your npm account enforces 2FA, complete the interactive challenge during
 this first manual publish.

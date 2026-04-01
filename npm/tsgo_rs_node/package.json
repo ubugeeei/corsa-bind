@@ -1,5 +1,5 @@
 {
-  "name": "@tsgo-rs/tsgo-rs-node",
+  "name": "@tsgo-rs/node",
   "version": "0.1.0",
   "description": "Native Node.js bindings for tsgo-rs and typescript-go stdio workflows",
   "homepage": "https://github.com/ubugeeei/tsgo-rs/tree/main/npm/tsgo_rs_node",
@@ -16,8 +16,7 @@
     "dist",
     "README.md",
     "index.d.ts",
-    "index.js",
-    "*.node"
+    "index.js"
   ],
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -32,7 +31,12 @@
     "access": "public"
   },
   "napi": {
-    "name": "tsgo_rs_node"
+    "name": "tsgo_rs_node",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin"
+      ]
+    }
   },
   "engines": {
     "node": ">=22"

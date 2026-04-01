@@ -139,7 +139,7 @@ The CI work that made this path reliable fell into three buckets:
 
 The first failure mode came from `typescript_oxlint`.
 
-The original `tsconfig` path mapping for `@tsgo-rs/tsgo-rs-node` pointed at:
+The original `tsconfig` path mapping for `@tsgo-rs/node` pointed at:
 
 - `../tsgo_rs_node/dist/index.d.mts`
 
@@ -313,7 +313,7 @@ The most important files for this CI stabilization work are:
 
 ## Troubleshooting
 
-## `vp check` says `@tsgo-rs/tsgo-rs-node` cannot be found
+## `vp check` says `@tsgo-rs/node` cannot be found
 
 Check whether `typescript_oxlint` is resolving the package to source or to `dist/`.
 For source validation, it should resolve to the source TypeScript entrypoint, not to generated declarations.

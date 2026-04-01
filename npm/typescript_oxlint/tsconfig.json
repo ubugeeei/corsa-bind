@@ -5,7 +5,7 @@
     "outDir": "./dist",
     "noEmit": false,
     "paths": {
-      "@tsgo-rs/tsgo-rs-node": ["../tsgo_rs_node/ts/index.ts"]
+      "@tsgo-rs/node": ["../tsgo_rs_node/ts/index.ts"]
     }
   },
   "include": ["ts/**/*.ts"]

@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
-      "@tsgo-rs/tsgo-rs-node": ["./npm/tsgo_rs_node/ts/index.ts"],
+      "@tsgo-rs/node": ["./npm/tsgo_rs_node/ts/index.ts"],
       "typescript-oxlint": ["./npm/typescript_oxlint/ts/index.ts"],
       "typescript-oxlint/ast-utils": ["./npm/typescript_oxlint/ts/ast_utils.ts"],
       "typescript-oxlint/eslint-utils": ["./npm/typescript_oxlint/ts/eslint_utils.ts"],

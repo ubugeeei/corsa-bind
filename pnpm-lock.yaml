@@ -29,7 +29,7 @@ importers:
 
   bench:
     dependencies:
-      '@tsgo-rs/tsgo-rs-node':
+      '@tsgo-rs/node':
         specifier: workspace:*
         version: link:../npm/tsgo_rs_node
       typescript-oxlint:
@@ -43,7 +43,7 @@ importers:
       '@oxlint/plugins':
         specifier: 1.57.0
         version: 1.57.0
-      '@tsgo-rs/tsgo-rs-node':
+      '@tsgo-rs/node':
         specifier: workspace:*
         version: link:../tsgo_rs_node
       oxlint:

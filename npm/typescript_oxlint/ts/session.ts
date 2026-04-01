@@ -1,6 +1,6 @@
 import { statSync } from "node:fs";
 
-import { type ProjectResponse, TsgoApiClient } from "@tsgo-rs/tsgo-rs-node";
+import { type ProjectResponse, TsgoApiClient } from "@tsgo-rs/node";
 
 import type { TsgoSignature, TsgoSymbol, TsgoType, TsgoTypePredicate } from "./types";
 import type { ResolvedProjectConfig, ResolvedRuntimeOptions } from "./types";

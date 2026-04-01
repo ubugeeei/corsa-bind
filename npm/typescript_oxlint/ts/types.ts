@@ -1,5 +1,5 @@
 import type { Context, Node, SourceCode } from "@oxlint/plugins";
-import type { ApiMode, ConfigResponse, ProjectResponse, TypeResponse } from "@tsgo-rs/tsgo-rs-node";
+import type { ApiMode, ConfigResponse, ProjectResponse, TypeResponse } from "@tsgo-rs/node";
 
 export interface TsgoRuntimeOptions {
   executable?: string;

@@ -357,7 +357,7 @@ Important properties:
 Typical path:
 
 1. Build Rust code and `napi-rs` bindings.
-2. Import `@tsgo-rs/tsgo-rs-node` or the higher-level compatibility layer.
+2. Import `@tsgo-rs/node` or the higher-level compatibility layer.
 3. Use Rust-backed checker or session behavior from JS and TS.
 
 Important properties:

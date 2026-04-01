@@ -8,7 +8,7 @@ use and what remains experimental.
 The supported production surface is currently:
 
 - local Rust API clients
-- local Node bindings inside this repository
+- published Node bindings for the documented prebuilt targets
 - LSP stdio integrations
 - local worker orchestration and cache reuse
 
@@ -34,6 +34,7 @@ receives fixes.
 - Node.js: `22+`
 - Go: the version declared by `ref/typescript-go/go.mod`
 - Operating systems: Linux, macOS, and Windows for the supported local surface
+- Published Node prebuilds: `darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `win32-x64-msvc`
 
 CI is expected to exercise:
 

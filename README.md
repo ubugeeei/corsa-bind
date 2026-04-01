@@ -45,7 +45,7 @@ Current focus:
 - Runtime: custom in-house runtime, no `tokio`
 - Fast-path bias: `CompactString`, `SmallVec`, `bumpalo`, `memchr`, `phf`, `FxHash`
 - JS toolchain: `pnpm` + Vite+ (`vp`) with `oxfmt` / `oxlint`
-- Node bindings: `npm/tsgo_rs_node` and `npm/typescript_oxlint` (public npm packages that still expect a caller-managed `typescript-go` executable)
+- Node bindings: `@tsgo-rs/node` (`npm/tsgo_rs_node`) and `npm/typescript_oxlint` (public npm packages that still expect a caller-managed `typescript-go` executable)
 - Distributed orchestration: `experimental-distributed` cargo feature
 - TS benchmark project: `bench`
 - Default request timeout: `30s`
@@ -70,7 +70,7 @@ Pinned upstream at the time of writing:
 - `tsgo_rs_runtime`: lightweight custom runtime and task primitives
 - `tsgo_rs_ref`: exact upstream pin, sync, and verification tooling
 - `tsgo_rs`: top-level facade crate, mock server, and native benchmark binaries
-- `npm/tsgo_rs_node`: `napi-rs` native bindings and the TypeScript wrapper package
+- `npm/tsgo_rs_node`: `napi-rs` native bindings and the `@tsgo-rs/node` TypeScript wrapper package
 - `npm/typescript_oxlint`: `typescript-eslint`-style compatibility layer for type-aware Oxlint JS plugins
 - `bench`: Vitest benchmark project for the Node binding
 

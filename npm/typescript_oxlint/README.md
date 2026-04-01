@@ -139,7 +139,7 @@ tracked upstream rule list.
 
 ## Runtime Safety Controls
 
-The underlying `@tsgo-rs/tsgo-rs-node` client now exposes a few production-oriented
+The underlying `@tsgo-rs/node` client now exposes a few production-oriented
 runtime controls:
 
 - `requestTimeoutMs`

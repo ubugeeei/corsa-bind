@@ -28,7 +28,7 @@ export default defineConfig({
   pack: {
     clean: true,
     deps: {
-      neverBundle: ["@tsgo-rs/tsgo-rs-node"],
+      neverBundle: ["@tsgo-rs/node"],
       skipNodeModulesBundle: true,
     },
     dts: true,
@@ -43,7 +43,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@tsgo-rs/tsgo-rs-node": resolve(nodePackageDir, "ts/index.ts"),
+      "@tsgo-rs/node": resolve(nodePackageDir, "ts/index.ts"),
       "typescript-oxlint/ast-utils": resolve(typescriptOxlintDir, "ts/ast_utils.ts"),
       "typescript-oxlint/eslint-utils": resolve(typescriptOxlintDir, "ts/eslint_utils.ts"),
       "typescript-oxlint/json-schema": resolve(typescriptOxlintDir, "ts/json_schema.ts"),

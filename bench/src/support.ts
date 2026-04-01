@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { ApiClientOptions, ApiMode, ConfigResponse } from "@tsgo-rs/tsgo-rs-node";
-import { TsgoApiClient } from "@tsgo-rs/tsgo-rs-node";
+import type { ApiClientOptions, ApiMode, ConfigResponse } from "@tsgo-rs/node";
+import { TsgoApiClient } from "@tsgo-rs/node";
 
 export const workspaceRoot = resolve(import.meta.dirname, "../..");
 export const tsgoPath = resolve(

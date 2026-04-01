@@ -7,6 +7,7 @@ This document is the short operational checklist for running `tsgo-rs` in produc
 The current production target is:
 
 - local Rust and Node API clients
+- published Node bindings with prebuilt packages for supported targets
 - LSP stdio integrations
 - local worker orchestration and cache reuse
 
@@ -69,3 +70,10 @@ The main quality workflow is intended to stay green on:
 
 Real `tsgo` smoke coverage now runs across the supported OS matrix, while the
 heavier benchmark verification remains concentrated in the Ubuntu benchmark job.
+
+Published Node prebuild coverage currently targets:
+
+- `darwin-arm64`
+- `darwin-x64`
+- `linux-x64-gnu`
+- `win32-x64-msvc`

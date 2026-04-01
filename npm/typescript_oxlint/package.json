@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@oxlint/plugins": "1.57.0",
-    "@tsgo-rs/tsgo-rs-node": "workspace:*",
+    "@tsgo-rs/node": "workspace:*",
     "oxlint": "1.57.0"
   },
   "engines": {

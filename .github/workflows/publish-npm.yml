@@ -74,11 +74,60 @@ jobs:
       - name: Release dry run
         run: vp run -w release_dry_run
 
+  build-native-bindings:
+    if: ${{ inputs.confirm == 'publish-npm' }}
+    name: Build native binding (${{ matrix.target }})
+    needs:
+      - release-gates
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Restore Cargo cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: "24"
+          cache: true
+          run-install: true
+
+      - name: Build native binding
+        working-directory: npm/tsgo_rs_node
+        run: napi build --platform --release --target ${{ matrix.target }}
+
+      - name: Upload native binding artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-binding-${{ matrix.target }}
+          path: npm/tsgo_rs_node/*.node
+          if-no-files-found: error
+
   publish:
     if: ${{ inputs.confirm == 'publish-npm' }}
     name: Publish npm packages
     needs:
       - release-gates
+      - build-native-bindings
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -107,12 +156,18 @@ jobs:
           cache: true
           run-install: true
 
+      - name: Download native binding artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: artifacts
+          pattern: native-binding-*
+
       - name: Build publishable npm artifacts
         run: vp run -w build
 
-      - name: Placeholder for napi-rs cross-build fan-out
-        run: |
-          echo "TODO: replace this runner-local build with multi-platform napi-rs artifact packaging before advertising cross-platform prebuild support."
-
       - name: Publish packed tarballs with npm trusted publishing
+        env:
+          NAPI_ARTIFACTS_DIR: artifacts
+          NAPI_REQUIRE_ALL_TARGETS: "1"
         run: node ./scripts/publish_npm.mjs

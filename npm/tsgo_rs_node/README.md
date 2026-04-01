@@ -1,6 +1,6 @@
-# @tsgo-rs/tsgo-rs-node
+# @tsgo-rs/node
 
-`@tsgo-rs/tsgo-rs-node` exposes the `tsgo-rs` Rust workspace to Node.js through
+`@tsgo-rs/node` exposes the `tsgo-rs` Rust workspace to Node.js through
 `napi-rs`.
 
 ## What it ships

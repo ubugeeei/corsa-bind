@@ -1,6 +1,6 @@
 import { bench, describe } from "vitest";
 
-import type { ApiMode } from "@tsgo-rs/tsgo-rs-node";
+import type { ApiMode } from "@tsgo-rs/node";
 
 import type { TsgoNode, TsgoTypeCheckerShape } from "typescript-oxlint";
 import { getParserServices } from "typescript-oxlint";
