@@ -95,20 +95,31 @@ impl RawMessage {
 
     /// Classifies the envelope into a higher-level message kind.
     pub fn kind(&self) -> Result<MessageKind> {
+        if self.jsonrpc.as_str() != "2.0" {
+            return Err(TsgoError::Protocol(compact_format(format_args!(
+                "unsupported jsonrpc version: {}",
+                self.jsonrpc
+            ))));
+        }
         match (&self.id, &self.method, &self.result, &self.error) {
-            (Some(id), Some(method), _, _) => Ok(MessageKind::Request {
+            (Some(id), Some(method), None, None) => Ok(MessageKind::Request {
                 id: id.clone(),
                 method: method.clone(),
                 params: self.params.clone().unwrap_or(Value::Null),
             }),
-            (None, Some(method), _, _) => Ok(MessageKind::Notification {
+            (None, Some(method), None, None) => Ok(MessageKind::Notification {
                 method: method.clone(),
                 params: self.params.clone().unwrap_or(Value::Null),
             }),
-            (Some(id), None, result, error) => Ok(MessageKind::Response {
+            (Some(id), None, Some(result), None) => Ok(MessageKind::Response {
                 id: id.clone(),
-                result: result.clone(),
-                error: error.clone(),
+                result: Some(result.clone()),
+                error: None,
+            }),
+            (Some(id), None, None, Some(error)) => Ok(MessageKind::Response {
+                id: id.clone(),
+                result: None,
+                error: Some(error.clone()),
             }),
             _ => Err(TsgoError::UnexpectedMessage(compact_format(format_args!(
                 "{self:?}"
@@ -145,4 +156,66 @@ pub enum MessageKind {
         /// Error body, when present.
         error: Option<RpcResponseError>,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn rejects_non_2_0_jsonrpc_version() {
+        let message = RawMessage {
+            jsonrpc: "1.0".into(),
+            id: Some(RequestId::integer(1)),
+            method: Some("ping".into()),
+            params: None,
+            result: None,
+            error: None,
+        };
+
+        let error = message.kind().unwrap_err();
+        assert!(matches!(
+            error,
+            TsgoError::Protocol(message) if message.contains("unsupported jsonrpc version")
+        ));
+    }
+
+    #[test]
+    fn rejects_request_like_message_with_response_fields() {
+        let message = RawMessage {
+            jsonrpc: "2.0".into(),
+            id: Some(RequestId::integer(1)),
+            method: Some("ping".into()),
+            params: Some(json!({"value": 1})),
+            result: Some(json!({"pong": true})),
+            error: None,
+        };
+
+        assert!(matches!(
+            message.kind().unwrap_err(),
+            TsgoError::UnexpectedMessage(_)
+        ));
+    }
+
+    #[test]
+    fn rejects_response_with_both_result_and_error() {
+        let message = RawMessage {
+            jsonrpc: "2.0".into(),
+            id: Some(RequestId::integer(1)),
+            method: None,
+            params: None,
+            result: Some(json!({"pong": true})),
+            error: Some(RpcResponseError {
+                code: -32000,
+                message: "broken".into(),
+                data: None,
+            }),
+        };
+
+        assert!(matches!(
+            message.kind().unwrap_err(),
+            TsgoError::UnexpectedMessage(_)
+        ));
+    }
 }
