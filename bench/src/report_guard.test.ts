@@ -18,6 +18,13 @@ const tsScenarios = [
   "getSourceFile",
   "getStringType",
   "typeToString",
+  "restrict-plus-operands visitor",
+  "require-array-sort-compare visitor",
+  "prefer-promise-reject-errors visitor",
+  "no-unsafe-assignment visitor",
+  "no-unsafe-return visitor",
+  "no-base-to-string visitor",
+  "prefer-string-starts-ends-with visitor",
 ] as const;
 
 const nativeScenarios = [
