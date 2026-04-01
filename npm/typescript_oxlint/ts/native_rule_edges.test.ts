@@ -3,11 +3,12 @@ import { resolve } from "node:path";
 
 import { describe, it } from "vitest";
 
+import { defaultTsgoExecutable } from "./context";
 import { RuleTester } from "./rule_tester";
 import { typescriptOxlintRules } from "./rules";
 
 const workspaceRoot = resolve(import.meta.dirname, "../../..");
-const realTsgoBinary = resolve(workspaceRoot, ".cache/tsgo");
+const realTsgoBinary = defaultTsgoExecutable(workspaceRoot);
 const integrationCase = existsSync(realTsgoBinary) ? it : it.skip;
 
 describe("typescript-oxlint native rule edges", () => {

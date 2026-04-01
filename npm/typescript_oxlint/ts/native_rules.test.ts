@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { defaultTsgoExecutable } from "./context";
 import { RuleTester } from "./rule_tester";
 import {
   implementedNativeRuleNames,
@@ -13,7 +14,7 @@ import {
 
 const workspaceRoot = resolve(import.meta.dirname, "../../..");
 const upstreamRulesDir = resolve(workspaceRoot, ".cache/tsgolint_upstream/internal/rules");
-const realTsgoBinary = resolve(workspaceRoot, ".cache/tsgo");
+const realTsgoBinary = defaultTsgoExecutable(workspaceRoot);
 const upstreamCase = existsSync(upstreamRulesDir) ? it : it.skip;
 const integrationCase = existsSync(realTsgoBinary) ? it : it.skip;
 
