@@ -11,6 +11,7 @@ import {
 } from "./context";
 
 const cleanupDirs = new Set<string>();
+const normalizePathSeparators = (path: string) => path.replaceAll("\\", "/");
 
 afterEach(() => {
   for (const dir of cleanupDirs) {
@@ -80,7 +81,9 @@ describe("context", () => {
       },
     } as any);
 
-    expect(resolved.configPath).toContain(".cache/typescript_oxlint/default/");
+    expect(normalizePathSeparators(resolved.configPath)).toContain(
+      ".cache/typescript_oxlint/default/",
+    );
     expect(resolved.runtime.executable).toBe(resolve(workspace, ".cache/tsgo"));
   });
 
