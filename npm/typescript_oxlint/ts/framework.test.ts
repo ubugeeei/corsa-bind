@@ -3,12 +3,13 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { defaultTsgoExecutable } from "./context";
 import { ESLintUtils } from "./eslint_utils";
 import { decorateRule, definePlugin } from "./plugin";
 import { RuleTester } from "./rule_tester";
 
 const workspaceRoot = resolve(import.meta.dirname, "../../..");
-const realTsgoBinary = resolve(workspaceRoot, ".cache/tsgo");
+const realTsgoBinary = defaultTsgoExecutable(workspaceRoot);
 
 describe("typescript-oxlint", () => {
   it("creates docs URLs through the typescript-eslint-compatible RuleCreator", () => {

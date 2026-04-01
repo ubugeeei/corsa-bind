@@ -4,7 +4,11 @@ import { dirname, join, resolve } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { resolveProjectConfig, resolveTypeAwareParserOptions } from "./context";
+import {
+  defaultTsgoExecutable,
+  resolveProjectConfig,
+  resolveTypeAwareParserOptions,
+} from "./context";
 
 const cleanupDirs = new Set<string>();
 
@@ -78,5 +82,10 @@ describe("context", () => {
 
     expect(resolved.configPath).toContain(".cache/typescript_oxlint/default/");
     expect(resolved.runtime.executable).toBe(resolve(workspace, ".cache/tsgo"));
+  });
+
+  it("resolves the platform-specific default tsgo executable", () => {
+    expect(defaultTsgoExecutable("/repo", "linux")).toBe(resolve("/repo", ".cache/tsgo"));
+    expect(defaultTsgoExecutable("/repo", "win32")).toBe(resolve("/repo", ".cache/tsgo.exe"));
   });
 });

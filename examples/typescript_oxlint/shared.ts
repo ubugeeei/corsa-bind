@@ -5,6 +5,10 @@ import type { TypeAwareParserOptions } from "typescript-oxlint";
 
 const examplesDir = dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = resolve(examplesDir, "../..");
+const tsgoExecutable =
+  process.platform === "win32"
+    ? resolve(workspaceRoot, ".cache/tsgo.exe")
+    : resolve(workspaceRoot, ".cache/tsgo");
 
 export function createExampleParserOptions(): TypeAwareParserOptions {
   return {
@@ -13,7 +17,7 @@ export function createExampleParserOptions(): TypeAwareParserOptions {
     },
     tsconfigRootDir: workspaceRoot,
     tsgo: {
-      executable: resolve(workspaceRoot, ".cache/tsgo"),
+      executable: tsgoExecutable,
       cwd: workspaceRoot,
       mode: "msgpack",
       requestTimeoutMs: 30_000,

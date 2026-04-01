@@ -20,6 +20,10 @@ const DEFAULT_TS_CONFIG = {
   },
 };
 
+export function defaultTsgoExecutable(rootDir: string, platform = process.platform): string {
+  return resolve(rootDir, platform === "win32" ? ".cache/tsgo.exe" : ".cache/tsgo");
+}
+
 export function resolveProjectConfig(context: ContextWithParserOptions): ResolvedProjectConfig {
   const filename = resolve(context.filename);
   const parserOptions = resolveTypeAwareParserOptions(context);
@@ -64,7 +68,9 @@ function resolveRuntimeOptions(
 ): ResolvedRuntimeOptions {
   return {
     executable: resolve(
-      parserOptions.tsgo?.executable ?? process.env.TSGO_EXECUTABLE ?? `${rootDir}/.cache/tsgo`,
+      parserOptions.tsgo?.executable ??
+        process.env.TSGO_EXECUTABLE ??
+        defaultTsgoExecutable(rootDir),
     ),
     cwd: resolve(parserOptions.tsgo?.cwd ?? rootDir),
     mode: parserOptions.tsgo?.mode ?? "msgpack",
