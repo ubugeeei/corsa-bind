@@ -1,7 +1,8 @@
 import { RuleTester } from "typescript-oxlint";
 
-import { isMain, realBinary, workspaceRoot } from "../shared.ts";
+import { isMain } from "../shared.ts";
 import { noStringPlusNumberRule } from "./custom_rule.ts";
+import { createExampleSettings } from "./shared.ts";
 
 export function runRuleTesterExample() {
   const executed: string[] = [];
@@ -17,21 +18,7 @@ export function runRuleTesterExample() {
   }) as typeof RuleTester.it;
 
   const tester = new RuleTester();
-  const settings = {
-    typescriptOxlint: {
-      parserOptions: {
-        projectService: {
-          allowDefaultProject: ["*.ts"],
-        },
-        tsconfigRootDir: workspaceRoot,
-        tsgo: {
-          executable: realBinary,
-          cwd: workspaceRoot,
-          mode: "msgpack" as const,
-        },
-      },
-    },
-  };
+  const settings = createExampleSettings() as never;
 
   tester.run("no-string-plus-number", noStringPlusNumberRule, {
     valid: [{ code: 'const text = "a" + "b";', settings }],

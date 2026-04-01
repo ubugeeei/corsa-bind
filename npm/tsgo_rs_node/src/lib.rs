@@ -6,6 +6,7 @@
 mod api_client;
 mod document;
 mod orchestrator;
+mod rule_predicates;
 mod util;
 
 use napi_derive::napi;

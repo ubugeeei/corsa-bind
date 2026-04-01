@@ -11,7 +11,7 @@ const realTsgoBinary = resolve(workspaceRoot, ".cache/tsgo");
 const integrationCase = existsSync(realTsgoBinary) ? it : it.skip;
 
 describe("typescript-oxlint native rule edges", () => {
-  integrationCase("covers array, enum, promise, and sort edge cases", () => {
+  integrationCase("covers array and enum edge cases", () => {
     const tester = createTester();
 
     tester.run("no-array-delete", typescriptOxlintRules["no-array-delete"] as never, {
@@ -41,6 +41,68 @@ describe("typescript-oxlint native rule edges", () => {
         },
       ],
     });
+  });
+
+  integrationCase("covers base-to-string edge cases", () => {
+    const tester = createTester();
+
+    tester.run("no-base-to-string", typescriptOxlintRules["no-base-to-string"] as never, {
+      valid: [
+        {
+          code: "const label = `${new Date()}`;",
+        },
+      ],
+      invalid: [
+        {
+          code: "const label = String({ value: 1 });",
+          errors: [{ messageId: "unexpected" }],
+        },
+      ],
+    });
+  });
+
+  integrationCase("covers unsafe assignment edge cases", () => {
+    const tester = createTester();
+
+    tester.run("no-unsafe-assignment", typescriptOxlintRules["no-unsafe-assignment"] as never, {
+      valid: [
+        {
+          code: "declare const value: any; const safe: unknown = value;",
+        },
+      ],
+      invalid: [
+        {
+          code: "declare const value: Set<any>; const unsafe: Set<string> = value;",
+          errors: [{ messageId: "unsafe" }],
+        },
+        {
+          code: "declare const value: any; const unsafe = value;",
+          errors: [{ messageId: "unsafe" }],
+        },
+      ],
+    });
+  });
+
+  integrationCase("covers unsafe return edge cases", () => {
+    const tester = createTester();
+
+    tester.run("no-unsafe-return", typescriptOxlintRules["no-unsafe-return"] as never, {
+      valid: [
+        {
+          code: "declare const value: any; const fn = (): unknown => value;",
+        },
+      ],
+      invalid: [
+        {
+          code: "declare const value: Promise<any>; async function unsafe(): Promise<string> { return value; }",
+          errors: [{ messageId: "unsafe" }],
+        },
+      ],
+    });
+  });
+
+  integrationCase("covers unary minus, promise reject, and sort edge cases", () => {
+    const tester = createTester();
 
     tester.run("no-unsafe-unary-minus", typescriptOxlintRules["no-unsafe-unary-minus"] as never, {
       valid: [
@@ -99,6 +161,32 @@ describe("typescript-oxlint native rule edges", () => {
             code: "const values = ['b', 'a']; values.sort();",
             options: [{ ignoreStringArrays: false }],
             errors: [{ messageId: "requireCompare" }],
+          },
+        ],
+      },
+    );
+  });
+
+  integrationCase("covers prefer-string-starts-ends-with edge cases", () => {
+    const tester = createTester();
+
+    tester.run(
+      "prefer-string-starts-ends-with",
+      typescriptOxlintRules["prefer-string-starts-ends-with"] as never,
+      {
+        valid: [
+          {
+            code: "const matches = text.startsWith(prefix) || text.endsWith(suffix);",
+          },
+        ],
+        invalid: [
+          {
+            code: "const starts = text.slice(0, prefix.length) === prefix;",
+            errors: [{ messageId: "startsWith" }],
+          },
+          {
+            code: "const ends = text.slice(-suffix.length) === suffix;",
+            errors: [{ messageId: "endsWith" }],
           },
         ],
       },

@@ -32,6 +32,7 @@ vp run -w examples_real
 ## Node Binding Examples
 
 - `node/mock_client.ts`: talks to the repo-local mock tsgo binary
+- `node/unsafe_type_flow.ts`: exercises the Rust-backed unsafe assignment / return predicates directly
 - `node/virtual_document.ts`: applies incremental virtual document edits
 - `node/distributed_orchestrator.ts`: opens and replicates virtual documents across the in-process cluster
 - `node/real_snapshot.ts`: opens the real pinned `typescript-go` project and fetches a source file snapshot
@@ -43,3 +44,4 @@ vp run -w examples_real
 - `typescript_oxlint/custom_rules_config.ts`: flat config using the custom plugin
 - `typescript_oxlint/native_rules_config.ts`: flat config using the built-in native rules
 - `typescript_oxlint/rule_tester.ts`: executable `RuleTester` example against the real pinned `tsgo` binary
+- `typescript_oxlint/native_rule_tester.ts`: executable `RuleTester` example for the built-in Rust-backed and TS-native rules

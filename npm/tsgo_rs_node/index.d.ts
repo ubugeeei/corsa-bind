@@ -13,6 +13,8 @@
  * ```
  */
 export declare function version(): string
+export declare function isUnsafeAssignment(inputJson: string): boolean
+export declare function isUnsafeReturn(inputJson: string): boolean
 /** Thin synchronous wrapper around the Rust stdio API client. */
 export declare class TsgoApiClient {
   /** Spawns a new client from a JSON-encoded spawn config. */

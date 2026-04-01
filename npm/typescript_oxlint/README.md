@@ -119,16 +119,20 @@ Current native coverage includes:
 
 - `await-thenable`
 - `no-array-delete`
+- `no-base-to-string`
 - `no-floating-promises`
 - `no-for-in-array`
 - `no-implied-eval`
 - `no-mixed-enums`
+- `no-unsafe-assignment`
+- `no-unsafe-return`
 - `no-unsafe-unary-minus`
 - `only-throw-error`
 - `prefer-find`
 - `prefer-includes`
 - `prefer-promise-reject-errors`
 - `prefer-regexp-exec`
+- `prefer-string-starts-ends-with`
 - `require-array-sort-compare`
 - `restrict-plus-operands`
 - `use-unknown-in-catch-callback-variable`

@@ -3,7 +3,13 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { TsgoApiClient, TsgoDistributedOrchestrator, TsgoVirtualDocument } from "./index";
+import {
+  TsgoApiClient,
+  TsgoDistributedOrchestrator,
+  TsgoVirtualDocument,
+  isUnsafeAssignment,
+  isUnsafeReturn,
+} from "./index";
 
 const workspaceRoot = resolve(import.meta.dirname, "../../..");
 const mockBinary = resolve(workspaceRoot, "target/debug/mock_tsgo");
@@ -12,6 +18,27 @@ const realDataset = resolve(workspaceRoot, "ref/typescript-go/_packages/api/tsco
 const realTsgoReady = existsSync(realBinary) && existsSync(realDataset);
 
 describe("TsgoApiClient", () => {
+  it("evaluates Rust-backed unsafe type flow predicates", () => {
+    expect(
+      isUnsafeAssignment({
+        sourceTypeTexts: ["Set<any>"],
+        targetTypeTexts: ["Set<string>"],
+      }),
+    ).toBe(true);
+    expect(
+      isUnsafeAssignment({
+        sourceTypeTexts: ["any"],
+        targetTypeTexts: ["unknown"],
+      }),
+    ).toBe(false);
+    expect(
+      isUnsafeReturn({
+        sourceTypeTexts: ["Promise<any>"],
+        targetTypeTexts: ["Promise<string>"],
+      }),
+    ).toBe(true);
+  });
+
   it("roundtrips through the mock tsgo binary", () => {
     const client = TsgoApiClient.spawn({
       executable: mockBinary,

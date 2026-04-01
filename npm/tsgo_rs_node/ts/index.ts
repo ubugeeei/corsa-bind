@@ -5,6 +5,7 @@ import type {
   ConfigResponse,
   InitializeResponse,
   TypeResponse,
+  UnsafeTypeFlowInput,
   UpdateSnapshotParams,
   UpdateSnapshotResponse,
   VirtualChange,
@@ -25,6 +26,14 @@ function fromJson<T>(value: string): T {
 
 function toJson(value: unknown): string {
   return JSON.stringify(value ?? null);
+}
+
+export function isUnsafeAssignment(input: UnsafeTypeFlowInput): boolean {
+  return binding.isUnsafeAssignment(toJson(input));
+}
+
+export function isUnsafeReturn(input: UnsafeTypeFlowInput): boolean {
+  return binding.isUnsafeReturn(toJson(input));
 }
 
 export class TsgoApiClient {

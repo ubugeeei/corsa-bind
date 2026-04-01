@@ -20,3 +20,11 @@ export function createExampleParserOptions(): TypeAwareParserOptions {
     },
   };
 }
+
+export function createExampleSettings() {
+  return {
+    typescriptOxlint: {
+      parserOptions: createExampleParserOptions(),
+    },
+  };
+}

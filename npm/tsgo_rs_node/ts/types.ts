@@ -59,6 +59,11 @@ export interface TypeResponse {
   texts: string[];
 }
 
+export interface UnsafeTypeFlowInput {
+  sourceTypeTexts: readonly string[];
+  targetTypeTexts?: readonly string[];
+}
+
 export interface VirtualChange {
   range?: {
     start: { line: number; character: number };

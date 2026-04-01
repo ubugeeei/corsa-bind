@@ -51,6 +51,13 @@ describe("typescript-oxlint native rules", () => {
     });
   });
 
+  integrationCase("runs no-base-to-string through RuleTester", () => {
+    createTester().run("no-base-to-string", typescriptOxlintRules["no-base-to-string"] as never, {
+      valid: [{ code: "const label = `${1}`;" }],
+      invalid: [{ code: "const label = `${{ value: 1 }}`;", errors: 1 }],
+    });
+  });
+
   integrationCase("runs no-floating-promises through RuleTester", () => {
     createTester().run(
       "no-floating-promises",
@@ -85,6 +92,26 @@ describe("typescript-oxlint native rules", () => {
     createTester().run("no-mixed-enums", typescriptOxlintRules["no-mixed-enums"] as never, {
       valid: [{ code: "enum Numeric { A, B = 2, C = 3 }" }],
       invalid: [{ code: "enum Mixed { A = 1, B = 'two' }", errors: 1 }],
+    });
+  });
+
+  integrationCase("runs no-unsafe-assignment through RuleTester", () => {
+    createTester().run(
+      "no-unsafe-assignment",
+      typescriptOxlintRules["no-unsafe-assignment"] as never,
+      {
+        valid: [{ code: "declare const value: any; const safe: unknown = value;" }],
+        invalid: [{ code: "declare const value: any; const unsafe: string = value;", errors: 1 }],
+      },
+    );
+  });
+
+  integrationCase("runs no-unsafe-return through RuleTester", () => {
+    createTester().run("no-unsafe-return", typescriptOxlintRules["no-unsafe-return"] as never, {
+      valid: [{ code: "declare const value: any; function ok(): unknown { return value; }" }],
+      invalid: [
+        { code: "declare const value: any; function nope(): string { return value; }", errors: 1 },
+      ],
     });
   });
 
@@ -136,6 +163,17 @@ describe("typescript-oxlint native rules", () => {
       valid: [{ code: "/a/g.exec(text);" }],
       invalid: [{ code: "text.match(/a/);", errors: 1 }],
     });
+  });
+
+  integrationCase("runs prefer-string-starts-ends-with through RuleTester", () => {
+    createTester().run(
+      "prefer-string-starts-ends-with",
+      typescriptOxlintRules["prefer-string-starts-ends-with"] as never,
+      {
+        valid: [{ code: "const ok = text.startsWith(prefix) || text.endsWith(suffix);" }],
+        invalid: [{ code: "const broken = text.indexOf(prefix) === 0;", errors: 1 }],
+      },
+    );
   });
 
   integrationCase("runs require-array-sort-compare through RuleTester", () => {
