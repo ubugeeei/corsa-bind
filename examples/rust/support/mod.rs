@@ -14,11 +14,19 @@ fn executable_suffix() -> &'static str {
 }
 
 pub fn workspace_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
+    find_workspace_root(Path::new(env!("CARGO_MANIFEST_DIR")))
+}
+
+fn find_workspace_root(start: &Path) -> PathBuf {
+    start
+        .ancestors()
+        .find(|candidate| {
+            candidate.join("Cargo.toml").exists()
+                && candidate.join("src/core").is_dir()
+                && candidate.join("src/bindings").is_dir()
+                && candidate.join("examples/rust").is_dir()
+        })
+        .unwrap_or(start)
         .to_path_buf()
 }
 

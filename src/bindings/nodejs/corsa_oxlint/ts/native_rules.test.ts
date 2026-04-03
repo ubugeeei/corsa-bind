@@ -12,7 +12,7 @@ import {
   corsaOxlintRules,
 } from "./rules";
 
-const workspaceRoot = resolve(import.meta.dirname, "../../..");
+const workspaceRoot = resolve(import.meta.dirname, "../../../../..");
 const upstreamRulesDir = resolve(workspaceRoot, ".cache/tsgolint_upstream/internal/rules");
 const realTsgoBinary = defaultTsgoExecutable(workspaceRoot);
 const upstreamCase = existsSync(upstreamRulesDir) ? it : it.skip;

@@ -97,10 +97,10 @@ jobs:
           run-install: true
 
       - name: Sync pinned tsgo checkout
-        run: vp run -w sync_ref
+        run: vp run -w sync_origin
 
       - name: Verify pinned tsgo checkout
-        run: vp run -w verify_ref
+        run: vp run -w verify_origin
 
       - name: Build pinned tsgo binary
         run: vp run -w build_tsgo
@@ -111,8 +111,8 @@ jobs:
       - name: Real examples
         run: vp run -w examples_real
 
-  bench-tsgo-ref:
-    name: tsgo Ref Bench
+  bench-tsgo-origin:
+    name: tsgo Origin Bench
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -138,10 +138,10 @@ jobs:
           run-install: true
 
       - name: Sync pinned tsgo checkout
-        run: vp run -w sync_ref
+        run: vp run -w sync_origin
 
       - name: Verify pinned tsgo checkout
-        run: vp run -w verify_ref
+        run: vp run -w verify_origin
 
       - name: Build pinned tsgo binary
         run: vp run -w build_tsgo
