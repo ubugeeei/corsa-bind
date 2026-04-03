@@ -19,11 +19,15 @@ fn string_to_c_bytes(s : String) -> Bytes {
 extern "C" fn OwnedCStr::to_string(self : OwnedCStr) -> String = "corsa_bind_mbt_take_string"
 extern "C" fn BorrowedCStr::to_string(self : BorrowedCStr) -> String = "corsa_bind_mbt_copy_string"
 
-extern "C" fn __version() -> BorrowedCStr = "corsa_bind_version"
+extern "C" fn __utils_version() -> BorrowedCStr = "corsa_bind_utils_version"
 extern "C" fn __last_error() -> BorrowedCStr = "corsa_bind_last_error_message"
 
 fn version() -> String {
-  __version().to_string()
+  utils_version()
+}
+
+fn utils_version() -> String {
+  __utils_version().to_string()
 }
 
 fn last_error() -> String {
@@ -31,10 +35,10 @@ fn last_error() -> String {
 }
 
 #borrow(payload)
-extern "C" fn __is_unsafe_assignment(payload : Bytes) -> Int = "corsa_bind_is_unsafe_assignment"
+extern "C" fn __utils_is_unsafe_assignment(payload : Bytes) -> Int = "corsa_bind_utils_is_unsafe_assignment"
 
 #borrow(payload)
-extern "C" fn __is_unsafe_return(payload : Bytes) -> Int = "corsa_bind_is_unsafe_return"
+extern "C" fn __utils_is_unsafe_return(payload : Bytes) -> Int = "corsa_bind_utils_is_unsafe_return"
 
 fn check_bool_result(result : Int) -> Bool {
   if result < 0 {
@@ -44,11 +48,19 @@ fn check_bool_result(result : Int) -> Bool {
 }
 
 fn is_unsafe_assignment(payload : String) -> Bool {
-  check_bool_result(__is_unsafe_assignment(string_to_c_bytes(payload)))
+  utils_is_unsafe_assignment(payload)
 }
 
 fn is_unsafe_return(payload : String) -> Bool {
-  check_bool_result(__is_unsafe_return(string_to_c_bytes(payload)))
+  utils_is_unsafe_return(payload)
+}
+
+fn utils_is_unsafe_assignment(payload : String) -> Bool {
+  check_bool_result(__utils_is_unsafe_assignment(string_to_c_bytes(payload)))
+}
+
+fn utils_is_unsafe_return(payload : String) -> Bool {
+  check_bool_result(__utils_is_unsafe_return(string_to_c_bytes(payload)))
 }
 
 #borrow(options)

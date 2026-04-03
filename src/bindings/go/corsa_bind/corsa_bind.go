@@ -37,8 +37,12 @@ type VirtualDocument struct {
 	ptr *C.CorsaBindVirtualDocument
 }
 
+type CorsaUtils struct{}
+
+var Utils CorsaUtils
+
 func Version() string {
-	return C.GoString(C.corsa_bind_version())
+	return Utils.Version()
 }
 
 func lastError() error {
@@ -84,21 +88,33 @@ func boolFromResult(result C.int) (bool, error) {
 }
 
 func IsUnsafeAssignment(input UnsafeTypeFlowInput) (bool, error) {
-	cJSON, err := marshalCString(input)
-	if err != nil {
-		return false, err
-	}
-	defer C.free(unsafe.Pointer(cJSON))
-	return boolFromResult(C.corsa_bind_is_unsafe_assignment(cJSON))
+	return Utils.IsUnsafeAssignment(input)
 }
 
 func IsUnsafeReturn(input UnsafeTypeFlowInput) (bool, error) {
+	return Utils.IsUnsafeReturn(input)
+}
+
+func (CorsaUtils) Version() string {
+	return C.GoString(C.corsa_bind_utils_version())
+}
+
+func (CorsaUtils) IsUnsafeAssignment(input UnsafeTypeFlowInput) (bool, error) {
 	cJSON, err := marshalCString(input)
 	if err != nil {
 		return false, err
 	}
 	defer C.free(unsafe.Pointer(cJSON))
-	return boolFromResult(C.corsa_bind_is_unsafe_return(cJSON))
+	return boolFromResult(C.corsa_bind_utils_is_unsafe_assignment(cJSON))
+}
+
+func (CorsaUtils) IsUnsafeReturn(input UnsafeTypeFlowInput) (bool, error) {
+	cJSON, err := marshalCString(input)
+	if err != nil {
+		return false, err
+	}
+	defer C.free(unsafe.Pointer(cJSON))
+	return boolFromResult(C.corsa_bind_utils_is_unsafe_return(cJSON))
 }
 
 func SpawnApiClient(options ApiClientOptions) (*ApiClient, error) {

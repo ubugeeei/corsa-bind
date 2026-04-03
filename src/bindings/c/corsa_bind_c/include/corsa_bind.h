@@ -17,6 +17,7 @@ typedef struct CorsaBindBytes {
 } CorsaBindBytes;
 
 const char *corsa_bind_version(void);
+const char *corsa_bind_utils_version(void);
 const char *corsa_bind_last_error_message(void);
 
 void corsa_bind_string_free(char *ptr);
@@ -24,6 +25,8 @@ void corsa_bind_bytes_free(struct CorsaBindBytes bytes);
 
 int corsa_bind_is_unsafe_assignment(const char *input_json);
 int corsa_bind_is_unsafe_return(const char *input_json);
+int corsa_bind_utils_is_unsafe_assignment(const char *input_json);
+int corsa_bind_utils_is_unsafe_return(const char *input_json);
 
 CorsaBindApiClient *corsa_bind_api_client_new(const char *options_json);
 void corsa_bind_api_client_free(CorsaBindApiClient *client);

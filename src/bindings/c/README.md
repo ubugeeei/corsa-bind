@@ -6,5 +6,5 @@ It exposes a JSON-first C ABI over the Rust core:
 
 - `CorsaBindApiClient` for tsgo API access
 - `CorsaBindVirtualDocument` for overlay document manipulation
-- unsafe-type predicates
+- `corsa_bind_utils_*` helpers for version and unsafe-type predicates
 - string and byte ownership helpers for FFI consumers

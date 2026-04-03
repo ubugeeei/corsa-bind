@@ -2,6 +2,7 @@ import * as nativeModule from "../index.js";
 
 import type {
   ApiClientOptions,
+  CorsaUtilsLike,
   ConfigResponse,
   InitializeResponse,
   TypeResponse,
@@ -35,6 +36,14 @@ export function isUnsafeAssignment(input: UnsafeTypeFlowInput): boolean {
 export function isUnsafeReturn(input: UnsafeTypeFlowInput): boolean {
   return binding.isUnsafeReturn(toJson(input));
 }
+
+export const CorsaUtils: CorsaUtilsLike<string, boolean> = Object.freeze({
+  version() {
+    return binding.version();
+  },
+  isUnsafeAssignment,
+  isUnsafeReturn,
+});
 
 export class TsgoApiClient {
   readonly #inner: NativeApiClient;

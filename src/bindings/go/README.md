@@ -5,7 +5,7 @@ The Go binding is implemented as a thin cgo wrapper over the shared C ABI.
 The package lives under [`corsa_bind/`](./corsa_bind/) and mirrors the C
 surface with Go-friendly helpers for:
 
-- version and unsafe-type predicates
+- `Utils.Version()` and `Utils.IsUnsafeAssignment()` / `Utils.IsUnsafeReturn()`
 - JSON-based API client calls
 - virtual document lifecycle helpers
 

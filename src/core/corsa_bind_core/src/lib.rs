@@ -8,6 +8,7 @@
 //! or the top-level `corsa_bind_rs` facade, but it is also useful on its own when
 //! embedding `tsgo` process management in another integration.
 
+pub mod binding_utils;
 mod error;
 /// Compact string/collection aliases used to keep hot paths allocation-light.
 pub mod fast;
@@ -16,6 +17,7 @@ mod process;
 mod rpc;
 
 pub use error::{Result, TsgoError};
+pub use binding_utils::{CorsaUtils, UnsafeTypeFlowInput};
 pub use observability::{SharedObserver, TsgoEvent, TsgoObserver, observe};
 /// Child-process guard and reusable command template for `tsgo`.
 pub use process::{AsyncChildGuard, TsgoCommand, terminate_child_process, wait_for_child_exit};

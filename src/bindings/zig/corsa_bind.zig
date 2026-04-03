@@ -9,11 +9,14 @@ pub const CorsaBindBytes = extern struct {
 };
 
 extern fn corsa_bind_version() [*:0]const u8;
+extern fn corsa_bind_utils_version() [*:0]const u8;
 extern fn corsa_bind_last_error_message() ?[*:0]const u8;
 extern fn corsa_bind_string_free(ptr: ?[*:0]u8) void;
 extern fn corsa_bind_bytes_free(bytes: CorsaBindBytes) void;
 extern fn corsa_bind_is_unsafe_assignment(input_json: [*:0]const u8) c_int;
 extern fn corsa_bind_is_unsafe_return(input_json: [*:0]const u8) c_int;
+extern fn corsa_bind_utils_is_unsafe_assignment(input_json: [*:0]const u8) c_int;
+extern fn corsa_bind_utils_is_unsafe_return(input_json: [*:0]const u8) c_int;
 extern fn corsa_bind_api_client_new(options_json: [*:0]const u8) ?*CorsaBindApiClient;
 extern fn corsa_bind_api_client_free(client: ?*CorsaBindApiClient) void;
 extern fn corsa_bind_api_client_initialize_json(client: ?*CorsaBindApiClient) ?[*:0]u8;
@@ -39,8 +42,22 @@ extern fn corsa_bind_virtual_document_apply_changes_json(document: ?*CorsaBindVi
 
 pub const Error = error{CorsaBindFailure};
 
+pub const CorsaUtils = struct {
+    pub fn version() []const u8 {
+        return std.mem.span(corsa_bind_utils_version());
+    }
+
+    pub fn isUnsafeAssignment(c_json: [*:0]const u8) Error!bool {
+        return checkBool(corsa_bind_utils_is_unsafe_assignment(c_json));
+    }
+
+    pub fn isUnsafeReturn(c_json: [*:0]const u8) Error!bool {
+        return checkBool(corsa_bind_utils_is_unsafe_return(c_json));
+    }
+};
+
 pub fn version() []const u8 {
-    return std.mem.span(corsa_bind_version());
+    return CorsaUtils.version();
 }
 
 pub fn lastError(allocator: std.mem.Allocator) ![]u8 {
@@ -73,11 +90,11 @@ fn copyBytes(allocator: std.mem.Allocator, bytes: CorsaBindBytes) Error!?[]u8 {
 }
 
 pub fn isUnsafeAssignment(c_json: [*:0]const u8) Error!bool {
-    return checkBool(corsa_bind_is_unsafe_assignment(c_json));
+    return CorsaUtils.isUnsafeAssignment(c_json);
 }
 
 pub fn isUnsafeReturn(c_json: [*:0]const u8) Error!bool {
-    return checkBool(corsa_bind_is_unsafe_return(c_json));
+    return CorsaUtils.isUnsafeReturn(c_json);
 }
 
 pub const ApiClient = struct {

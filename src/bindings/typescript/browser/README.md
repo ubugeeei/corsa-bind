@@ -8,3 +8,6 @@ client and fetch transport from [`../typescript`](../typescript/README.md).
 
 This is also the place where a future wasm-backed browser adapter can live
 without changing the public browser-facing folder name again.
+
+For binding-style helper calls over a host transport, reuse
+`createRemoteCorsaUtils()` from the shared TypeScript layer.

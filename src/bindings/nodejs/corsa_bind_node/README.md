@@ -11,6 +11,7 @@ native `typescript-go` side of that ecosystem.
 ## What it ships
 
 - native Node.js bindings for the `corsa-bind` API and LSP surface
+- a Rust-backed `CorsaUtils` helper surface for version and unsafe-type checks
 - an ESM TypeScript wrapper under `dist/`
 - no bundled `typescript-go` executable
 

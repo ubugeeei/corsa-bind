@@ -47,6 +47,11 @@ pub mod fast {
     pub use corsa_bind_core::fast::*;
 }
 
+/// Re-exports shared binding utilities such as unsafe-type flow predicates.
+pub mod utils {
+    pub use corsa_bind_core::{CorsaUtils, UnsafeTypeFlowInput};
+}
+
 /// Re-exports JSON-RPC transport primitives.
 pub mod jsonrpc {
     pub use corsa_bind_jsonrpc::*;
@@ -84,4 +89,6 @@ pub mod runtime {
     pub use corsa_bind_runtime::*;
 }
 
-pub use corsa_bind_core::{Result, SharedObserver, TsgoError, TsgoEvent, TsgoObserver};
+pub use corsa_bind_core::{
+    CorsaUtils, Result, SharedObserver, TsgoError, TsgoEvent, TsgoObserver, UnsafeTypeFlowInput,
+};

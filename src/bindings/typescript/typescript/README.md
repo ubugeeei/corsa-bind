@@ -6,6 +6,7 @@ This directory holds the transport-neutral pieces that other surfaces build on:
 
 - request/response types shared with the native Node.js wrapper
 - the async remote client facade
+- a remote `createRemoteCorsaUtils()` adapter for host-provided Rust utility calls
 - fetch-based transport helpers for browser-style hosts
 
 Runtime entrypoints live alongside it:

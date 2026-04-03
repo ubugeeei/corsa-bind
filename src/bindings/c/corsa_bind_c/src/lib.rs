@@ -16,6 +16,7 @@ use corsa_bind_rs::{
     fast::{CompactString, FastMap},
     lsp::{VirtualChange, VirtualDocument},
     runtime::block_on,
+    utils::{CorsaUtils, UnsafeTypeFlowInput},
 };
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
@@ -34,28 +35,6 @@ struct SpawnOptions {
     shutdown_timeout_ms: Option<u64>,
     outbound_capacity: Option<usize>,
     allow_unstable_upstream_calls: Option<bool>,
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct UnsafeTypeFlowInput {
-    source_type_texts: Vec<String>,
-    #[serde(default)]
-    target_type_texts: Vec<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum SimpleType {
-    Any,
-    Unknown,
-    Never,
-    Primitive(String),
-    Array(Box<SimpleType>),
-    Tuple(Vec<SimpleType>),
-    Generic { base: String, args: Vec<SimpleType> },
-    Union(Vec<SimpleType>),
-    Intersection(Vec<SimpleType>),
-    Other(String),
 }
 
 #[derive(Serialize)]
@@ -221,6 +200,11 @@ pub extern "C" fn corsa_bind_version() -> *const c_char {
 }
 
 #[unsafe(no_mangle)]
+pub extern "C" fn corsa_bind_utils_version() -> *const c_char {
+    corsa_bind_version()
+}
+
+#[unsafe(no_mangle)]
 pub extern "C" fn corsa_bind_last_error_message() -> *const c_char {
     LAST_ERROR.with(|slot| {
         slot.borrow()
@@ -247,12 +231,7 @@ pub unsafe extern "C" fn corsa_bind_bytes_free(value: CorsaBindBytes) {
 pub unsafe extern "C" fn corsa_bind_is_unsafe_assignment(input_json: *const c_char) -> c_int {
     clear_last_error();
     match parse_json_arg::<UnsafeTypeFlowInput>(input_json, "input_json") {
-        Ok(input) => {
-            match has_unsafe_any_flow(&input.source_type_texts, &input.target_type_texts) {
-                true => 1,
-                false => 0,
-            }
-        }
+        Ok(input) => c_int::from(CorsaUtils::is_unsafe_assignment(&input)),
         Err(error) => {
             set_last_error(error);
             -1
@@ -263,6 +242,18 @@ pub unsafe extern "C" fn corsa_bind_is_unsafe_assignment(input_json: *const c_ch
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn corsa_bind_is_unsafe_return(input_json: *const c_char) -> c_int {
     corsa_bind_is_unsafe_assignment(input_json)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn corsa_bind_utils_is_unsafe_assignment(
+    input_json: *const c_char,
+) -> c_int {
+    corsa_bind_is_unsafe_assignment(input_json)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn corsa_bind_utils_is_unsafe_return(input_json: *const c_char) -> c_int {
+    corsa_bind_is_unsafe_return(input_json)
 }
 
 #[unsafe(no_mangle)]
@@ -763,266 +754,4 @@ pub unsafe extern "C" fn corsa_bind_virtual_document_apply_changes_json(
             null_mut()
         }
     }
-}
-
-fn has_unsafe_any_flow(source_texts: &[String], target_texts: &[String]) -> bool {
-    let sources = parse_type_texts(source_texts);
-    if sources.is_empty() {
-        return false;
-    }
-    let targets = parse_type_texts(target_texts);
-    if targets.is_empty() {
-        return sources.iter().any(contains_any_like);
-    }
-    sources.iter().any(|source| {
-        targets
-            .iter()
-            .filter(|target| !is_permissive_target(target))
-            .any(|target| is_unsafe_flow(source, target))
-    })
-}
-
-fn parse_type_texts(texts: &[String]) -> Vec<SimpleType> {
-    let mut unique = std::collections::BTreeSet::new();
-    for text in texts {
-        let trimmed = text.trim();
-        if !trimmed.is_empty() {
-            unique.insert(trimmed.to_owned());
-        }
-    }
-    unique
-        .into_iter()
-        .map(|text| parse_type_text(text.as_str()))
-        .collect()
-}
-
-fn parse_type_text(text: &str) -> SimpleType {
-    let text = strip_wrapping_parens(text.trim());
-    if let Some(parts) = split_top_level(text, '|') {
-        return SimpleType::Union(parts.iter().map(|part| parse_type_text(part)).collect());
-    }
-    if let Some(parts) = split_top_level(text, '&') {
-        return SimpleType::Intersection(parts.iter().map(|part| parse_type_text(part)).collect());
-    }
-    if let Some(stripped) = text.strip_suffix("[]") {
-        return SimpleType::Array(Box::new(parse_type_text(stripped)));
-    }
-    if text.starts_with('[') && text.ends_with(']') && is_wrapped_by(text, '[', ']') {
-        let inner = &text[1..text.len() - 1];
-        return SimpleType::Tuple(
-            split_top_level_list(inner, ',')
-                .into_iter()
-                .map(parse_type_text)
-                .collect(),
-        );
-    }
-    if let Some((base, args)) = split_generic(text) {
-        return SimpleType::Generic {
-            base: base.to_owned(),
-            args: split_top_level_list(args, ',')
-                .into_iter()
-                .map(parse_type_text)
-                .collect(),
-        };
-    }
-    match text {
-        "any" => SimpleType::Any,
-        "unknown" => SimpleType::Unknown,
-        "never" => SimpleType::Never,
-        "string" | "number" | "boolean" | "bigint" | "symbol" | "null" | "undefined" => {
-            SimpleType::Primitive(text.to_owned())
-        }
-        "true" | "false" => SimpleType::Primitive("boolean".to_owned()),
-        _ if is_string_literal(text) => SimpleType::Primitive("string".to_owned()),
-        _ if is_number_literal(text) => SimpleType::Primitive("number".to_owned()),
-        _ if is_bigint_literal(text) => SimpleType::Primitive("bigint".to_owned()),
-        _ => SimpleType::Other(text.to_owned()),
-    }
-}
-
-fn is_unsafe_flow(source: &SimpleType, target: &SimpleType) -> bool {
-    if is_permissive_target(target) {
-        return false;
-    }
-    match source {
-        SimpleType::Any => true,
-        SimpleType::Union(types) | SimpleType::Intersection(types) => {
-            types.iter().any(|member| is_unsafe_flow(member, target))
-        }
-        SimpleType::Array(source_item) => match target {
-            SimpleType::Array(target_item) => is_unsafe_flow(source_item, target_item),
-            SimpleType::Generic { base, args }
-                if is_array_like_base(base.as_str()) && args.len() == 1 =>
-            {
-                is_unsafe_flow(source_item, &args[0])
-            }
-            _ => false,
-        },
-        SimpleType::Tuple(source_items) => match target {
-            SimpleType::Tuple(target_items) => source_items
-                .iter()
-                .zip(target_items.iter())
-                .any(|(source_item, target_item)| is_unsafe_flow(source_item, target_item)),
-            SimpleType::Array(target_item) => source_items
-                .iter()
-                .any(|source_item| is_unsafe_flow(source_item, target_item)),
-            SimpleType::Generic { base, args }
-                if is_array_like_base(base.as_str()) && args.len() == 1 =>
-            {
-                source_items
-                    .iter()
-                    .any(|source_item| is_unsafe_flow(source_item, &args[0]))
-            }
-            _ => false,
-        },
-        SimpleType::Generic {
-            base: source_base,
-            args: source_args,
-        } => match target {
-            SimpleType::Generic {
-                base: target_base,
-                args: target_args,
-            } if same_container_family(source_base.as_str(), target_base.as_str())
-                && source_args.len() == target_args.len() =>
-            {
-                source_args
-                    .iter()
-                    .zip(target_args.iter())
-                    .any(|(source_arg, target_arg)| is_unsafe_flow(source_arg, target_arg))
-            }
-            SimpleType::Array(target_item)
-                if is_array_like_base(source_base.as_str()) && source_args.len() == 1 =>
-            {
-                is_unsafe_flow(&source_args[0], target_item)
-            }
-            _ => false,
-        },
-        _ => false,
-    }
-}
-
-fn contains_any_like(ty: &SimpleType) -> bool {
-    match ty {
-        SimpleType::Any => true,
-        SimpleType::Array(inner) => contains_any_like(inner),
-        SimpleType::Tuple(items) | SimpleType::Union(items) | SimpleType::Intersection(items) => {
-            items.iter().any(contains_any_like)
-        }
-        SimpleType::Generic { args, .. } => args.iter().any(contains_any_like),
-        _ => false,
-    }
-}
-
-fn is_permissive_target(ty: &SimpleType) -> bool {
-    match ty {
-        SimpleType::Any | SimpleType::Unknown | SimpleType::Never => true,
-        SimpleType::Union(types) => types.iter().any(is_permissive_target),
-        _ => false,
-    }
-}
-
-fn same_container_family(left: &str, right: &str) -> bool {
-    left == right
-        || (is_array_like_base(left) && is_array_like_base(right))
-        || (is_promise_like_base(left) && is_promise_like_base(right))
-}
-
-fn is_array_like_base(base: &str) -> bool {
-    matches!(base, "Array" | "ReadonlyArray")
-}
-
-fn is_promise_like_base(base: &str) -> bool {
-    matches!(base, "Promise" | "PromiseLike")
-}
-
-fn split_generic(text: &str) -> Option<(&str, &str)> {
-    let mut depth = 0;
-    let mut start = None;
-    for (index, ch) in text.char_indices() {
-        match ch {
-            '<' => {
-                if depth == 0 {
-                    start = Some(index);
-                }
-                depth += 1;
-            }
-            '>' => {
-                depth -= 1;
-                if depth == 0 {
-                    let start = start?;
-                    let base = text[..start].trim();
-                    let args = &text[start + 1..index];
-                    if index + 1 == text.len() && !base.is_empty() {
-                        return Some((base, args));
-                    }
-                    return None;
-                }
-            }
-            _ => {}
-        }
-    }
-    None
-}
-
-fn split_top_level(text: &str, separator: char) -> Option<Vec<&str>> {
-    let mut depth = 0;
-    let mut last = 0;
-    let mut parts = Vec::new();
-    for (index, ch) in text.char_indices() {
-        match ch {
-            '(' | '[' | '<' | '{' => depth += 1,
-            ')' | ']' | '>' | '}' => depth -= 1,
-            _ if ch == separator && depth == 0 => {
-                parts.push(text[last..index].trim());
-                last = index + ch.len_utf8();
-            }
-            _ => {}
-        }
-    }
-    if parts.is_empty() {
-        return None;
-    }
-    parts.push(text[last..].trim());
-    Some(parts)
-}
-
-fn split_top_level_list(text: &str, separator: char) -> Vec<&str> {
-    split_top_level(text, separator).unwrap_or_else(|| vec![text.trim()])
-}
-
-fn strip_wrapping_parens(text: &str) -> &str {
-    let mut current = text;
-    while current.starts_with('(') && current.ends_with(')') && is_wrapped_by(current, '(', ')') {
-        current = current[1..current.len() - 1].trim();
-    }
-    current
-}
-
-fn is_wrapped_by(text: &str, open: char, close: char) -> bool {
-    let mut depth = 0;
-    for (index, ch) in text.char_indices() {
-        if ch == open {
-            depth += 1;
-        } else if ch == close {
-            depth -= 1;
-            if depth == 0 && index + ch.len_utf8() != text.len() {
-                return false;
-            }
-        }
-    }
-    depth == 0
-}
-
-fn is_string_literal(text: &str) -> bool {
-    text.len() >= 2
-        && ((text.starts_with('"') && text.ends_with('"'))
-            || (text.starts_with('\'') && text.ends_with('\'')))
-}
-
-fn is_number_literal(text: &str) -> bool {
-    text.parse::<f64>().is_ok()
-}
-
-fn is_bigint_literal(text: &str) -> bool {
-    text.ends_with('n') && text[..text.len() - 1].parse::<i128>().is_ok()
 }

@@ -1,18 +1,18 @@
-import { isUnsafeAssignment, isUnsafeReturn } from "@corsa-bind/node";
+import { CorsaUtils } from "@corsa-bind/node";
 
 import { isMain } from "../shared.ts";
 
 export function runUnsafeTypeFlowExample() {
   return {
-    assignmentIntoString: isUnsafeAssignment({
+    assignmentIntoString: CorsaUtils.isUnsafeAssignment({
       sourceTypeTexts: ["Set<any>"],
       targetTypeTexts: ["Set<string>"],
     }),
-    assignmentIntoUnknown: isUnsafeAssignment({
+    assignmentIntoUnknown: CorsaUtils.isUnsafeAssignment({
       sourceTypeTexts: ["any"],
       targetTypeTexts: ["unknown"],
     }),
-    promiseReturn: isUnsafeReturn({
+    promiseReturn: CorsaUtils.isUnsafeReturn({
       sourceTypeTexts: ["Promise<any>"],
       targetTypeTexts: ["Promise<string>"],
     }),

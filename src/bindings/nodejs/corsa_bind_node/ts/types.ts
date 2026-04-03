@@ -64,6 +64,12 @@ export interface UnsafeTypeFlowInput {
   targetTypeTexts?: readonly string[];
 }
 
+export interface CorsaUtilsLike<VersionResult = string, PredicateResult = boolean> {
+  version(): VersionResult;
+  isUnsafeAssignment(input: UnsafeTypeFlowInput): PredicateResult;
+  isUnsafeReturn(input: UnsafeTypeFlowInput): PredicateResult;
+}
+
 export interface VirtualChange {
   range?: {
     start: { line: number; character: number };

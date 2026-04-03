@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  CorsaUtils,
   TsgoApiClient,
   TsgoDistributedOrchestrator,
   TsgoVirtualDocument,
@@ -20,8 +21,9 @@ const realTsgoReady = existsSync(realBinary) && existsSync(realDataset);
 
 describe("TsgoApiClient", () => {
   it("evaluates Rust-backed unsafe type flow predicates", () => {
+    expect(CorsaUtils.version()).toMatch(/\d+\.\d+\.\d+/);
     expect(
-      isUnsafeAssignment({
+      CorsaUtils.isUnsafeAssignment({
         sourceTypeTexts: ["Set<any>"],
         targetTypeTexts: ["Set<string>"],
       }),

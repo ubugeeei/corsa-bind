@@ -58,7 +58,7 @@ vp run -w examples_rust_experimental
 These examples do not require a real `typescript-go` binary and are the best first touchpoints.
 
 - `examples/nodejs/minimal_start.ts`: zero-binary start that combines virtual-document edits with the Rust-backed unsafe-type helpers
-- `examples/nodejs/unsafe_type_flow.ts`: direct `isUnsafeAssignment()` / `isUnsafeReturn()` predicates for quick rule prototyping
+- `examples/nodejs/unsafe_type_flow.ts`: `CorsaUtils` unsafe-type predicates for quick rule prototyping
 - `examples/nodejs/virtual_document.ts`: focused in-memory document editing through `TsgoVirtualDocument`
 - `examples/rust/minimal_start.rs`: smallest Rust facade example for `VirtualDocument`, `RequestId`, and `block_on()`
 - `examples/rust/virtual_document.rs`: incremental and replace-style edits through the Rust `VirtualDocument`

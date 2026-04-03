@@ -1,4 +1,4 @@
-import { isUnsafeAssignment, isUnsafeReturn, TsgoVirtualDocument } from "@corsa-bind/node";
+import { CorsaUtils, TsgoVirtualDocument } from "@corsa-bind/node";
 
 import { isMain } from "../shared.ts";
 
@@ -21,11 +21,11 @@ export function runMinimalStartExample() {
   return {
     document: document.state(),
     emittedChangeCount: emitted.length,
-    unsafeAssignment: isUnsafeAssignment({
+    unsafeAssignment: CorsaUtils.isUnsafeAssignment({
       sourceTypeTexts: ["Set<any>"],
       targetTypeTexts: ["Set<string>"],
     }),
-    unsafeReturn: isUnsafeReturn({
+    unsafeReturn: CorsaUtils.isUnsafeReturn({
       sourceTypeTexts: ["Promise<any>"],
       targetTypeTexts: ["Promise<string>"],
     }),
