@@ -57,8 +57,12 @@ Publish crates in dependency order:
 
 Publish npm packages in dependency order:
 
-1. `@corsa/node`
-2. `oxlint-plugin-typescript-go`
+1. `@corsa/node-win32-x64-msvc`
+2. `@corsa/node-darwin-x64`
+3. `@corsa/node-linux-x64-gnu`
+4. `@corsa/node-darwin-arm64`
+5. `@corsa/node`
+6. `oxlint-plugin-typescript-go`
 
 ## Dry Run
 
@@ -112,13 +116,14 @@ After the first manual publish of each npm package, configure npm Trusted
 Publishing for each package with:
 
 - GitHub organization or user: `ubugeeei`
-- repository: `corsa`
+- repository: `corsa-bind`
 - workflow filename: `publish-npm.yml`
 - environment: `release`
 
-For `@corsa/node`, also configure the same trusted publisher on each native
-binary package:
+Configure the same trusted publisher on:
 
+- `oxlint-plugin-typescript-go`
+- `@corsa/node`
 - `@corsa/node-darwin-arm64`
 - `@corsa/node-darwin-x64`
 - `@corsa/node-linux-x64-gnu`
@@ -179,6 +184,16 @@ target-specific native binding packages first and the JS-only
 
 If your npm account enforces 2FA, complete the interactive challenge during
 this first manual publish.
+
+Once the packages exist on npm, attach the GitHub Actions trusted publisher to
+every npm package with:
+
+```bash
+vp exec node --strip-types ./scripts/setup_npm_trusted_publish.ts
+```
+
+Use `--dry-run` first if you want the exact `npm trust github ...` commands
+without making any changes.
 
 If a publish partially succeeds, rerun from the first missing package:
 

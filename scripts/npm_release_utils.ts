@@ -169,6 +169,22 @@ function getNpmRegistryBase(): string {
   );
 }
 
+export async function doesNpmPackageExist(packageName: string): Promise<boolean> {
+  const response = await fetch(`${getNpmRegistryBase()}/${encodeURIComponent(packageName)}`);
+
+  if (response.status === 404) {
+    return false;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to query npm registry for ${packageName}: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  return true;
+}
+
 export function getPackageVersion(pkg: PublishablePackage): string {
   return getPackageManifest(pkg).version;
 }
@@ -266,6 +282,15 @@ export function getNodeBindingTargets(
       seen.add(target.platformArchABI);
       return true;
     });
+}
+
+export function getNodeBindingBinaryPackageNames(
+  packageJson = readJson<NodeBindingManifest>(resolve(nodeBindingPackage.path, "package.json")),
+): string[] {
+  const rootPackageName = packageJson.name;
+  return getNodeBindingTargets(packageJson).map(
+    (target) => `${rootPackageName}-${target.platformArchABI}`,
+  );
 }
 
 export function createBinaryPackageManifest(
