@@ -1,5 +1,5 @@
 use super::{MAX_HEADER_BYTES, read_frame, write_frame};
-use crate::TsgoError;
+use crate::CorsaError;
 use std::io::BufReader;
 #[cfg(unix)]
 use std::{os::unix::net::UnixStream, thread};
@@ -68,7 +68,7 @@ fn rejects_oversized_headers() {
     let header = vec![b'a'; MAX_HEADER_BYTES + 1];
     let mut reader = BufReader::new(header.as_slice());
     let err = read_frame(&mut reader).unwrap_err();
-    assert!(matches!(err, TsgoError::Protocol(message) if message.contains("header is too large")));
+    assert!(matches!(err, CorsaError::Protocol(message) if message.contains("header is too large")));
 }
 
 #[test]
@@ -90,5 +90,5 @@ fn frame_with_length(payload: &[u8], extra: &[u8]) -> Vec<u8> {
 fn assert_protocol(frame: Vec<u8>, needle: &str) {
     let mut reader = BufReader::new(frame.as_slice());
     let err = read_frame(&mut reader).unwrap_err();
-    assert!(matches!(err, TsgoError::Protocol(message) if message.contains(needle)));
+    assert!(matches!(err, CorsaError::Protocol(message) if message.contains(needle)));
 }

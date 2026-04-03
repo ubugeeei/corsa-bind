@@ -6,7 +6,7 @@ import { corsaOxlintRules } from "corsa-oxlint/rules";
 
 import {
   ensureBenchInputs,
-  tsgoPath,
+  corsaPath,
   corsaOxlintConfigPath,
   corsaOxlintFixtureDir,
   corsaOxlintFilePath,
@@ -109,8 +109,8 @@ function createContext(
         parserOptions: {
           project: [corsaOxlintConfigPath],
           tsconfigRootDir: corsaOxlintFixtureDir,
-          tsgo: {
-            executable: tsgoPath,
+          corsa: {
+            executable: corsaPath,
             cwd: workspaceRoot,
             cacheLifetimeMs: 60_000,
             mode,

@@ -2,9 +2,9 @@ export { default } from "../../nodejs/corsa_bind_node/ts/index.ts";
 export * from "../../nodejs/corsa_bind_node/ts/index.ts";
 
 export {
-  BrowserTsgoApiClient,
+  BrowserCorsaApiClient,
   createFetchTransport,
-  RemoteTsgoApiClient,
+  RemoteCorsaApiClient,
   type FetchTransportOptions,
-  type TsgoRemoteTransport,
+  type CorsaRemoteTransport,
 } from "../typescript/index.ts";

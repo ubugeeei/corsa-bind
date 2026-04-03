@@ -2,23 +2,23 @@ import type { Node } from "@oxlint/plugins";
 
 import { OxlintUtils } from "../oxlint_utils";
 import { isIdentifierNamed, memberPropertyName, stripChainExpression } from "./ast";
-import type { ContextWithParserOptions, TsgoType, TsgoTypeCheckerShape } from "../types";
+import type { ContextWithParserOptions, CorsaType, CorsaTypeCheckerShape } from "../types";
 
-export function checkerFor(context: ContextWithParserOptions): TsgoTypeCheckerShape {
+export function checkerFor(context: ContextWithParserOptions): CorsaTypeCheckerShape {
   return OxlintUtils.getParserServices(context).program.getTypeChecker();
 }
 
 export function typeAtNode(
   context: ContextWithParserOptions,
   node: Node | { readonly range: readonly [number, number] },
-): TsgoType | undefined {
+): CorsaType | undefined {
   return checkerFor(context).getTypeAtLocation(node as Node);
 }
 
 export function baseTypeAtNode(
   context: ContextWithParserOptions,
   node: Node | { readonly range: readonly [number, number] },
-): TsgoType | undefined {
+): CorsaType | undefined {
   const type = typeAtNode(context, node);
   if (!type) {
     return undefined;
@@ -29,7 +29,7 @@ export function baseTypeAtNode(
 export function symbolTypeAtNode(
   context: ContextWithParserOptions,
   node: Node | { readonly range: readonly [number, number] },
-): TsgoType | undefined {
+): CorsaType | undefined {
   const checker = checkerFor(context);
   const symbol = checker.getSymbolAtLocation(node as Node);
   if (!symbol) {
@@ -195,7 +195,7 @@ export function typeTextsAtNode(
   collectTexts(symbolTypeAtNode(context, node));
   return [...values];
 
-  function collectTexts(type: TsgoType | undefined): void {
+  function collectTexts(type: CorsaType | undefined): void {
     if (!type) {
       return;
     }

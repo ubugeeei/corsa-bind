@@ -1,7 +1,7 @@
 # corsa-oxlint
 
 `corsa-oxlint` is an Oxlint-first framework for building JS plugins with real
-type information powered by `tsgo`.
+type information powered by Corsa.
 
 The name is a deliberate nod to TypeScript's own codenames: `Corsa` is the
 native TypeScript 7 effort, while `Strada` is the existing JS-based line.
@@ -16,7 +16,7 @@ native TypeScript 7 effort, while `Strada` is the existing JS-based line.
 
 ## What It Does
 
-- exposes `OxlintUtils.RuleCreator()` and `getParserServices()` backed by `tsgo`
+- exposes `OxlintUtils.RuleCreator()` and `getParserServices()` backed by Corsa
 - preserves a dedicated Oxlint subpath layout without extra lint wrappers
 - binds Rust-implemented hot paths into JS through `napi-rs`
 - lets custom Oxlint rules query types and symbols from JS or TS
@@ -85,8 +85,8 @@ export default [
         parserOptions: {
           project: ["./tsconfig.json"],
           tsconfigRootDir: import.meta.dirname,
-          tsgo: {
-            executable: "./.cache/tsgo",
+          corsa: {
+            executable: "./.cache/corsa",
             mode: "msgpack",
             requestTimeoutMs: 30000,
           },

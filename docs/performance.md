@@ -2,7 +2,7 @@
 
 `corsa-bind` ships with two benchmark layers:
 
-- Native real-tsgo benchmark: `vp run -w bench_native`
+- Native real-corsa benchmark: `vp run -w bench_native`
 - Native deep benchmark: `vp run -w bench_native_deep`
 - Tooling + orchestration benchmark: `vp run -w bench_tooling_compare`
 - Node binding benchmark: `vp run -w bench_ts`
@@ -50,10 +50,10 @@ The runner creates temporary overlay `tsconfig` files for CLI parity, enforces p
 
 ## Native Runner
 
-The native benchmark runner is the `bench_real_tsgo` binary:
+The native benchmark runner is the `bench_real_corsa` binary:
 
 ```bash
-cargo run --release -p corsa_bind_rs --bin bench_real_tsgo -- \
+cargo run --release -p corsa_bind_rs --bin bench_real_corsa -- \
   --cold-iterations 5 \
   --warm-iterations 20 \
   --json-output .cache/bench_native.json
@@ -62,7 +62,7 @@ cargo run --release -p corsa_bind_rs --bin bench_real_tsgo -- \
 For a heavier pass that is better suited to before/after comparisons, use:
 
 ```bash
-cargo run --release -p corsa_bind_rs --bin bench_real_tsgo -- \
+cargo run --release -p corsa_bind_rs --bin bench_real_corsa -- \
   --cold-iterations 10 \
   --warm-iterations 80 \
   --json-output .cache/bench_native_deep.json
@@ -151,8 +151,8 @@ The current Vitest bench summary is useful for relative ranking but the JSON fil
 
 ## Notes
 
-- `ApiSpawnConfig::new()` defaults to `SyncMsgpackStdio`, because it is still consistently ahead on the measured real-tsgo paths.
+- `ApiSpawnConfig::new()` defaults to `SyncMsgpackStdio`, because it is still consistently ahead on the measured real-corsa paths.
 - `getSourceFile` benefits strongly from msgpack because async JSON-RPC has to carry binary payloads through JSON framing.
 - `bench/src/report_guard.test.ts` fails when benchmark samples go missing or when the measured hot paths drift past the configured budget.
-- `src/bindings/rust/corsa_bind_rs/tests/real_tsgo_baseline.rs` pins the real upstream API summary for the locked `tsgo` commit.
+- `src/bindings/rust/corsa_bind_rs/tests/real_corsa_baseline.rs` pins the real upstream API summary for the locked `tsgo` commit.
 - `printNode` is intentionally excluded from the default native suite at the pinned upstream commit because the real `tsgo` server can still panic inside `internal/printer` on real project data.

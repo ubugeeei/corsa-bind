@@ -1,4 +1,4 @@
-use crate::{Result, TsgoError};
+use crate::{Result, CorsaError};
 use corsa_bind_core::fast::{CompactString, SmallVec, compact_format};
 use lsp_types::{
     Position, Range, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem, Uri,
@@ -45,7 +45,7 @@ pub struct VirtualChange {
 /// document.apply_changes(&[VirtualChange::replace("const n = 2;")])?;
 /// assert_eq!(document.text, "const n = 2;");
 /// assert_eq!(document.version, 2);
-/// # Ok::<(), corsa_bind_lsp::TsgoError>(())
+/// # Ok::<(), corsa_bind_lsp::CorsaError>(())
 /// ```
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -147,7 +147,7 @@ impl VirtualDocument {
         )
     }
 
-    /// Creates an in-memory `tsgo://` virtual document.
+    /// Creates an in-memory `corsa://` virtual document.
     ///
     /// This scheme is helpful when replicated or synthetic documents should be
     /// clearly distinguishable from user-owned workspace files.
@@ -157,7 +157,7 @@ impl VirtualDocument {
         language_id: impl Into<CompactString>,
         text: impl Into<CompactString>,
     ) -> Result<Self> {
-        let mut raw = CompactString::from("tsgo://");
+        let mut raw = CompactString::from("corsa://");
         raw.push_str(authority.as_ref());
         raw.push_str(normalize_virtual_path(path.as_ref()).as_str());
         Self::parse_uri(raw, language_id, text)
@@ -217,7 +217,7 @@ impl VirtualDocument {
         text: impl Into<CompactString>,
     ) -> Result<Self> {
         let uri = Uri::from_str(&raw).map_err(|err| {
-            TsgoError::Protocol(compact_format(format_args!("invalid virtual uri: {err}")))
+            CorsaError::Protocol(compact_format(format_args!("invalid virtual uri: {err}")))
         })?;
         Ok(Self::new(uri, language_id, text))
     }
@@ -236,7 +236,7 @@ fn apply_change(text: &mut CompactString, change: &VirtualChange) -> Result<()> 
         let start = byte_offset(text, range.start)?;
         let end = byte_offset(text, range.end)?;
         if start > end {
-            return Err(TsgoError::Protocol(
+            return Err(CorsaError::Protocol(
                 "virtual edit has an inverted range".into(),
             ));
         }
@@ -260,7 +260,7 @@ fn byte_offset(text: &str, position: Position) -> Result<usize> {
                     .character
                     .eq(&column)
                     .then_some(index)
-                    .ok_or_else(|| TsgoError::Protocol("virtual edit is out of bounds".into()));
+                    .ok_or_else(|| CorsaError::Protocol("virtual edit is out of bounds".into()));
             }
             line += 1;
             column = 0;
@@ -269,7 +269,7 @@ fn byte_offset(text: &str, position: Position) -> Result<usize> {
         if line == position.line {
             column += ch.len_utf16() as u32;
             if column > position.character {
-                return Err(TsgoError::Protocol(
+                return Err(CorsaError::Protocol(
                     "virtual edit splits a code point".into(),
                 ));
             }
@@ -278,5 +278,5 @@ fn byte_offset(text: &str, position: Position) -> Result<usize> {
     if line == position.line && column == position.character {
         return Ok(text.len());
     }
-    Err(TsgoError::Protocol("virtual edit is out of bounds".into()))
+    Err(CorsaError::Protocol("virtual edit is out of bounds".into()))
 }

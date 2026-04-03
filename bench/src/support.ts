@@ -2,12 +2,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { ApiClientOptions, ApiMode, ConfigResponse } from "@corsa-bind/node";
-import { TsgoApiClient } from "@corsa-bind/node";
+import { CorsaApiClient } from "@corsa-bind/node";
 
 export const workspaceRoot = resolve(import.meta.dirname, "../..");
-export const tsgoPath = resolve(
+export const corsaPath = resolve(
   workspaceRoot,
-  process.platform === "win32" ? ".cache/tsgo.exe" : ".cache/tsgo",
+  process.platform === "win32" ? ".cache/corsa.exe" : ".cache/corsa",
 );
 export const datasetPath = resolve(
   workspaceRoot,
@@ -20,20 +20,20 @@ export const corsaOxlintSourceText = readFileSync(corsaOxlintFilePath, "utf8");
 
 export function benchOptions(mode: ApiMode): ApiClientOptions {
   return {
-    executable: tsgoPath,
+    executable: corsaPath,
     cwd: workspaceRoot,
     mode,
   };
 }
 
 export function ensureBenchInputs(): void {
-  if (!existsSync(tsgoPath)) {
+  if (!existsSync(corsaPath)) {
     throw new Error(
-      "missing built tsgo binary under .cache; run `vp run -w build` or `vp run -w build_tsgo` first",
+      "missing built Corsa binary under .cache; run `vp run -w build` or `vp run -w build_corsa` first",
     );
   }
   if (!existsSync(datasetPath)) {
-    throw new Error("missing pinned tsgo dataset under origin/typescript-go");
+    throw new Error("missing pinned upstream dataset under origin/typescript-go");
   }
   if (!existsSync(corsaOxlintConfigPath)) {
     throw new Error("missing corsa-oxlint fixture tsconfig");
@@ -41,14 +41,14 @@ export function ensureBenchInputs(): void {
 }
 
 export function openBenchSession(mode: ApiMode): {
-  client: TsgoApiClient;
+  client: CorsaApiClient;
   config: ConfigResponse;
   configPath: string;
   projectId: string;
   primaryFile: string;
   snapshot: string;
 } {
-  const client = TsgoApiClient.spawn(benchOptions(mode));
+  const client = CorsaApiClient.spawn(benchOptions(mode));
   client.initialize();
   const config = client.parseConfigFile(datasetPath);
   const snapshot = client.updateSnapshot({ openProject: datasetPath });

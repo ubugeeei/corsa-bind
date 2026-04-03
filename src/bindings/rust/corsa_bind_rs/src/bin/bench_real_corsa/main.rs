@@ -30,7 +30,7 @@ fn main() -> ExitCode {
 async fn run(cli: args::Cli) -> corsa_bind_rs::Result<()> {
     let datasets = dataset::load(&cli).await?;
     let results = scenario::run(&cli, &datasets).await?;
-    println!("tsgo: {}", cli.tsgo_path.display());
+    println!("corsa: {}", cli.corsa_path.display());
     println!("cold_iterations: {}", cli.cold_iterations);
     println!("warm_iterations: {}", cli.warm_iterations);
     println!();

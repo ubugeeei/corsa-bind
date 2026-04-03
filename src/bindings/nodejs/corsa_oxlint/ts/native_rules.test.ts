@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { defaultTsgoExecutable } from "./context";
+import { defaultCorsaExecutable } from "./context";
 import { RuleTester } from "./rule_tester";
 import {
   implementedNativeRuleNames,
@@ -14,9 +14,9 @@ import {
 
 const workspaceRoot = resolve(import.meta.dirname, "../../../../..");
 const upstreamRulesDir = resolve(workspaceRoot, ".cache/tsgolint_upstream/internal/rules");
-const realTsgoBinary = defaultTsgoExecutable(workspaceRoot);
+const realCorsaBinary = defaultCorsaExecutable(workspaceRoot);
 const upstreamCase = existsSync(upstreamRulesDir) ? it : it.skip;
-const integrationCase = existsSync(realTsgoBinary) ? it : it.skip;
+const integrationCase = existsSync(realCorsaBinary) ? it : it.skip;
 
 describe("corsa-oxlint native rules", () => {
   it("exports the native plugin surface", () => {
@@ -223,8 +223,8 @@ function createTester(): RuleTester {
     settings: {
       corsaOxlint: {
         parserOptions: {
-          tsgo: {
-            executable: realTsgoBinary,
+          corsa: {
+            executable: realCorsaBinary,
           },
         },
       },

@@ -1,55 +1,55 @@
 import type { Node } from "@oxlint/plugins";
 
-import type { ContextWithParserOptions, TsgoNode } from "./types";
+import type { ContextWithParserOptions, CorsaNode } from "./types";
 
-const estreeToTsgo = new WeakMap<object, TsgoNode>();
-const tsgoToEstree = new WeakMap<object, Node>();
+const estreeToCorsa = new WeakMap<object, CorsaNode>();
+const corsaToEstree = new WeakMap<object, Node>();
 
 export function createNodeMaps(context: ContextWithParserOptions): {
   esTreeNodeToTSNodeMap: {
-    get(node: Node): TsgoNode;
+    get(node: Node): CorsaNode;
     has(node: Node): boolean;
   };
   tsNodeToESTreeNodeMap: {
-    get(node: TsgoNode): Node;
-    has(node: TsgoNode): boolean;
+    get(node: CorsaNode): Node;
+    has(node: CorsaNode): boolean;
   };
 } {
   return {
     esTreeNodeToTSNodeMap: {
       get(node) {
-        let current = estreeToTsgo.get(node);
+        let current = estreeToCorsa.get(node);
         if (!current) {
-          current = createTsgoNode(context.filename, node);
-          estreeToTsgo.set(node, current);
-          tsgoToEstree.set(current, node);
+          current = createCorsaNode(context.filename, node);
+          estreeToCorsa.set(node, current);
+          corsaToEstree.set(current, node);
         }
         return current;
       },
       has(node) {
-        return estreeToTsgo.has(node);
+        return estreeToCorsa.has(node);
       },
     },
     tsNodeToESTreeNodeMap: {
       get(node) {
-        const value = tsgoToEstree.get(node);
+        const value = corsaToEstree.get(node);
         if (!value) {
           throw new Error("corsa-oxlint could not map tsgo node back to ESTree");
         }
         return value;
       },
       has(node) {
-        return tsgoToEstree.has(node);
+        return corsaToEstree.has(node);
       },
     },
   };
 }
 
-export function toPosition(node: Node | TsgoNode): number {
+export function toPosition(node: Node | CorsaNode): number {
   return "pos" in node ? node.pos : assertRange(node)[0];
 }
 
-function createTsgoNode(fileName: string, node: Node): TsgoNode {
+function createCorsaNode(fileName: string, node: Node): CorsaNode {
   const [pos, end] = assertRange(node);
   return {
     fileName,

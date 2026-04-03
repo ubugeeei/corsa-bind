@@ -6,7 +6,7 @@ use std::{io, time::Duration};
 
 /// Workspace-wide error type for process, transport, and protocol failures.
 #[derive(Debug, thiserror::Error)]
-pub enum TsgoError {
+pub enum CorsaError {
     /// Underlying OS or process I/O failure.
     #[error(transparent)]
     Io(#[from] io::Error),
@@ -43,9 +43,9 @@ pub enum TsgoError {
 }
 
 /// Standard result alias used across the workspace.
-pub type Result<T, E = TsgoError> = std::result::Result<T, E>;
+pub type Result<T, E = CorsaError> = std::result::Result<T, E>;
 
-impl TsgoError {
+impl CorsaError {
     /// Clones an error into a form safe to send to pending waiters.
     ///
     /// Some inner error types are not cheaply cloneable, so this method

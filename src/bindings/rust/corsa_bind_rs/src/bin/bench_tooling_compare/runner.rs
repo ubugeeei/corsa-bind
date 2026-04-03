@@ -6,7 +6,7 @@ use std::{
 };
 
 use corsa_bind_rs::{
-    Result, TsgoError,
+    Result, CorsaError,
     api::{ApiClient, ApiMode, ApiSpawnConfig, SymbolHandle, UpdateSnapshotParams},
     fast::{CompactString, SmallVec},
 };
@@ -97,10 +97,10 @@ async fn run_project_check_suite(
     rows.push(row(
         "project_check",
         dataset,
-        "tsgo",
+        "corsa-cli",
         measure_with_warmup(cli.warmup_iterations, cli.iterations, || async {
-            let mut command = tsgo_command(cli, support, overlay);
-            run_command(&mut command, timeout, &[0], "tsgo")
+            let mut command = corsa_command(cli, support, overlay);
+            run_command(&mut command, timeout, &[0], "corsa-cli")
         })
         .await?,
     ));
@@ -156,8 +156,8 @@ fn tsc_command(support: &ToolSupport, overlay: &OverlayConfig) -> Command {
     command
 }
 
-fn tsgo_command(cli: &Cli, support: &ToolSupport, overlay: &OverlayConfig) -> Command {
-    let mut command = Command::new(&cli.tsgo_path);
+fn corsa_command(cli: &Cli, support: &ToolSupport, overlay: &OverlayConfig) -> Command {
+    let mut command = Command::new(&cli.corsa_path);
     command
         .current_dir(&support.typescript_go_root)
         .arg("--pretty")
@@ -180,7 +180,7 @@ fn eslint_command(
         .arg("--config")
         .arg(&support.eslint_config)
         .arg("--no-config-lookup")
-        .env("TSGO_RS_BENCH_TSCONFIG", &overlay.path);
+        .env("CORSA_BENCH_TSCONFIG", &overlay.path);
     for file in &dataset.source_files {
         command.arg(file.as_str());
     }
@@ -214,7 +214,7 @@ async fn workflow_warm(cli: &Cli, dataset: &DatasetCase) -> Result<Stats> {
 
 async fn open_workflow_session(cli: &Cli, dataset: &DatasetCase) -> Result<WorkflowSession> {
     let client = ApiClient::spawn(
-        ApiSpawnConfig::new(&cli.tsgo_path)
+        ApiSpawnConfig::new(&cli.corsa_path)
             .with_cwd(&cli.root_dir)
             .with_mode(ApiMode::SyncMsgpackStdio),
     )
@@ -276,7 +276,7 @@ async fn run_editor_workflow(session: &WorkflowSession) -> Result<()> {
             session.target.position,
         )
         .await?
-        .ok_or(TsgoError::Protocol(
+        .ok_or(CorsaError::Protocol(
             "workflow target no longer resolves to a type".into(),
         ))?;
     let _ = session
@@ -308,7 +308,7 @@ async fn discover_bench_target(
     let source = client
         .get_source_file(snapshot.handle.clone(), project.clone(), file)
         .await?
-        .ok_or(TsgoError::Protocol(
+        .ok_or(CorsaError::Protocol(
             "benchmark dataset is missing its primary file".into(),
         ))?;
     let text = String::from_utf8_lossy(source.as_bytes());
@@ -326,7 +326,7 @@ async fn discover_bench_target(
             });
         }
     }
-    Err(TsgoError::Protocol(
+    Err(CorsaError::Protocol(
         "failed to discover a benchmarkable symbol in the primary file".into(),
     ))
 }
@@ -398,14 +398,14 @@ impl ToolSupport {
         let typescript_go_root = workspace_root.join("origin/typescript-go");
         let tsc_script = typescript_go_root.join("node_modules/typescript/bin/tsc");
         if !tsc_script.exists() {
-            return Err(TsgoError::Protocol(CompactString::from(
+            return Err(CorsaError::Protocol(CompactString::from(
                 "missing origin/typescript-go/node_modules/typescript/bin/tsc; run `vp run -w bench_tooling_setup` first",
             )));
         }
         let cli_compare_root = workspace_root.join("bench/cli_compare");
         let eslint_script = cli_compare_root.join("node_modules/eslint/bin/eslint.js");
         if !eslint_script.exists() {
-            return Err(TsgoError::Protocol(CompactString::from(
+            return Err(CorsaError::Protocol(CompactString::from(
                 "missing bench/cli_compare/node_modules/eslint/bin/eslint.js; run `vp run -w bench_tooling_setup` first",
             )));
         }

@@ -89,10 +89,10 @@ export default defineConfig({
         command: "cargo build --workspace",
       },
       build_mock: {
-        command: "cargo build -p corsa_bind_rs --bin mock_tsgo",
+        command: "cargo build -p corsa_bind_rs --bin mock_corsa",
       },
-      build_tsgo: {
-        command: "node --strip-types ./scripts/build_tsgo.ts",
+      build_corsa: {
+        command: "node --strip-types ./scripts/build_corsa.ts",
       },
       build_node_debug: {
         command: "napi build --platform",
@@ -159,13 +159,13 @@ export default defineConfig({
       },
       bench_native: {
         command:
-          "cargo run --release -p corsa_bind_rs --bin bench_real_tsgo -- --cold-iterations 5 --warm-iterations 20 --json-output .cache/bench_native.json",
-        dependsOn: ["build_tsgo"],
+          "cargo run --release -p corsa_bind_rs --bin bench_real_corsa -- --cold-iterations 5 --warm-iterations 20 --json-output .cache/bench_native.json",
+        dependsOn: ["build_corsa"],
       },
       bench_native_deep: {
         command:
-          "cargo run --release -p corsa_bind_rs --bin bench_real_tsgo -- --cold-iterations 10 --warm-iterations 80 --json-output .cache/bench_native_deep.json",
-        dependsOn: ["build_tsgo"],
+          "cargo run --release -p corsa_bind_rs --bin bench_real_corsa -- --cold-iterations 10 --warm-iterations 80 --json-output .cache/bench_native_deep.json",
+        dependsOn: ["build_corsa"],
       },
       bench_tooling_setup: {
         command: noopCommand,
@@ -182,15 +182,15 @@ export default defineConfig({
       bench_tooling_compare: {
         command:
           "cargo run --release -p corsa_bind_rs --bin bench_tooling_compare -- --iterations 10 --warmup-iterations 2 --json-output .cache/bench_tooling_compare.json",
-        dependsOn: ["build_tsgo", "bench_tooling_setup"],
+        dependsOn: ["build_corsa", "bench_tooling_setup"],
       },
       bench_ts: {
         command: "vp test bench --config ./vite.config.ts --outputJson .cache/bench_ts.json",
-        dependsOn: ["build_tsgo", "build_node_release"],
+        dependsOn: ["build_corsa", "build_node_release"],
       },
       bench_verify: {
         command:
-          "TSGO_REQUIRE_BENCH_REPORTS=1 vp test run --config ./vite.config.ts bench/src/report_guard.test.ts",
+          "CORSA_REQUIRE_BENCH_REPORTS=1 vp test run --config ./vite.config.ts bench/src/report_guard.test.ts",
         dependsOn: ["bench_native", "bench_ts"],
       },
       release_dry_run: {
@@ -205,7 +205,7 @@ export default defineConfig({
       examples_node_real: {
         command: "pnpm run real",
         cwd: "examples",
-        dependsOn: ["build", "sync_origin", "verify_origin", "build_tsgo"],
+        dependsOn: ["build", "sync_origin", "verify_origin", "build_corsa"],
       },
       examples_rust_smoke: {
         command: "node --strip-types ./scripts/run_rust_examples.ts smoke",
@@ -213,7 +213,7 @@ export default defineConfig({
       },
       examples_rust_real: {
         command: "node --strip-types ./scripts/run_rust_examples.ts real",
-        dependsOn: ["sync_origin", "verify_origin", "build_tsgo"],
+        dependsOn: ["sync_origin", "verify_origin", "build_corsa"],
       },
       examples_rust_experimental: {
         command: "node --strip-types ./scripts/run_rust_examples.ts experimental",

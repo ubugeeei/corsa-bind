@@ -19,7 +19,7 @@ fn executable_suffix() -> &'static str {
 }
 
 pub fn mock_binary() -> PathBuf {
-    if let Some(path) = std::env::var_os("CARGO_BIN_EXE_mock_tsgo") {
+    if let Some(path) = std::env::var_os("CARGO_BIN_EXE_mock_corsa") {
         let path = PathBuf::from(path);
         if path.exists() {
             return path;
@@ -27,7 +27,7 @@ pub fn mock_binary() -> PathBuf {
     }
     workspace_root()
         .join("target/debug")
-        .join(format!("mock_tsgo{}", executable_suffix()))
+        .join(format!("mock_corsa{}", executable_suffix()))
 }
 
 pub fn workspace_root() -> PathBuf {
@@ -66,7 +66,13 @@ pub fn lsp_config() -> LspSpawnConfig {
     LspSpawnConfig::new(mock_binary()).with_cwd(test_cwd())
 }
 
-pub fn resolved_real_tsgo_binary() -> Option<PathBuf> {
+pub fn resolved_real_corsa_binary() -> Option<PathBuf> {
+    if let Some(path) = std::env::var_os("CORSA_EXECUTABLE") {
+        let path = PathBuf::from(path);
+        if path.exists() {
+            return Some(path);
+        }
+    }
     if let Some(path) = std::env::var_os("TSGO_EXECUTABLE") {
         let path = PathBuf::from(path);
         if path.exists() {
@@ -74,6 +80,8 @@ pub fn resolved_real_tsgo_binary() -> Option<PathBuf> {
         }
     }
     [
+        workspace_root().join(".cache/corsa"),
+        workspace_root().join(".cache/corsa.exe"),
         workspace_root().join(".cache/tsgo"),
         workspace_root().join(".cache/tsgo.exe"),
         workspace_root().join("origin/typescript-go/.cache/tsgo"),
@@ -85,12 +93,12 @@ pub fn resolved_real_tsgo_binary() -> Option<PathBuf> {
     .find(|path| path.exists())
 }
 
-pub fn real_tsgo_binary() -> PathBuf {
-    resolved_real_tsgo_binary().unwrap_or_else(|| {
+pub fn real_corsa_binary() -> PathBuf {
+    resolved_real_corsa_binary().unwrap_or_else(|| {
         workspace_root().join(if cfg!(windows) {
-            ".cache/tsgo.exe"
+            ".cache/corsa.exe"
         } else {
-            ".cache/tsgo"
+            ".cache/corsa"
         })
     })
 }
@@ -100,7 +108,7 @@ pub fn real_dataset() -> PathBuf {
 }
 
 pub fn real_api_config(mode: ApiMode) -> Option<ApiSpawnConfig> {
-    let binary = resolved_real_tsgo_binary()?;
+    let binary = resolved_real_corsa_binary()?;
     let dataset = real_dataset();
     if !dataset.exists() {
         return None;

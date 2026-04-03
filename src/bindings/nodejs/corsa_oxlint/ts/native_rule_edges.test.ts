@@ -3,13 +3,13 @@ import { resolve } from "node:path";
 
 import { describe, it } from "vitest";
 
-import { defaultTsgoExecutable } from "./context";
+import { defaultCorsaExecutable } from "./context";
 import { RuleTester } from "./rule_tester";
 import { corsaOxlintRules } from "./rules";
 
 const workspaceRoot = resolve(import.meta.dirname, "../../../../..");
-const realTsgoBinary = defaultTsgoExecutable(workspaceRoot);
-const integrationCase = existsSync(realTsgoBinary) ? it : it.skip;
+const realCorsaBinary = defaultCorsaExecutable(workspaceRoot);
+const integrationCase = existsSync(realCorsaBinary) ? it : it.skip;
 
 describe("corsa-oxlint native rule edges", () => {
   integrationCase("covers array and enum edge cases", () => {
@@ -200,8 +200,8 @@ function createTester(): RuleTester {
     settings: {
       corsaOxlint: {
         parserOptions: {
-          tsgo: {
-            executable: realTsgoBinary,
+          corsa: {
+            executable: realCorsaBinary,
           },
         },
       },

@@ -1,4 +1,4 @@
-import type { TsgoRemoteTransport } from "./client.ts";
+import type { CorsaRemoteTransport } from "./client.ts";
 import type { CorsaUtilsLike, UnsafeTypeFlowInput } from "./types.ts";
 
 export interface RemoteCorsaUtilsOptions {
@@ -14,7 +14,7 @@ export const DEFAULT_REMOTE_CORSA_UTIL_METHODS = Object.freeze({
 });
 
 export function createRemoteCorsaUtils(
-  transport: Pick<TsgoRemoteTransport, "requestJson">,
+  transport: Pick<CorsaRemoteTransport, "requestJson">,
   options: RemoteCorsaUtilsOptions = {},
 ): CorsaUtilsLike<Promise<string>, Promise<boolean>> {
   const methods = {

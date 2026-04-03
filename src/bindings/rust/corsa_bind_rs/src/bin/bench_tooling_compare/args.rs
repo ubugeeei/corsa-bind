@@ -6,7 +6,8 @@ const HELP: &str = "\
 usage: cargo run -p corsa_bind_rs --bin bench_tooling_compare -- [options]
 
 options:
-  --tsgo PATH                tsgo executable (default: .cache/tsgo)
+  --corsa PATH               Corsa executable (default: .cache/corsa)
+  --tsgo PATH                deprecated alias for --corsa
   --node CMD                 node executable or command name (default: node)
   --dataset PATH             tsconfig path to benchmark (repeatable)
   --json-output PATH         write machine-readable benchmark JSON
@@ -26,7 +27,7 @@ pub enum Suite {
 #[derive(Clone, Debug)]
 pub struct Cli {
     pub root_dir: PathBuf,
-    pub tsgo_path: PathBuf,
+    pub corsa_path: PathBuf,
     pub node_command: CompactString,
     pub dataset_paths: SmallVec<[PathBuf; 4]>,
     pub json_output_path: Option<PathBuf>,
@@ -38,7 +39,7 @@ pub struct Cli {
 
 pub fn parse() -> Result<Option<Cli>, CompactString> {
     let root_dir = env::current_dir().map_err(|error| CompactString::from(error.to_string()))?;
-    let mut tsgo_path = default_tsgo_path(&root_dir);
+    let mut corsa_path = default_corsa_path(&root_dir);
     let mut node_command = CompactString::from("node");
     let mut dataset_paths = SmallVec::<[PathBuf; 4]>::new();
     let mut json_output_path = None;
@@ -54,8 +55,8 @@ pub fn parse() -> Result<Option<Cli>, CompactString> {
                 println!("{HELP}");
                 return Ok(None);
             }
-            "--tsgo" => {
-                tsgo_path = read_path(&mut args, &argument, &root_dir)?;
+            "--corsa" | "--tsgo" => {
+                corsa_path = read_path(&mut args, &argument, &root_dir)?;
             }
             "--node" => {
                 node_command = read_value(&mut args, &argument)?;
@@ -92,12 +93,12 @@ pub fn parse() -> Result<Option<Cli>, CompactString> {
     if iterations == 0 {
         return Err(CompactString::from("--iterations must be > 0"));
     }
-    if !tsgo_path.exists() {
-        return Err(CompactString::from(tsgo_path.display().to_string()));
+    if !corsa_path.exists() {
+        return Err(CompactString::from(corsa_path.display().to_string()));
     }
     Ok(Some(Cli {
         root_dir,
-        tsgo_path,
+        corsa_path,
         node_command,
         dataset_paths,
         json_output_path,
@@ -115,8 +116,10 @@ fn both_suites() -> SmallVec<[Suite; 2]> {
     suites
 }
 
-fn default_tsgo_path(root_dir: &std::path::Path) -> PathBuf {
+fn default_corsa_path(root_dir: &std::path::Path) -> PathBuf {
     let candidates = [
+        root_dir.join(".cache/corsa"),
+        root_dir.join(".cache/corsa.exe"),
         root_dir.join(".cache/tsgo"),
         root_dir.join(".cache/tsgo.exe"),
         root_dir.join("origin/typescript-go/.cache/tsgo"),
@@ -130,9 +133,9 @@ fn default_tsgo_path(root_dir: &std::path::Path) -> PathBuf {
         }
     }
     root_dir.join(if cfg!(windows) {
-        ".cache/tsgo.exe"
+        ".cache/corsa.exe"
     } else {
-        ".cache/tsgo"
+        ".cache/corsa"
     })
 }
 

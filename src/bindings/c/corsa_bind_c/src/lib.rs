@@ -176,7 +176,7 @@ fn build_spawn_config(options: SpawnOptions) -> Result<ApiSpawnConfig, String> {
         config = config.with_mode(match mode.as_str() {
             "jsonrpc" => ApiMode::AsyncJsonRpcStdio,
             "msgpack" => ApiMode::SyncMsgpackStdio,
-            _ => return Err("unknown tsgo api mode".to_owned()),
+            _ => return Err("unknown Corsa API mode".to_owned()),
         });
     }
     if let Some(timeout_ms) = options.request_timeout_ms {

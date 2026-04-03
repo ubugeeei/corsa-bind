@@ -19,22 +19,22 @@ use std::{
 ///
 /// ```
 /// use std::path::PathBuf;
-/// use corsa_bind_core::TsgoCommand;
+/// use corsa_bind_core::CorsaCommand;
 ///
-/// let command = TsgoCommand::new("/opt/bin/tsgo")
+/// let command = CorsaCommand::new("/opt/bin/corsa")
 ///     .with_cwd("/workspace")
 ///     .with_env("TSGO_TRACE", "0");
 ///
 /// assert_eq!(command.cwd(), &PathBuf::from("/workspace"));
 /// ```
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct TsgoCommand {
+pub struct CorsaCommand {
     executable: PathBuf,
     cwd: PathBuf,
     env: SmallVec<[(CompactString, CompactString); 4]>,
 }
 
-impl TsgoCommand {
+impl CorsaCommand {
     /// Creates a new command template rooted at the current working directory.
     pub fn new(executable: impl Into<PathBuf>) -> Self {
         Self {

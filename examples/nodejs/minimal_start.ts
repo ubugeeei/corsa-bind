@@ -1,9 +1,9 @@
-import { CorsaUtils, TsgoVirtualDocument } from "@corsa-bind/node";
+import { CorsaUtils, CorsaVirtualDocument } from "@corsa-bind/node";
 
 import { isMain } from "../shared.ts";
 
 export function runMinimalStartExample() {
-  const document = TsgoVirtualDocument.untitled(
+  const document = CorsaVirtualDocument.untitled(
     "/virtual/minimal.ts",
     "typescript",
     "const answer = 41;\n",

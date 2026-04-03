@@ -73,7 +73,7 @@ This repository therefore treats process cleanup as part of benchmark correctnes
 
 ## Native Runner
 
-The native runner is [`bench_real_tsgo`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_tsgo/main.rs).
+The native runner is [`bench_real_corsa`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/main.rs).
 
 Its purpose:
 
@@ -171,16 +171,16 @@ This keeps TypeScript's node module resolution behavior aligned with the upstrea
 
 ## Implementation Walkthrough
 
-## `bench_real_tsgo`
+## `bench_real_corsa`
 
 Main files:
 
-- [`args.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_tsgo/args.rs)
-- [`dataset.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_tsgo/dataset.rs)
-- [`scenario.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_tsgo/scenario.rs)
-- [`measure.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_tsgo/measure.rs)
-- [`stats.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_tsgo/stats.rs)
-- [`report.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_tsgo/report.rs)
+- [`args.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/args.rs)
+- [`dataset.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/dataset.rs)
+- [`scenario.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/scenario.rs)
+- [`measure.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/measure.rs)
+- [`stats.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/stats.rs)
+- [`report.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/report.rs)
 
 Flow:
 
@@ -248,7 +248,7 @@ The msgpack worker also follows the same policy via [`msgpack_worker.rs`](../src
 
 Use:
 
-- `bench_real_tsgo` for transport and API-path questions
+- `bench_real_corsa` for transport and API-path questions
 - `bench_tooling_compare` for CLI parity and orchestration questions
 - Node benchmarks for JS binding overhead and consumer-facing Node workflows
 

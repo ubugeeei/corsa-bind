@@ -6,8 +6,8 @@ const examplesDir = dirname(fileURLToPath(import.meta.url));
 const executableSuffix = process.platform === "win32" ? ".exe" : "";
 
 export const workspaceRoot = resolve(examplesDir, "..");
-export const mockBinary = resolve(workspaceRoot, `target/debug/mock_tsgo${executableSuffix}`);
-export const realBinary = resolve(workspaceRoot, `.cache/tsgo${executableSuffix}`);
+export const mockBinary = resolve(workspaceRoot, `target/debug/mock_corsa${executableSuffix}`);
+export const realBinary = resolve(workspaceRoot, `.cache/corsa${executableSuffix}`);
 export const realDataset = resolve(
   workspaceRoot,
   "origin/typescript-go/_packages/api/tsconfig.json",

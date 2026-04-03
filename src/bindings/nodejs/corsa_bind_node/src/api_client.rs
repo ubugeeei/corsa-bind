@@ -26,13 +26,13 @@ struct SnapshotState<'a> {
 
 /// Thin synchronous wrapper around the Rust stdio API client.
 #[napi]
-pub struct TsgoApiClient {
+pub struct CorsaApiClient {
     inner: ApiClient,
     snapshots: Mutex<FastMap<CompactString, ManagedSnapshot>>,
 }
 
 #[napi]
-impl TsgoApiClient {
+impl CorsaApiClient {
     /// Spawns a new client from a JSON-encoded spawn config.
     #[napi(factory)]
     pub fn spawn(options_json: String) -> Result<Self> {

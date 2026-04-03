@@ -1,7 +1,7 @@
 import type { Context, Node, SourceCode } from "@oxlint/plugins";
 import type { ApiMode, ConfigResponse, ProjectResponse, TypeResponse } from "@corsa-bind/node";
 
-export interface TsgoRuntimeOptions {
+export interface CorsaRuntimeOptions {
   executable?: string;
   cwd?: string;
   mode?: ApiMode;
@@ -21,7 +21,9 @@ export interface TypeAwareParserOptions {
   project?: string | string[];
   projectService?: boolean | ProjectServiceOptions;
   tsconfigRootDir?: string;
-  tsgo?: TsgoRuntimeOptions;
+  corsa?: CorsaRuntimeOptions;
+  /** @deprecated Use `corsa` instead. */
+  tsgo?: CorsaRuntimeOptions;
 }
 
 export interface CorsaOxlintSettings extends TypeAwareParserOptions {
@@ -42,14 +44,14 @@ export interface ResolvedProjectConfig {
   runtime: ResolvedRuntimeOptions;
 }
 
-export interface TsgoNode {
+export interface CorsaNode {
   readonly fileName: string;
   readonly pos: number;
   readonly end: number;
   readonly range: readonly [number, number];
 }
 
-export interface TsgoSymbol {
+export interface CorsaSymbol {
   readonly id: string;
   readonly name: string;
   readonly flags: number;
@@ -58,7 +60,7 @@ export interface TsgoSymbol {
   readonly valueDeclaration?: string;
 }
 
-export interface TsgoSignature {
+export interface CorsaSignature {
   readonly id: string;
   readonly flags: number;
   readonly declaration?: string;
@@ -68,18 +70,18 @@ export interface TsgoSignature {
   readonly target?: string;
 }
 
-export interface TsgoTypePredicate {
+export interface CorsaTypePredicate {
   readonly kind: number;
   readonly parameterIndex: number;
   readonly parameterName?: string;
-  readonly type?: TsgoType;
+  readonly type?: CorsaType;
 }
 
-export interface TsgoType extends TypeResponse {
+export interface CorsaType extends TypeResponse {
   readonly __corsaOxlintKind: "type";
 }
 
-export interface TsgoProgramShape {
+export interface CorsaProgramShape {
   getCompilerOptions(): unknown;
   getCurrentDirectory(): string;
   getRootFileNames(): readonly string[];
@@ -87,39 +89,39 @@ export interface TsgoProgramShape {
     readonly fileName: string;
     readonly text: string;
   };
-  getTypeChecker(): TsgoTypeCheckerShape;
+  getTypeChecker(): CorsaTypeCheckerShape;
 }
 
-export interface TsgoTypeCheckerShape {
-  getTypeAtLocation(node: Node | TsgoNode): TsgoType | undefined;
-  getContextualType(node: Node | TsgoNode): TsgoType | undefined;
-  getSymbolAtLocation(node: Node | TsgoNode): TsgoSymbol | undefined;
-  getTypeOfSymbol(symbol: TsgoSymbol): TsgoType | undefined;
-  getDeclaredTypeOfSymbol(symbol: TsgoSymbol): TsgoType | undefined;
-  getTypeOfSymbolAtLocation(symbol: TsgoSymbol, node: Node | TsgoNode): TsgoType | undefined;
-  typeToString(type: TsgoType, enclosingDeclaration?: Node | TsgoNode, flags?: number): string;
-  getBaseTypeOfLiteralType(type: TsgoType): TsgoType | undefined;
-  getPropertiesOfType(type: TsgoType): readonly TsgoSymbol[];
-  getSignaturesOfType(type: TsgoType, kind: number): readonly TsgoSignature[];
-  getReturnTypeOfSignature(signature: TsgoSignature): TsgoType | undefined;
-  getTypePredicateOfSignature(signature: TsgoSignature): TsgoTypePredicate | undefined;
-  getBaseTypes(type: TsgoType): readonly TsgoType[];
-  getTypeArguments(type: TsgoType): readonly TsgoType[];
+export interface CorsaTypeCheckerShape {
+  getTypeAtLocation(node: Node | CorsaNode): CorsaType | undefined;
+  getContextualType(node: Node | CorsaNode): CorsaType | undefined;
+  getSymbolAtLocation(node: Node | CorsaNode): CorsaSymbol | undefined;
+  getTypeOfSymbol(symbol: CorsaSymbol): CorsaType | undefined;
+  getDeclaredTypeOfSymbol(symbol: CorsaSymbol): CorsaType | undefined;
+  getTypeOfSymbolAtLocation(symbol: CorsaSymbol, node: Node | CorsaNode): CorsaType | undefined;
+  typeToString(type: CorsaType, enclosingDeclaration?: Node | CorsaNode, flags?: number): string;
+  getBaseTypeOfLiteralType(type: CorsaType): CorsaType | undefined;
+  getPropertiesOfType(type: CorsaType): readonly CorsaSymbol[];
+  getSignaturesOfType(type: CorsaType, kind: number): readonly CorsaSignature[];
+  getReturnTypeOfSignature(signature: CorsaSignature): CorsaType | undefined;
+  getTypePredicateOfSignature(signature: CorsaSignature): CorsaTypePredicate | undefined;
+  getBaseTypes(type: CorsaType): readonly CorsaType[];
+  getTypeArguments(type: CorsaType): readonly CorsaType[];
 }
 
 export interface ParserServices {
-  readonly program: TsgoProgramShape;
+  readonly program: CorsaProgramShape;
   readonly esTreeNodeToTSNodeMap: {
-    get(node: Node): TsgoNode;
+    get(node: Node): CorsaNode;
     has(node: Node): boolean;
   };
   readonly tsNodeToESTreeNodeMap: {
-    get(node: TsgoNode): Node;
-    has(node: TsgoNode): boolean;
+    get(node: CorsaNode): Node;
+    has(node: CorsaNode): boolean;
   };
   readonly hasFullTypeInformation: boolean;
-  getTypeAtLocation(node: Node): TsgoType | undefined;
-  getSymbolAtLocation(node: Node): TsgoSymbol | undefined;
+  getTypeAtLocation(node: Node): CorsaType | undefined;
+  getSymbolAtLocation(node: Node): CorsaSymbol | undefined;
 }
 
 export type ParserServicesWithTypeInformation = ParserServices & {

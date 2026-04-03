@@ -32,8 +32,8 @@ The workflow lives in [`../.github/workflows/ci.yml`](../.github/workflows/ci.ym
 It currently has three CI jobs in the main workflow:
 
 - `quality`
-- `real-tsgo-smoke`
-- `bench-tsgo-origin`
+- `real-corsa-smoke`
+- `bench-corsa-origin`
 
 ## `quality`
 
@@ -56,9 +56,9 @@ vp run -w build
 vp run -w test
 ```
 
-## `real-tsgo-smoke`
+## `real-corsa-smoke`
 
-The `real-tsgo-smoke` job answers:
+The `real-corsa-smoke` job answers:
 
 - is the pinned upstream checkout exactly where the lockfile says it should be?
 - can the pinned upstream `tsgo` binary actually build?
@@ -69,13 +69,13 @@ The important commands are:
 ```bash
 vp run -w sync_origin
 vp run -w verify_origin
-vp run -w build_tsgo
-cargo test -p corsa_bind_rs --no-default-features --test real_tsgo_regression --test real_tsgo_typecheck
+vp run -w build_corsa
+cargo test -p corsa_bind_rs --no-default-features --test real_corsa_regression --test real_corsa_typecheck
 ```
 
-## `bench-tsgo-origin`
+## `bench-corsa-origin`
 
-The `bench-tsgo-origin` job keeps the heavier Ubuntu-only path:
+The `bench-corsa-origin` job keeps the heavier Ubuntu-only path:
 
 - baseline validation against the pinned upstream server
 - benchmark report regeneration
@@ -122,8 +122,8 @@ nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w bui
 nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w test'
 nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w sync_origin'
 nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w verify_origin'
-nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w build_tsgo'
-cargo test -p corsa_bind_rs --test real_tsgo_baseline --test real_tsgo_regression
+nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w build_corsa'
+cargo test -p corsa_bind_rs --test real_corsa_baseline --test real_corsa_regression
 nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w bench_verify'
 ```
 
@@ -168,7 +168,7 @@ After module resolution was fixed, several TypeScript errors remained in `corsa_
 
 The important ones were:
 
-- `TsgoType` access patterns assuming an `id` path while the checker only knew a narrower local shape
+- `CorsaType` access patterns assuming an `id` path while the checker only knew a narrower local shape
 - an unnecessary cast around `texts`
 - a cached config path that could be inferred as `undefined`
 
@@ -191,7 +191,7 @@ in:
 - [`../origin/typescript-go/go.mod`](../origin/typescript-go/go.mod)
 
 That means CI cannot rely on whatever `go` version happens to be preinstalled on a runner.
-Without an explicit setup step, `vp run -w build_tsgo` can fail even if the repository itself is otherwise correct.
+Without an explicit setup step, `vp run -w build_corsa` can fail even if the repository itself is otherwise correct.
 
 The workflow now sets Go explicitly through:
 
@@ -201,7 +201,7 @@ using `actions/setup-go` and `go-version-file: origin/typescript-go/go.mod`.
 
 This keeps the workflow aligned with the actual upstream requirement instead of duplicating a version string elsewhere.
 
-## 4. `build_tsgo` Needed a Repository-Local Build Cache
+## 4. `build_corsa` Needed a Repository-Local Build Cache
 
 Once the Go version was correct, another issue appeared locally:
 
@@ -213,7 +213,7 @@ The correct fix was to make the cache explicit and local to the repository:
 
 - [`../vite.config.ts`](../vite.config.ts)
 
-`build_tsgo` now creates `.cache/go-build` and passes an absolute `GOCACHE` path to `go build`.
+`build_corsa` now creates `.cache/go-build` and passes an absolute `GOCACHE` path to `go build`.
 
 That matters for two reasons:
 
@@ -263,7 +263,7 @@ The benchmark path:
 - regenerated `.cache/bench_ts.json`
 - ran the benchmark guard tests
 
-After the run, no leftover `tsgo`, `bench_real_tsgo`, or related benchmark worker processes remained.
+After the run, no leftover `tsgo`, `bench_real_corsa`, or related benchmark worker processes remained.
 
 That matters because benchmark pipelines that leak processes are not just untidy.
 They are measurement bugs waiting to happen.
@@ -321,7 +321,7 @@ The most important files for this CI stabilization work are:
 Check whether `corsa_oxlint` is resolving the package to source or to `dist/`.
 For source validation, it should resolve to the source TypeScript entrypoint, not to generated declarations.
 
-## `build_tsgo` fails with a Go version error
+## `build_corsa` fails with a Go version error
 
 Check:
 
@@ -331,7 +331,7 @@ Check:
 
 If a login shell is overriding the toolchain, prefer the `nix shell ... -c sh -c '...'` pattern.
 
-## `build_tsgo` fails with a cache permission error
+## `build_corsa` fails with a cache permission error
 
 Check whether `GOCACHE` is:
 

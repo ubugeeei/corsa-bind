@@ -1,7 +1,7 @@
 #![cfg(unix)]
 
 use super::{InboundEvent, JsonRpcConnection, JsonRpcConnectionOptions, RpcHandlerMap};
-use corsa_bind_core::{TsgoEvent, TsgoObserver};
+use corsa_bind_core::{CorsaEvent, CorsaObserver};
 use serde_json::json;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -9,11 +9,11 @@ use std::{io::BufReader, os::unix::net::UnixStream, thread};
 
 #[derive(Default)]
 struct EventCollector {
-    events: Mutex<Vec<TsgoEvent>>,
+    events: Mutex<Vec<CorsaEvent>>,
 }
 
-impl TsgoObserver for EventCollector {
-    fn on_event(&self, event: &TsgoEvent) {
+impl CorsaObserver for EventCollector {
+    fn on_event(&self, event: &CorsaEvent) {
         self.events.lock().unwrap().push(event.clone());
     }
 }
@@ -62,11 +62,11 @@ fn request_times_out_when_no_response_arrives() {
         .unwrap_err();
     assert!(matches!(
         error,
-        crate::TsgoError::Timeout(message) if message.contains("jsonrpc request `ping`")
+        crate::CorsaError::Timeout(message) if message.contains("jsonrpc request `ping`")
     ));
     assert_eq!(
         observer.events.lock().unwrap().as_slice(),
-        &[TsgoEvent::JsonRpcRequestTimedOut {
+        &[CorsaEvent::JsonRpcRequestTimedOut {
             method: "ping".into(),
             timeout: Duration::from_millis(10),
         }]

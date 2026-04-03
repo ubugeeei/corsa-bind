@@ -70,7 +70,7 @@ impl ApiFileSystem for VirtualFs {
     }
 }
 
-fn main() -> Result<(), corsa_bind_rs::TsgoError> {
+fn main() -> Result<(), corsa_bind_rs::CorsaError> {
     let result = block_on(async {
         let filesystem = Arc::new(VirtualFs::new(&[
             ("/virtual/tsconfig.json", "{}"),
@@ -89,7 +89,7 @@ fn main() -> Result<(), corsa_bind_rs::TsgoError> {
             "virtualOption": config.options["virtual"],
         });
         client.close().await?;
-        Ok::<_, corsa_bind_rs::TsgoError>(result)
+        Ok::<_, corsa_bind_rs::CorsaError>(result)
     })?;
 
     support::print_json(result);

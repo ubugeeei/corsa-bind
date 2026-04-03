@@ -1,4 +1,4 @@
-use crate::{Result, TsgoError};
+use crate::{Result, CorsaError};
 use corsa_bind_core::fast::compact_format;
 use std::io::{Read, Write};
 
@@ -20,7 +20,7 @@ pub(crate) fn read_tuple<R: Read>(reader: &mut R) -> Result<MsgpackTuple> {
     let mut tag = [0_u8; 1];
     reader.read_exact(&mut tag)?;
     if tag[0] != 0x93 {
-        return Err(TsgoError::Protocol(compact_format(format_args!(
+        return Err(CorsaError::Protocol(compact_format(format_args!(
             "expected tuple marker, got {:x}",
             tag[0]
         ))));
@@ -55,7 +55,7 @@ fn read_int<R: Read>(reader: &mut R) -> Result<u8> {
         return Ok(buf[0]);
     }
     if buf[0] != 0xcc {
-        return Err(TsgoError::Protocol(compact_format(format_args!(
+        return Err(CorsaError::Protocol(compact_format(format_args!(
             "expected uint8 marker, got {:x}",
             buf[0]
         ))));
@@ -72,7 +72,7 @@ fn read_bin<R: Read>(reader: &mut R) -> Result<Vec<u8>> {
         0xc5 => read_len::<2, _>(reader)?,
         0xc6 => read_len::<4, _>(reader)?,
         other => {
-            return Err(TsgoError::Protocol(compact_format(format_args!(
+            return Err(CorsaError::Protocol(compact_format(format_args!(
                 "expected bin marker, got {:x}",
                 other
             ))));

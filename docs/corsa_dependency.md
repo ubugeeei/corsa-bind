@@ -1,6 +1,6 @@
 # tsgo Dependency Management
 
-`typescript-go` is managed as a pinned git dependency via [tsgo_origin.lock.toml](../tsgo_origin.lock.toml).
+`typescript-go` is managed as a pinned git dependency via [corsa_origin.lock.toml](../corsa_origin.lock.toml).
 
 Core policy:
 

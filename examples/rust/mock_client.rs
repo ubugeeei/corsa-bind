@@ -1,13 +1,13 @@
 mod support;
 
 use corsa_bind_rs::{
-    TsgoError,
+    CorsaError,
     api::{ApiClient, ApiMode, UpdateSnapshotParams},
     runtime::block_on,
 };
 use serde_json::json;
 
-fn main() -> Result<(), corsa_bind_rs::TsgoError> {
+fn main() -> Result<(), corsa_bind_rs::CorsaError> {
     let result = block_on(async {
         let client = ApiClient::spawn(support::mock_api_config(
             "mock_client",
@@ -23,7 +23,7 @@ fn main() -> Result<(), corsa_bind_rs::TsgoError> {
             })
             .await?;
         let project = snapshot.projects.first().ok_or_else(|| {
-            TsgoError::Protocol("mock client example did not return a project".into())
+            CorsaError::Protocol("mock client example did not return a project".into())
         })?;
         let source = client
             .get_source_file(
@@ -33,10 +33,10 @@ fn main() -> Result<(), corsa_bind_rs::TsgoError> {
             )
             .await?
             .ok_or_else(|| {
-                TsgoError::Protocol("mock client example did not return source".into())
+                CorsaError::Protocol("mock client example did not return source".into())
             })?;
         let source_text = String::from_utf8(source.as_bytes().to_vec()).map_err(|err| {
-            TsgoError::Protocol(format!("source file was not utf8: {err}").into())
+            CorsaError::Protocol(format!("source file was not utf8: {err}").into())
         })?;
         let string_type = client
             .get_string_type(snapshot.handle.clone(), project.id.clone())
@@ -61,7 +61,7 @@ fn main() -> Result<(), corsa_bind_rs::TsgoError> {
         });
         snapshot.release().await?;
         client.close().await?;
-        Ok::<_, corsa_bind_rs::TsgoError>(result)
+        Ok::<_, corsa_bind_rs::CorsaError>(result)
     })?;
 
     support::print_json(result);

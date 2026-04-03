@@ -10,7 +10,7 @@ use corsa_bind_rs::{
 };
 
 #[test]
-fn real_tsgo_msgpack_roundtrip_smoke() {
+fn real_corsa_msgpack_roundtrip_smoke() {
     block_on(async {
         let Some(config) = support::real_api_config(ApiMode::SyncMsgpackStdio) else {
             return;
@@ -68,7 +68,7 @@ fn real_tsgo_msgpack_roundtrip_smoke() {
 }
 
 #[test]
-fn real_tsgo_jsonrpc_roundtrip_smoke() {
+fn real_corsa_jsonrpc_roundtrip_smoke() {
     block_on(async {
         let Some(config) = support::real_api_config(ApiMode::AsyncJsonRpcStdio) else {
             return;
@@ -95,7 +95,7 @@ fn real_tsgo_jsonrpc_roundtrip_smoke() {
 }
 
 #[test]
-fn real_tsgo_msgpack_hot_path_stays_ahead_of_jsonrpc() {
+fn real_corsa_msgpack_hot_path_stays_ahead_of_jsonrpc() {
     block_on(async {
         let Some(msgpack_config) = support::real_api_config(ApiMode::SyncMsgpackStdio) else {
             return;

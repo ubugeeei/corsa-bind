@@ -18,7 +18,7 @@ over stdio.
 > [!IMPORTANT]
 > This repository does not maintain a fork of `typescript-go`.
 > `origin/typescript-go` is treated as a managed upstream checkout and verified
-> against [`tsgo_origin.lock.toml`](./tsgo_origin.lock.toml).
+> against [`corsa_origin.lock.toml`](./corsa_origin.lock.toml).
 
 ## What You Get
 
@@ -59,7 +59,7 @@ vp test
 Build the real pinned `tsgo` binary when you want real-upstream tests or examples:
 
 ```bash
-vp run -w build_tsgo
+vp run -w build_corsa
 ```
 
 ## Common Tasks
@@ -85,10 +85,10 @@ Examples live in [`examples/`](./examples/README.md).
 
 `typescript-go` moves quickly, so this repo treats upstream tracking as a first-class part of development.
 
-- exact pin metadata lives in [`tsgo_origin.lock.toml`](./tsgo_origin.lock.toml)
+- exact pin metadata lives in [`corsa_origin.lock.toml`](./corsa_origin.lock.toml)
 - managed checkout lives in `origin/typescript-go`
 - dirty or branch-attached upstream state fails verification
-- update workflow and policy are documented in [`docs/tsgo_dependency.md`](./docs/tsgo_dependency.md)
+- update workflow and policy are documented in [`docs/corsa_dependency.md`](./docs/corsa_dependency.md)
 
 ## Project Notes
 

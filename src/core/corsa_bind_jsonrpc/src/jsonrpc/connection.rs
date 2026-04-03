@@ -1,6 +1,6 @@
-use crate::{Result, TsgoError};
+use crate::{Result, CorsaError};
 use corsa_bind_core::fast::{CompactString, FastMap};
-use corsa_bind_core::{SharedObserver, TsgoEvent, fast::compact_format, observe};
+use corsa_bind_core::{SharedObserver, CorsaEvent, fast::compact_format, observe};
 use corsa_bind_runtime::{BroadcastReceiver, BroadcastSender, broadcast};
 use log::warn;
 use parking_lot::Mutex;
@@ -212,7 +212,7 @@ impl JsonRpcConnection {
     /// Use this when a typed response model is not available yet.
     pub async fn request_value(&self, method: &str, params: Value) -> Result<Value> {
         if self.inner.closed.load(Ordering::SeqCst) {
-            return Err(TsgoError::Closed("jsonrpc connection"));
+            return Err(CorsaError::Closed("jsonrpc connection"));
         }
         let id = RequestId::integer(self.inner.next_id.fetch_add(1, Ordering::SeqCst) + 1);
         let (tx, rx) = mpsc::sync_channel(1);
@@ -230,18 +230,18 @@ impl JsonRpcConnection {
                 self.inner.pending.lock().remove(&id);
                 observe(
                     self.inner.observer.as_ref(),
-                    TsgoEvent::JsonRpcRequestTimedOut {
+                    CorsaEvent::JsonRpcRequestTimedOut {
                         method: CompactString::from(method),
                         timeout,
                     },
                 );
-                TsgoError::timeout(
+                CorsaError::timeout(
                     compact_format(format_args!("jsonrpc request `{method}`")).as_str(),
                     timeout,
                 )
             })?;
         }
-        rx.recv().map_err(|_| TsgoError::Closed("jsonrpc waiter"))?
+        rx.recv().map_err(|_| CorsaError::Closed("jsonrpc waiter"))?
     }
 
     /// Sends a JSON-RPC notification.
@@ -275,13 +275,13 @@ impl JsonRpcConnection {
 
     /// Closes the connection and fails outstanding requests.
     ///
-    /// After closure, new requests fail immediately with [`TsgoError::Closed`].
+    /// After closure, new requests fail immediately with [`CorsaError::Closed`].
     pub async fn close(&self) -> Result<()> {
         if self.inner.closed.swap(true, Ordering::SeqCst) {
             return Ok(());
         }
         self.inner
-            .fail_pending(TsgoError::Closed("jsonrpc connection"));
+            .fail_pending(CorsaError::Closed("jsonrpc connection"));
         self.inner.outbound.lock().take();
         if let Some(task) = self.inner.write_task.lock().take() {
             let _ = task.join();
@@ -315,7 +315,7 @@ impl Inner {
                 Ok(MessageKind::Response { id, result, error }) => {
                     if let Some(tx) = self.pending.lock().remove(&id) {
                         let _ = tx.send(match error {
-                            Some(error) => Err(TsgoError::Rpc(error)),
+                            Some(error) => Err(CorsaError::Rpc(error)),
                             None => Ok(result.unwrap_or(Value::Null)),
                         });
                     }
@@ -375,20 +375,20 @@ impl Inner {
             .outbound
             .lock()
             .as_ref()
-            .ok_or(TsgoError::Closed("jsonrpc writer"))?
+            .ok_or(CorsaError::Closed("jsonrpc writer"))?
             .try_send(message)
         {
             Ok(()) => Ok(()),
             Err(TrySendError::Full(_)) => {
-                observe(self.observer.as_ref(), TsgoEvent::JsonRpcOutboundQueueFull);
-                Err(TsgoError::Protocol("jsonrpc outbound queue is full".into()))
+                observe(self.observer.as_ref(), CorsaEvent::JsonRpcOutboundQueueFull);
+                Err(CorsaError::Protocol("jsonrpc outbound queue is full".into()))
             }
-            Err(TrySendError::Disconnected(_)) => Err(TsgoError::Closed("jsonrpc writer")),
+            Err(TrySendError::Disconnected(_)) => Err(CorsaError::Closed("jsonrpc writer")),
         }
     }
 
-    fn fail_pending(&self, error: TsgoError) {
-        if !matches!(error, TsgoError::Closed(_)) {
+    fn fail_pending(&self, error: CorsaError) {
+        if !matches!(error, CorsaError::Closed(_)) {
             warn!("jsonrpc transport failing pending requests: {error}");
         }
         let mut pending = self.pending.lock();
@@ -396,7 +396,7 @@ impl Inner {
         if count > 0 {
             observe(
                 self.observer.as_ref(),
-                TsgoEvent::JsonRpcPendingRequestsFailed {
+                CorsaEvent::JsonRpcPendingRequestsFailed {
                     error: CompactString::from(error.to_string().as_str()),
                     count,
                 },

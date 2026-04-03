@@ -45,7 +45,7 @@ That means:
 - benchmark wins have to come from transport and orchestration, not private engine modifications
 - upgrading upstream is work, but it is honest work
 
-This policy is enforced through `origin/typescript-go`, `tsgo_origin.lock.toml`, and `corsa_bind_ref`.
+This policy is enforced through `origin/typescript-go`, `corsa_origin.lock.toml`, and `corsa_bind_ref`.
 
 ### 2. Reproducibility Beats Convenience
 
@@ -448,7 +448,7 @@ Recommended pattern:
 4. Add a method on `ApiClient` in the appropriate `methods_*` module.
 5. Prefer names that mirror upstream closely.
 6. Add a mock-server integration test.
-7. Add a real-tsgo regression test if the endpoint matters to compatibility.
+7. Add a real-corsa regression test if the endpoint matters to compatibility.
 
 Good instincts:
 
@@ -565,7 +565,7 @@ For most work:
 
 1. `vp check`
 2. `cargo test --workspace`
-3. if the change touches the real upstream path, run the real-tsgo regression tests
+3. if the change touches the real upstream path, run the real-corsa regression tests
 4. if the change touches performance-sensitive code, run the relevant benchmark layer
 5. if the change touches docs.rs-facing Rust API, run `RUSTDOCFLAGS='-D warnings' cargo doc --workspace --no-deps`
 
@@ -593,7 +593,7 @@ If you are debugging performance:
 
 1. [benchmarking_guide.md](./benchmarking_guide.md)
 2. [performance.md](./performance.md)
-3. `bench_real_tsgo`
+3. `bench_real_corsa`
 4. transport code in `client`, `jsonrpc`, and `runtime`
 
 If you are debugging CI or environment issues:

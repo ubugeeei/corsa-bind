@@ -104,7 +104,7 @@ fn async_api_rejects_unstable_print_node_by_default() {
             .unwrap_err();
         assert!(matches!(
             error,
-            corsa_bind_rs::TsgoError::Unsupported(message) if message.contains("printNode is disabled by default")
+            corsa_bind_rs::CorsaError::Unsupported(message) if message.contains("printNode is disabled by default")
         ));
         client.close().await.unwrap();
     });

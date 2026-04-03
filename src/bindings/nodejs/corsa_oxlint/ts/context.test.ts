@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  defaultTsgoExecutable,
+  defaultCorsaExecutable,
   resolveProjectConfig,
   resolveTypeAwareParserOptions,
 } from "./context";
@@ -27,7 +27,7 @@ describe("context", () => {
       filename: "/repo/src/demo.ts",
       languageOptions: {
         parserOptions: {
-          tsgo: {
+          corsa: {
             mode: "jsonrpc",
           },
         },
@@ -36,8 +36,8 @@ describe("context", () => {
         corsaOxlint: {
           parserOptions: {
             project: ["tsconfig.json"],
-            tsgo: {
-              executable: "/repo/.cache/tsgo",
+            corsa: {
+              executable: "/repo/.cache/corsa",
             },
           },
         },
@@ -48,8 +48,8 @@ describe("context", () => {
     } as any);
 
     expect(resolved.project).toEqual(["tsconfig.json"]);
-    expect(resolved.tsgo).toEqual({
-      executable: "/repo/.cache/tsgo",
+    expect(resolved.corsa).toEqual({
+      executable: "/repo/.cache/corsa",
       mode: "jsonrpc",
     });
   });
@@ -70,8 +70,8 @@ describe("context", () => {
             projectService: {
               allowDefaultProject: ["*.ts"],
             },
-            tsgo: {
-              executable: resolve(workspace, ".cache/tsgo"),
+            corsa: {
+              executable: resolve(workspace, ".cache/corsa"),
             },
           },
         },
@@ -82,11 +82,11 @@ describe("context", () => {
     } as any);
 
     expect(normalizePathSeparators(resolved.configPath)).toContain(".cache/corsa_oxlint/default/");
-    expect(resolved.runtime.executable).toBe(resolve(workspace, ".cache/tsgo"));
+    expect(resolved.runtime.executable).toBe(resolve(workspace, ".cache/corsa"));
   });
 
-  it("resolves the platform-specific default tsgo executable", () => {
-    expect(defaultTsgoExecutable("/repo", "linux")).toBe(resolve("/repo", ".cache/tsgo"));
-    expect(defaultTsgoExecutable("/repo", "win32")).toBe(resolve("/repo", ".cache/tsgo.exe"));
+  it("resolves the platform-specific default Corsa executable", () => {
+    expect(defaultCorsaExecutable("/repo", "linux")).toBe(resolve("/repo", ".cache/corsa"));
+    expect(defaultCorsaExecutable("/repo", "win32")).toBe(resolve("/repo", ".cache/corsa.exe"));
   });
 });

@@ -1,13 +1,13 @@
 import type { ContextWithParserOptions } from "./types";
 import { resolveProjectConfig } from "./context";
-import { TsgoProjectSession } from "./session";
+import { CorsaProjectSession } from "./session";
 
-const sessions = new Map<string, TsgoProjectSession>();
+const sessions = new Map<string, CorsaProjectSession>();
 let installedExitHook = false;
 
 export function sessionForContext(context: ContextWithParserOptions): {
   project: ReturnType<typeof resolveProjectConfig>;
-  session: TsgoProjectSession;
+  session: CorsaProjectSession;
 } {
   const project = resolveProjectConfig(context);
   const key = [
@@ -18,7 +18,7 @@ export function sessionForContext(context: ContextWithParserOptions): {
   ].join("::");
   let session = sessions.get(key);
   if (!session) {
-    session = new TsgoProjectSession(project, project.runtime);
+    session = new CorsaProjectSession(project, project.runtime);
     sessions.set(key, session);
   }
   installExitHook();

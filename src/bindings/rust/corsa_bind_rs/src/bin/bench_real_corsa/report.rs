@@ -44,7 +44,7 @@ pub fn write(path: &Path, cli: &Cli, datasets: &[DatasetCase], rows: &[ScenarioR
     fs::write(
         path,
         serde_json::to_vec_pretty(&json!({
-            "tsgoPath": cli.tsgo_path,
+            "corsaPath": cli.corsa_path,
             "coldIterations": cli.cold_iterations,
             "warmIterations": cli.warm_iterations,
             "datasets": datasets,

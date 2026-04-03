@@ -68,7 +68,7 @@ fn parse_mode(mode: &str) -> Result<ApiMode> {
     match mode {
         "jsonrpc" => Ok(ApiMode::AsyncJsonRpcStdio),
         "msgpack" => Ok(ApiMode::SyncMsgpackStdio),
-        _ => Err(Error::from_reason("unknown tsgo api mode".to_owned())),
+        _ => Err(Error::from_reason("unknown Corsa API mode".to_owned())),
     }
 }
 

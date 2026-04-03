@@ -2,12 +2,12 @@ import { bench, describe } from "vitest";
 
 import type { ApiMode } from "@corsa-bind/node";
 
-import type { TsgoNode, TsgoTypeCheckerShape } from "corsa-oxlint";
+import type { CorsaNode, CorsaTypeCheckerShape } from "corsa-oxlint";
 import { getParserServices } from "corsa-oxlint";
 
 import {
   ensureBenchInputs,
-  tsgoPath,
+  corsaPath,
   corsaOxlintConfigPath,
   corsaOxlintFixtureDir,
   corsaOxlintFilePath,
@@ -53,8 +53,8 @@ function createContext(mode: ApiMode) {
         parserOptions: {
           project: [corsaOxlintConfigPath],
           tsconfigRootDir: corsaOxlintFixtureDir,
-          tsgo: {
-            executable: tsgoPath,
+          corsa: {
+            executable: corsaPath,
             cwd: workspaceRoot,
             cacheLifetimeMs: 60_000,
             mode,
@@ -68,7 +68,7 @@ function createContext(mode: ApiMode) {
   };
 }
 
-function createNode(pos: number, end: number): TsgoNode {
+function createNode(pos: number, end: number): CorsaNode {
   return {
     fileName: corsaOxlintFilePath,
     pos,
@@ -77,7 +77,7 @@ function createNode(pos: number, end: number): TsgoNode {
   };
 }
 
-function typeText(checker: TsgoTypeCheckerShape, node: TsgoNode): string | undefined {
+function typeText(checker: CorsaTypeCheckerShape, node: CorsaNode): string | undefined {
   const type = checker.getTypeAtLocation(node);
   if (!type) {
     return undefined;

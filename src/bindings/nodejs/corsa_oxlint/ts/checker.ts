@@ -4,17 +4,17 @@ import { createNodeMaps, toPosition } from "./node_map";
 import { sessionForContext } from "./registry";
 import type {
   ContextWithParserOptions,
-  TsgoNode,
-  TsgoProgramShape,
-  TsgoSignature,
-  TsgoSymbol,
-  TsgoType,
-  TsgoTypeCheckerShape,
+  CorsaNode,
+  CorsaProgramShape,
+  CorsaSignature,
+  CorsaSymbol,
+  CorsaType,
+  CorsaTypeCheckerShape,
 } from "./types";
 
 export function createProgram(
   context: ContextWithParserOptions,
-): TsgoProgramShape & { readonly nodeMaps: ReturnType<typeof createNodeMaps> } {
+): CorsaProgramShape & { readonly nodeMaps: ReturnType<typeof createNodeMaps> } {
   const nodeMaps = createNodeMaps(context);
   return {
     nodeMaps,
@@ -36,7 +36,7 @@ export function createProgram(
   };
 }
 
-export function createTypeChecker(context: ContextWithParserOptions): TsgoTypeCheckerShape {
+export function createTypeChecker(context: ContextWithParserOptions): CorsaTypeCheckerShape {
   return {
     getTypeAtLocation(node) {
       return sessionForContext(context).session.getTypeAtPosition(
@@ -92,7 +92,7 @@ export function createTypeChecker(context: ContextWithParserOptions): TsgoTypeCh
 
 function filenameFor(
   context: ContextWithParserOptions,
-  node: Node | TsgoNode | TsgoType | TsgoSymbol | TsgoSignature,
+  node: Node | CorsaNode | CorsaType | CorsaSymbol | CorsaSignature,
 ): string {
   if ("fileName" in node) {
     return node.fileName;

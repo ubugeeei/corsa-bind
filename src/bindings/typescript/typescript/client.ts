@@ -6,7 +6,7 @@ import type {
   UpdateSnapshotResponse,
 } from "./types.ts";
 
-export interface TsgoRemoteTransport {
+export interface CorsaRemoteTransport {
   requestBinary(method: string, params?: unknown): Promise<Uint8Array | null>;
   requestJson<T>(method: string, params?: unknown): Promise<T>;
   close?(): Promise<void> | void;
@@ -43,7 +43,7 @@ async function parseEnvelope<T>(response: Response): Promise<JsonEnvelope<T>> {
   return (await response.json()) as JsonEnvelope<T>;
 }
 
-export function createFetchTransport(options: FetchTransportOptions): TsgoRemoteTransport {
+export function createFetchTransport(options: FetchTransportOptions): CorsaRemoteTransport {
   const fetchImpl = options.fetch ?? globalThis.fetch;
   if (!fetchImpl) {
     throw new Error("fetch is not available in this runtime");
@@ -59,7 +59,7 @@ export function createFetchTransport(options: FetchTransportOptions): TsgoRemote
       body: JSON.stringify({ method, params: params ?? null }),
     });
     if (!response.ok) {
-      throw new Error(`remote tsgo request failed: ${response.status} ${response.statusText}`);
+      throw new Error(`remote Corsa request failed: ${response.status} ${response.statusText}`);
     }
     const envelope = await parseEnvelope<T>(response);
     if (!envelope.ok) {
@@ -82,7 +82,7 @@ export function createFetchTransport(options: FetchTransportOptions): TsgoRemote
         body: JSON.stringify({ method, params: params ?? null, responseType: "binary" }),
       });
       if (!response.ok) {
-        throw new Error(`remote tsgo request failed: ${response.status} ${response.statusText}`);
+        throw new Error(`remote Corsa request failed: ${response.status} ${response.statusText}`);
       }
       const envelope = (await response.json()) as BinaryEnvelope;
       if (!envelope.ok) {
@@ -93,10 +93,10 @@ export function createFetchTransport(options: FetchTransportOptions): TsgoRemote
   };
 }
 
-export class RemoteTsgoApiClient {
-  readonly #transport: TsgoRemoteTransport;
+export class RemoteCorsaApiClient {
+  readonly #transport: CorsaRemoteTransport;
 
-  constructor(transport: TsgoRemoteTransport) {
+  constructor(transport: CorsaRemoteTransport) {
     this.#transport = transport;
   }
 
@@ -153,4 +153,4 @@ export class RemoteTsgoApiClient {
   }
 }
 
-export { RemoteTsgoApiClient as BrowserTsgoApiClient };
+export { RemoteCorsaApiClient as BrowserCorsaApiClient };

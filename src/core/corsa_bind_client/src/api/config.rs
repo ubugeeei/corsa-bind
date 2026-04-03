@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use super::ApiFileSystem;
-use crate::process::TsgoCommand;
+use crate::process::CorsaCommand;
 use corsa_bind_core::{SharedObserver, fast::CompactString};
 
 /// Transport mode used to talk to the tsgo API.
@@ -24,7 +24,7 @@ pub enum ApiMode {
 /// ```
 /// use corsa_bind_client::{ApiMode, ApiSpawnConfig};
 ///
-/// let config = ApiSpawnConfig::new("/opt/bin/tsgo")
+/// let config = ApiSpawnConfig::new("/opt/bin/corsa")
 ///     .with_cwd("/workspace")
 ///     .with_mode(ApiMode::AsyncJsonRpcStdio);
 ///
@@ -34,7 +34,7 @@ pub enum ApiMode {
 #[derive(Clone)]
 pub struct ApiSpawnConfig {
     /// Reusable command template used to launch the worker.
-    pub command: TsgoCommand,
+    pub command: CorsaCommand,
     /// Wire protocol used between the client and `tsgo`.
     pub mode: ApiMode,
     /// Optional filesystem callback implementation exposed to `tsgo`.
@@ -61,7 +61,7 @@ impl ApiSpawnConfig {
     /// which makes it the preferred mode for benchmark and production usage.
     pub fn new(executable: impl Into<PathBuf>) -> Self {
         Self {
-            command: TsgoCommand::new(executable),
+            command: CorsaCommand::new(executable),
             mode: ApiMode::SyncMsgpackStdio,
             filesystem: None,
             request_timeout: Some(Duration::from_secs(30)),
@@ -132,7 +132,7 @@ impl ApiSpawnConfig {
 /// ```
 /// use corsa_bind_client::{ApiProfile, ApiSpawnConfig};
 ///
-/// let profile = ApiProfile::new("primary", ApiSpawnConfig::new("/opt/bin/tsgo"));
+/// let profile = ApiProfile::new("primary", ApiSpawnConfig::new("/opt/bin/corsa"));
 /// assert_eq!(profile.id.as_str(), "primary");
 /// ```
 #[derive(Clone)]
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn new_prefers_msgpack_fast_path() {
-        let config = ApiSpawnConfig::new("/opt/bin/tsgo");
+        let config = ApiSpawnConfig::new("/opt/bin/corsa");
         assert_eq!(config.mode, ApiMode::SyncMsgpackStdio);
     }
 }

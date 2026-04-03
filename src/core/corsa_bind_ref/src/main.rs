@@ -1,7 +1,7 @@
 use std::{env, path::PathBuf, process::ExitCode};
 
 use corsa_bind_core::fast::{CompactString, SmallVec, compact_format};
-use corsa_bind_ref::TsgoRefManager;
+use corsa_bind_ref::CorsaRefManager;
 
 fn main() -> ExitCode {
     match run() {
@@ -22,8 +22,8 @@ fn run() -> corsa_bind_core::Result<()> {
     let lock_path = args
         .get(1)
         .map(|path| PathBuf::from(path.as_str()))
-        .unwrap_or_else(|| PathBuf::from("tsgo_origin.lock.toml"));
-    let manager = TsgoRefManager::new(lock_path);
+        .unwrap_or_else(|| PathBuf::from("corsa_origin.lock.toml"));
+    let manager = CorsaRefManager::new(lock_path);
     match command {
         "status" => {
             let status = manager.status()?;
@@ -33,8 +33,8 @@ fn run() -> corsa_bind_core::Result<()> {
         "verify" => manager.verify(),
         "sync" => manager.sync(),
         "pin-current" => manager.pin_current(),
-        other => Err(corsa_bind_core::TsgoError::Protocol(compact_format(
-            format_args!("unknown tsgo_origin command: {other}"),
+        other => Err(corsa_bind_core::CorsaError::Protocol(compact_format(
+            format_args!("unknown corsa_origin command: {other}"),
         ))),
     }
 }

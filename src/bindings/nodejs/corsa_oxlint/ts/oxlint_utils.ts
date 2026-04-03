@@ -4,7 +4,7 @@ import type { ContextWithParserOptions } from "./types";
 
 /**
  * Oxlint-first utility surface that routes parser service access through
- * tsgo-backed implementations.
+ * Corsa-backed implementations.
  */
 export const OxlintUtils = Object.freeze({
   RuleCreator(urlCreator: (ruleName: string) => string) {

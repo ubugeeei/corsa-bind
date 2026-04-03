@@ -1,5 +1,5 @@
 use super::state::{ReplicatedCommand, ReplicatedState};
-use crate::{Result, TsgoError};
+use crate::{Result, CorsaError};
 use corsa_bind_core::fast::{CompactString, FastMap, SmallVec, compact_format};
 use parking_lot::RwLock;
 use std::sync::Arc;
@@ -95,7 +95,7 @@ impl RaftCluster {
     pub fn campaign(&self, candidate_id: &str) -> Result<u64> {
         let mut nodes = self.nodes.write();
         let (last_len, last_term) = log_signature(nodes.get(candidate_id).ok_or_else(|| {
-            TsgoError::Protocol(compact_format(format_args!(
+            CorsaError::Protocol(compact_format(format_args!(
                 "unknown raft node: {candidate_id}"
             )))
         })?);
@@ -122,7 +122,7 @@ impl RaftCluster {
             if let Some(node) = nodes.get_mut(candidate_id) {
                 node.role = RaftRole::Follower;
             }
-            return Err(TsgoError::Protocol(
+            return Err(CorsaError::Protocol(
                 "raft election did not reach quorum".into(),
             ));
         }
@@ -144,12 +144,12 @@ impl RaftCluster {
         let mut nodes = self.nodes.write();
         let (leader_term, prev_len, prev_term) = {
             let leader = nodes.get_mut(leader_id).ok_or_else(|| {
-                TsgoError::Protocol(compact_format(format_args!(
+                CorsaError::Protocol(compact_format(format_args!(
                     "unknown raft node: {leader_id}"
                 )))
             })?;
             if leader.role != RaftRole::Leader {
-                return Err(TsgoError::Protocol(compact_format(format_args!(
+                return Err(CorsaError::Protocol(compact_format(format_args!(
                     "raft node is not leader: {leader_id}"
                 ))));
             }
@@ -172,7 +172,7 @@ impl RaftCluster {
             }
         }
         if acknowledgements < quorum_size(nodes.len()) {
-            return Err(TsgoError::Protocol(
+            return Err(CorsaError::Protocol(
                 "raft append did not reach quorum".into(),
             ));
         }

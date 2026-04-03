@@ -5,7 +5,7 @@
 //! tests, benchmarks, and CI. This crate owns the lockfile format and the logic
 //! that verifies the checkout really matches that pin.
 //!
-//! Typical consumers use [`TsgoRefManager`] to:
+//! Typical consumers use [`CorsaRefManager`] to:
 //!
 //! - inspect the current managed checkout
 //! - fail fast when the checkout drifts
@@ -22,8 +22,8 @@ pub use git::{
     CommitMetadata, RepositorySnapshot, canonical_repository_id, canonical_repository_url,
 };
 /// Lockfile structures describing the pinned upstream repository.
-pub use lockfile::{LockedRepository, TsgoRefLock};
+pub use lockfile::{LockedRepository, CorsaRefLock};
 /// High-level entry point for syncing and verifying the managed checkout.
-pub use manager::TsgoRefManager;
+pub use manager::CorsaRefManager;
 /// Drift diagnostics emitted when the managed checkout diverges from the lockfile.
 pub use status::{RepositoryProblem, RepositoryStatus};

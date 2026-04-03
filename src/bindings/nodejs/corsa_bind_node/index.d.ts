@@ -16,9 +16,9 @@ export declare function isUnsafeReturn(inputJson: string): boolean
  */
 export declare function version(): string
 /** Thin synchronous wrapper around the Rust stdio API client. */
-export declare class TsgoApiClient {
+export declare class CorsaApiClient {
   /** Spawns a new client from a JSON-encoded spawn config. */
-  static spawn(optionsJson: string): TsgoApiClient
+  static spawn(optionsJson: string): CorsaApiClient
   /** Calls `initialize` and returns the raw JSON response. */
   initializeJson(): string
   /** Parses a `tsconfig` through tsgo and returns the JSON response. */
@@ -41,11 +41,11 @@ export declare class TsgoApiClient {
   close(): void
 }
 /** Mutable virtual document mirrored through the LSP overlay layer. */
-export declare class TsgoVirtualDocument {
+export declare class CorsaVirtualDocument {
   /** Creates an `untitled:` document. */
-  static untitled(path: string, languageId: string, text: string): TsgoVirtualDocument
-  /** Creates an in-memory `tsgo://` document. */
-  static inMemory(authority: string, path: string, languageId: string, text: string): TsgoVirtualDocument
+  static untitled(path: string, languageId: string, text: string): CorsaVirtualDocument
+  /** Creates an in-memory `corsa://` document. */
+  static inMemory(authority: string, path: string, languageId: string, text: string): CorsaVirtualDocument
   /** Returns the document URI. */
   get uri(): string
   /** Returns the language identifier. */
@@ -62,7 +62,7 @@ export declare class TsgoVirtualDocument {
   applyChangesJson(changesJson: string): string
 }
 /** N-API wrapper for the distributed orchestration layer. */
-export declare class TsgoDistributedOrchestrator {
+export declare class CorsaDistributedOrchestrator {
   /** Creates a new in-process Raft cluster. */
   constructor(nodeIds: Array<string>)
   /** Starts a leader election and returns the resulting term. */

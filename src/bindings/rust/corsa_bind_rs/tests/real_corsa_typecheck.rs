@@ -9,8 +9,8 @@ use corsa_bind_rs::{
 use tempfile::tempdir;
 
 #[test]
-fn real_tsgo_reports_actual_type_errors() {
-    let Some(binary) = support::resolved_real_tsgo_binary() else {
+fn real_corsa_reports_actual_type_errors() {
+    let Some(binary) = support::resolved_real_corsa_binary() else {
         return;
     };
     let project = fixture(&[
@@ -41,7 +41,7 @@ export const fixed = amount.toFixed(2);
 
     assert!(
         !output.status.success(),
-        "expected tsgo to reject the fixture"
+        "expected Corsa to reject the fixture"
     );
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(
@@ -53,9 +53,9 @@ export const fixed = amount.toFixed(2);
 }
 
 #[test]
-fn real_tsgo_infers_contextual_and_generic_types() {
+fn real_corsa_infers_contextual_and_generic_types() {
     block_on(async {
-        let Some(binary) = support::resolved_real_tsgo_binary() else {
+        let Some(binary) = support::resolved_real_corsa_binary() else {
             return;
         };
         let project = fixture(&[

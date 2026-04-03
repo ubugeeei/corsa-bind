@@ -1,5 +1,5 @@
 use corsa_bind_core::{
-    Result, TsgoError,
+    Result, CorsaError,
     fast::{CompactString, compact_format},
 };
 use std::{path::Path, process::Command};
@@ -137,7 +137,7 @@ pub fn switch_detached(path: &Path, commit: &str) -> Result<()> {
 
 fn next_line<'a>(lines: &mut impl Iterator<Item = &'a str>, name: &str) -> Result<CompactString> {
     lines.next().map(CompactString::from).ok_or_else(|| {
-        TsgoError::Protocol(compact_format(format_args!("git output missing {name}")))
+        CorsaError::Protocol(compact_format(format_args!("git output missing {name}")))
     })
 }
 
@@ -167,13 +167,13 @@ fn run_git_at(path: Option<&Path>, args: &[&str]) -> Result<CompactString> {
     Ok(CompactString::from_utf8_lossy(&output.stdout).trim().into())
 }
 
-fn git_command_error(args: &[&str]) -> TsgoError {
+fn git_command_error(args: &[&str]) -> CorsaError {
     let mut command = CompactString::from("git");
     for arg in args {
         command.push(' ');
         command.push_str(arg);
     }
-    TsgoError::Protocol(compact_format(format_args!(
+    CorsaError::Protocol(compact_format(format_args!(
         "git command failed: {command}"
     )))
 }

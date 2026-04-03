@@ -5,21 +5,21 @@ import { describe, expect, it } from "vitest";
 
 import {
   CorsaUtils,
-  TsgoApiClient,
-  TsgoDistributedOrchestrator,
-  TsgoVirtualDocument,
+  CorsaApiClient,
+  CorsaDistributedOrchestrator,
+  CorsaVirtualDocument,
   isUnsafeAssignment,
   isUnsafeReturn,
 } from "./index.ts";
 
 const workspaceRoot = resolve(import.meta.dirname, "../../../../..");
 const executableSuffix = process.platform === "win32" ? ".exe" : "";
-const mockBinary = resolve(workspaceRoot, `target/debug/mock_tsgo${executableSuffix}`);
-const realBinary = resolve(workspaceRoot, `.cache/tsgo${executableSuffix}`);
+const mockBinary = resolve(workspaceRoot, `target/debug/mock_corsa${executableSuffix}`);
+const realBinary = resolve(workspaceRoot, `.cache/corsa${executableSuffix}`);
 const realDataset = resolve(workspaceRoot, "origin/typescript-go/_packages/api/tsconfig.json");
-const realTsgoReady = existsSync(realBinary) && existsSync(realDataset);
+const realCorsaReady = existsSync(realBinary) && existsSync(realDataset);
 
-describe("TsgoApiClient", () => {
+describe("CorsaApiClient", () => {
   it("evaluates Rust-backed unsafe type flow predicates", () => {
     expect(CorsaUtils.version()).toMatch(/\d+\.\d+\.\d+/);
     expect(
@@ -42,8 +42,8 @@ describe("TsgoApiClient", () => {
     ).toBe(true);
   });
 
-  it("roundtrips through the mock tsgo binary", () => {
-    const client = TsgoApiClient.spawn({
+  it("roundtrips through the mock Corsa binary", () => {
+    const client = CorsaApiClient.spawn({
       executable: mockBinary,
       cwd: workspaceRoot,
       mode: "jsonrpc",
@@ -84,10 +84,10 @@ describe("TsgoApiClient", () => {
   });
 
   for (const mode of ["msgpack", "jsonrpc"] as const) {
-    const realCase = realTsgoReady ? it : it.skip;
+    const realCase = realCorsaReady ? it : it.skip;
 
     realCase(`keeps real ${mode} snapshots alive across follow-up calls`, () => {
-      const client = TsgoApiClient.spawn({
+      const client = CorsaApiClient.spawn({
         executable: realBinary,
         cwd: workspaceRoot,
         mode,
@@ -115,9 +115,9 @@ describe("TsgoApiClient", () => {
   }
 });
 
-describe("TsgoVirtualDocument", () => {
+describe("CorsaVirtualDocument", () => {
   it("tracks incremental virtual file changes", () => {
-    const document = TsgoVirtualDocument.untitled(
+    const document = CorsaVirtualDocument.untitled(
       "/virtual/demo.ts",
       "typescript",
       "const value = 1;\n",
@@ -138,12 +138,12 @@ describe("TsgoVirtualDocument", () => {
   });
 });
 
-describe("TsgoDistributedOrchestrator", () => {
+describe("CorsaDistributedOrchestrator", () => {
   it("replicates virtual documents after leader election", () => {
-    const cluster = new TsgoDistributedOrchestrator(["n1", "n2", "n3"]);
+    const cluster = new CorsaDistributedOrchestrator(["n1", "n2", "n3"]);
     expect(cluster.campaign("n1")).toBe(1);
 
-    const document = TsgoVirtualDocument.inMemory(
+    const document = CorsaVirtualDocument.inMemory(
       "cluster",
       "/main.ts",
       "typescript",

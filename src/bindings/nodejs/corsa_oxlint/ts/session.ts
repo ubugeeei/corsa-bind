@@ -1,19 +1,19 @@
 import { statSync } from "node:fs";
 
-import { type ProjectResponse, TsgoApiClient } from "@corsa-bind/node";
+import { type ProjectResponse, CorsaApiClient } from "@corsa-bind/node";
 
-import type { TsgoSignature, TsgoSymbol, TsgoType, TsgoTypePredicate } from "./types";
+import type { CorsaSignature, CorsaSymbol, CorsaType, CorsaTypePredicate } from "./types";
 import type { ResolvedProjectConfig, ResolvedRuntimeOptions } from "./types";
 
 type FileCache = {
   mtimeMs: number;
   projectId: string;
-  typeByPosition: Map<number, TsgoType | undefined>;
-  symbolByPosition: Map<number, TsgoSymbol | undefined>;
+  typeByPosition: Map<number, CorsaType | undefined>;
+  symbolByPosition: Map<number, CorsaSymbol | undefined>;
 };
 
-export class TsgoProjectSession {
-  #client?: TsgoApiClient;
+export class CorsaProjectSession {
+  #client?: CorsaApiClient;
   #config?: { options: unknown; fileNames: string[] };
   #snapshot?: string;
   #projects: ProjectResponse[] = [];
@@ -43,7 +43,7 @@ export class TsgoProjectSession {
     return this.config().fileNames;
   }
 
-  getTypeAtPosition(fileName: string, position: number): TsgoType | undefined {
+  getTypeAtPosition(fileName: string, position: number): CorsaType | undefined {
     const state = this.fileState(fileName);
     if (!state.typeByPosition.has(position)) {
       state.typeByPosition.set(
@@ -59,7 +59,7 @@ export class TsgoProjectSession {
     return state.typeByPosition.get(position);
   }
 
-  getSymbolAtPosition(fileName: string, position: number): TsgoSymbol | undefined {
+  getSymbolAtPosition(fileName: string, position: number): CorsaSymbol | undefined {
     const state = this.fileState(fileName);
     if (!state.symbolByPosition.has(position)) {
       state.symbolByPosition.set(
@@ -75,7 +75,7 @@ export class TsgoProjectSession {
     return state.symbolByPosition.get(position);
   }
 
-  getTypeOfSymbol(symbol: TsgoSymbol): TsgoType | undefined {
+  getTypeOfSymbol(symbol: CorsaSymbol): CorsaType | undefined {
     return this.client().callJson("getTypeOfSymbol", {
       snapshot: this.#snapshot,
       project: this.projectId(),
@@ -83,7 +83,7 @@ export class TsgoProjectSession {
     });
   }
 
-  getDeclaredTypeOfSymbol(symbol: TsgoSymbol): TsgoType | undefined {
+  getDeclaredTypeOfSymbol(symbol: CorsaSymbol): CorsaType | undefined {
     return this.client().callJson("getDeclaredTypeOfSymbol", {
       snapshot: this.#snapshot,
       project: this.projectId(),
@@ -91,11 +91,11 @@ export class TsgoProjectSession {
     });
   }
 
-  typeToString(type: TsgoType, flags?: number): string {
+  typeToString(type: CorsaType, flags?: number): string {
     return this.client().typeToString(this.#snapshot!, this.projectId(), type.id, undefined, flags);
   }
 
-  getBaseTypeOfLiteralType(type: TsgoType): TsgoType | undefined {
+  getBaseTypeOfLiteralType(type: CorsaType): CorsaType | undefined {
     return this.client().callJson("getBaseTypeOfLiteralType", {
       snapshot: this.#snapshot,
       project: this.projectId(),
@@ -103,7 +103,7 @@ export class TsgoProjectSession {
     });
   }
 
-  getPropertiesOfType(type: TsgoType): readonly TsgoSymbol[] {
+  getPropertiesOfType(type: CorsaType): readonly CorsaSymbol[] {
     return (
       this.client().callJson("getPropertiesOfType", {
         snapshot: this.#snapshot,
@@ -113,7 +113,7 @@ export class TsgoProjectSession {
     );
   }
 
-  getSignaturesOfType(type: TsgoType, kind: number): readonly TsgoSignature[] {
+  getSignaturesOfType(type: CorsaType, kind: number): readonly CorsaSignature[] {
     return this.client().callJson("getSignaturesOfType", {
       snapshot: this.#snapshot,
       project: this.projectId(),
@@ -122,7 +122,7 @@ export class TsgoProjectSession {
     });
   }
 
-  getReturnTypeOfSignature(signature: TsgoSignature): TsgoType | undefined {
+  getReturnTypeOfSignature(signature: CorsaSignature): CorsaType | undefined {
     return this.client().callJson("getReturnTypeOfSignature", {
       snapshot: this.#snapshot,
       project: this.projectId(),
@@ -130,7 +130,7 @@ export class TsgoProjectSession {
     });
   }
 
-  getTypePredicateOfSignature(signature: TsgoSignature): TsgoTypePredicate | undefined {
+  getTypePredicateOfSignature(signature: CorsaSignature): CorsaTypePredicate | undefined {
     return this.client().callJson("getTypePredicateOfSignature", {
       snapshot: this.#snapshot,
       project: this.projectId(),
@@ -138,7 +138,7 @@ export class TsgoProjectSession {
     });
   }
 
-  getBaseTypes(type: TsgoType): readonly TsgoType[] {
+  getBaseTypes(type: CorsaType): readonly CorsaType[] {
     return (
       this.client().callJson("getBaseTypes", {
         snapshot: this.#snapshot,
@@ -148,7 +148,7 @@ export class TsgoProjectSession {
     );
   }
 
-  getTypeArguments(type: TsgoType): readonly TsgoType[] {
+  getTypeArguments(type: CorsaType): readonly CorsaType[] {
     return (
       this.client().callJson("getTypeArguments", {
         snapshot: this.#snapshot,
@@ -158,9 +158,9 @@ export class TsgoProjectSession {
     );
   }
 
-  private client(): TsgoApiClient {
+  private client(): CorsaApiClient {
     if (!this.#client) {
-      this.#client = TsgoApiClient.spawn({
+      this.#client = CorsaApiClient.spawn({
         executable: this.runtime.executable,
         cwd: this.runtime.cwd,
         mode: this.runtime.mode,
@@ -176,7 +176,7 @@ export class TsgoProjectSession {
     }
     const config = this.#config;
     if (!config) {
-      throw new Error(`corsa-oxlint could not parse a tsgo config for ${this.project.configPath}`);
+      throw new Error(`corsa-oxlint could not parse a Corsa config for ${this.project.configPath}`);
     }
     return config;
   }
@@ -227,7 +227,9 @@ export class TsgoProjectSession {
   private projectId(): string {
     const id = this.#projects[0]?.id;
     if (!id) {
-      throw new Error(`corsa-oxlint could not resolve a tsgo project for ${this.project.filename}`);
+      throw new Error(
+        `corsa-oxlint could not resolve a Corsa project for ${this.project.filename}`,
+      );
     }
     return id;
   }

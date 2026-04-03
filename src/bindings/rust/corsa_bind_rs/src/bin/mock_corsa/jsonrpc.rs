@@ -6,7 +6,7 @@ use std::io::{BufRead, Write};
 pub fn read_message<R: BufRead>(reader: &mut R) -> Result<Option<RawMessage>> {
     match read_frame(reader) {
         Ok(payload) => Ok(Some(serde_json::from_slice(&payload)?)),
-        Err(corsa_bind_rs::TsgoError::Closed(_)) => Ok(None),
+        Err(corsa_bind_rs::CorsaError::Closed(_)) => Ok(None),
         Err(error) => Err(error.into()),
     }
 }

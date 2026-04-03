@@ -18,7 +18,7 @@ native `typescript-go` side of that ecosystem.
 ## Runtime requirement
 
 You must provide a compatible `typescript-go` (`tsgo`) executable yourself and
-pass its path through `TsgoApiClient.spawn({ executable: "/path/to/tsgo" })`.
+pass its path through `CorsaApiClient.spawn({ executable: "/path/to/tsgo" })`.
 
 ## Development
 
@@ -30,4 +30,4 @@ vp test run --config ./vite.config.ts src/bindings/nodejs/corsa_bind_node/ts/**/
 
 Repository-level executable examples live under [`examples/`](../../examples/README.md),
 including mock-client, virtual-document, distributed-orchestrator, and
-real-`tsgo` snapshot samples.
+real-Corsa snapshot samples.

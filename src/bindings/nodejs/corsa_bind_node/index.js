@@ -310,11 +310,11 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { TsgoApiClient, TsgoVirtualDocument, TsgoDistributedOrchestrator, isUnsafeAssignment, isUnsafeReturn, version } = nativeBinding
+const { CorsaApiClient, CorsaVirtualDocument, CorsaDistributedOrchestrator, isUnsafeAssignment, isUnsafeReturn, version } = nativeBinding
 
-module.exports.TsgoApiClient = TsgoApiClient
-module.exports.TsgoVirtualDocument = TsgoVirtualDocument
-module.exports.TsgoDistributedOrchestrator = TsgoDistributedOrchestrator
+module.exports.CorsaApiClient = CorsaApiClient
+module.exports.CorsaVirtualDocument = CorsaVirtualDocument
+module.exports.CorsaDistributedOrchestrator = CorsaDistributedOrchestrator
 module.exports.isUnsafeAssignment = isUnsafeAssignment
 module.exports.isUnsafeReturn = isUnsafeReturn
 module.exports.version = version

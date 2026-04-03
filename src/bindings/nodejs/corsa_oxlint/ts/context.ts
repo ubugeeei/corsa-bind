@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import type {
+  CorsaRuntimeOptions,
   ContextWithParserOptions,
   ProjectServiceOptions,
   ResolvedProjectConfig,
@@ -20,8 +21,8 @@ const DEFAULT_TS_CONFIG = {
   },
 };
 
-export function defaultTsgoExecutable(rootDir: string, platform = process.platform): string {
-  return resolve(rootDir, platform === "win32" ? ".cache/tsgo.exe" : ".cache/tsgo");
+export function defaultCorsaExecutable(rootDir: string, platform = process.platform): string {
+  return resolve(rootDir, platform === "win32" ? ".cache/corsa.exe" : ".cache/corsa");
 }
 
 export function resolveProjectConfig(context: ContextWithParserOptions): ResolvedProjectConfig {
@@ -50,7 +51,7 @@ export function resolveProjectConfig(context: ContextWithParserOptions): Resolve
  * @example
  * ```ts
  * const parserOptions = resolveTypeAwareParserOptions(context);
- * parserOptions.tsgo?.mode;
+ * parserOptions.corsa?.mode;
  * ```
  */
 export function resolveTypeAwareParserOptions(
@@ -66,15 +67,17 @@ function resolveRuntimeOptions(
   rootDir: string,
   parserOptions: TypeAwareParserOptions,
 ): ResolvedRuntimeOptions {
+  const runtime = resolveRuntimeConfig(parserOptions);
   return {
     executable: resolve(
-      parserOptions.tsgo?.executable ??
+      runtime.executable ??
+        process.env.CORSA_EXECUTABLE ??
         process.env.TSGO_EXECUTABLE ??
-        defaultTsgoExecutable(rootDir),
+        defaultCorsaExecutable(rootDir),
     ),
-    cwd: resolve(parserOptions.tsgo?.cwd ?? rootDir),
-    mode: parserOptions.tsgo?.mode ?? "msgpack",
-    cacheLifetimeMs: parserOptions.tsgo?.cacheLifetimeMs ?? DEFAULT_CACHE_LIFETIME_MS,
+    cwd: resolve(runtime.cwd ?? rootDir),
+    mode: runtime.mode ?? "msgpack",
+    cacheLifetimeMs: runtime.cacheLifetimeMs ?? DEFAULT_CACHE_LIFETIME_MS,
   };
 }
 
@@ -178,16 +181,30 @@ export function mergeTypeAwareParserOptions(
   if (!override) {
     return base;
   }
+  const baseRuntime = resolveRuntimeConfig(base);
+  const overrideRuntime = resolveRuntimeConfig(override);
   return {
     ...base,
     ...override,
     project: override.project ?? base.project,
     projectService: mergeProjectService(base.projectService, override.projectService),
     tsconfigRootDir: override.tsconfigRootDir ?? base.tsconfigRootDir,
-    tsgo: {
-      ...base.tsgo,
-      ...override.tsgo,
-    },
+    corsa:
+      Object.keys({ ...baseRuntime, ...overrideRuntime }).length === 0
+        ? undefined
+        : {
+            ...baseRuntime,
+            ...overrideRuntime,
+          },
+  };
+}
+
+function resolveRuntimeConfig(
+  parserOptions: TypeAwareParserOptions | undefined,
+): CorsaRuntimeOptions {
+  return {
+    ...parserOptions?.tsgo,
+    ...parserOptions?.corsa,
   };
 }
 

@@ -1,5 +1,5 @@
 use corsa_bind_rs::{
-    Result, TsgoError,
+    Result, CorsaError,
     api::{ApiClient, ApiMode, ApiSpawnConfig, SymbolHandle, UpdateSnapshotParams},
     fast::{CompactString, SmallVec},
 };
@@ -143,7 +143,7 @@ fn mode_name(mode: ApiMode) -> CompactString {
 }
 
 fn spawn_config(cli: &Cli, mode: ApiMode) -> ApiSpawnConfig {
-    ApiSpawnConfig::new(&cli.tsgo_path)
+    ApiSpawnConfig::new(&cli.corsa_path)
         .with_cwd(&cli.root_dir)
         .with_mode(mode)
 }
@@ -343,7 +343,7 @@ async fn resolve_type_text(session: &ProjectSession, iterations: usize) -> Resul
                 session.target.position,
             )
             .await?
-            .ok_or(TsgoError::Protocol(
+            .ok_or(CorsaError::Protocol(
                 "benchmark target no longer resolves to a type".into(),
             ))?;
         let _ = session
@@ -370,7 +370,7 @@ async fn discover_bench_target(
     let source = client
         .get_source_file(snapshot.handle.clone(), project.clone(), file)
         .await?
-        .ok_or(TsgoError::Protocol(
+        .ok_or(CorsaError::Protocol(
             "benchmark dataset is missing its primary file".into(),
         ))?;
     let text = String::from_utf8_lossy(source.as_bytes());
@@ -388,7 +388,7 @@ async fn discover_bench_target(
             });
         }
     }
-    Err(TsgoError::Protocol(
+    Err(CorsaError::Protocol(
         "failed to discover a benchmarkable symbol in the primary file".into(),
     ))
 }

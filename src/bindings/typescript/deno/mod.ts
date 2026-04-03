@@ -1,9 +1,9 @@
 export {
-  BrowserTsgoApiClient,
+  BrowserCorsaApiClient,
   createFetchTransport,
-  RemoteTsgoApiClient,
+  RemoteCorsaApiClient,
   type FetchTransportOptions,
-  type TsgoRemoteTransport,
+  type CorsaRemoteTransport,
 } from "../typescript/index.ts";
 
 export type * from "../typescript/types.ts";

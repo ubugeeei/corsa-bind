@@ -3,13 +3,13 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { defaultTsgoExecutable } from "./context";
+import { defaultCorsaExecutable } from "./context";
 import { OxlintUtils } from "./oxlint_utils";
 import { decorateRule, definePlugin } from "./plugin";
 import { RuleTester } from "./rule_tester";
 
 const workspaceRoot = resolve(import.meta.dirname, "../../../../..");
-const realTsgoBinary = defaultTsgoExecutable(workspaceRoot);
+const realCorsaBinary = defaultCorsaExecutable(workspaceRoot);
 
 describe("corsa-oxlint", () => {
   it("creates docs URLs through the Oxlint RuleCreator", () => {
@@ -64,7 +64,7 @@ describe("corsa-oxlint", () => {
       },
       create(context: any) {
         seen = {
-          executable: context.parserOptions.tsgo?.executable,
+          executable: context.parserOptions.corsa?.executable,
           project: context.languageOptions?.parserOptions?.project,
           hasParserServices: "parserServices" in (context as object),
         };
@@ -83,8 +83,8 @@ describe("corsa-oxlint", () => {
         corsaOxlint: {
           parserOptions: {
             project: ["tsconfig.json"],
-            tsgo: {
-              executable: realTsgoBinary,
+            corsa: {
+              executable: realCorsaBinary,
             },
           },
         },
@@ -95,7 +95,7 @@ describe("corsa-oxlint", () => {
     } as any);
 
     expect(seen).toEqual({
-      executable: realTsgoBinary,
+      executable: realCorsaBinary,
       project: ["tsconfig.json"],
       hasParserServices: true,
     });
@@ -115,9 +115,9 @@ describe("corsa-oxlint", () => {
         },
         create(context: any) {
           seen = {
-            languageExecutable: context.languageOptions?.parserOptions?.tsgo?.executable,
-            parserExecutable: context.parserOptions?.tsgo?.executable,
-            settingsExecutable: context.settings?.corsaOxlint?.parserOptions?.tsgo?.executable,
+            languageExecutable: context.languageOptions?.parserOptions?.corsa?.executable,
+            parserExecutable: context.parserOptions?.corsa?.executable,
+            settingsExecutable: context.settings?.corsaOxlint?.parserOptions?.corsa?.executable,
           };
           return {};
         },
@@ -129,8 +129,8 @@ describe("corsa-oxlint", () => {
             settings: {
               corsaOxlint: {
                 parserOptions: {
-                  tsgo: {
-                    executable: realTsgoBinary,
+                  corsa: {
+                    executable: realCorsaBinary,
                   },
                 },
               },
@@ -142,13 +142,13 @@ describe("corsa-oxlint", () => {
     );
 
     expect(seen).toEqual({
-      languageExecutable: realTsgoBinary,
-      parserExecutable: realTsgoBinary,
-      settingsExecutable: realTsgoBinary,
+      languageExecutable: realCorsaBinary,
+      parserExecutable: realCorsaBinary,
+      settingsExecutable: realCorsaBinary,
     });
   });
 
-  const integrationCase = existsSync(realTsgoBinary) ? it : it.skip;
+  const integrationCase = existsSync(realCorsaBinary) ? it : it.skip;
 
   integrationCase("runs a type-aware custom rule through oxlint RuleTester", () => {
     const createRule = OxlintUtils.RuleCreator((name) => `https://example.com/rules/${name}`);
@@ -204,8 +204,8 @@ describe("corsa-oxlint", () => {
           settings: {
             corsaOxlint: {
               parserOptions: {
-                tsgo: {
-                  executable: realTsgoBinary,
+                corsa: {
+                  executable: realCorsaBinary,
                 },
               },
             },
@@ -219,8 +219,8 @@ describe("corsa-oxlint", () => {
           settings: {
             corsaOxlint: {
               parserOptions: {
-                tsgo: {
-                  executable: realTsgoBinary,
+                corsa: {
+                  executable: realCorsaBinary,
                 },
               },
             },

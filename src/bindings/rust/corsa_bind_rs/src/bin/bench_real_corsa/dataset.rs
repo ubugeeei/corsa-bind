@@ -5,7 +5,7 @@ use std::{
 };
 
 use corsa_bind_rs::{
-    Result, TsgoError,
+    Result, CorsaError,
     api::{ApiClient, ApiMode, ApiSpawnConfig},
     fast::{CompactString, SmallVec},
 };
@@ -25,7 +25,7 @@ pub struct DatasetCase {
 
 pub async fn load(cli: &Cli) -> Result<SmallVec<[DatasetCase; 4]>> {
     let client = ApiClient::spawn(
-        ApiSpawnConfig::new(&cli.tsgo_path)
+        ApiSpawnConfig::new(&cli.corsa_path)
             .with_cwd(&cli.root_dir)
             .with_mode(ApiMode::SyncMsgpackStdio),
     )
@@ -35,7 +35,7 @@ pub async fn load(cli: &Cli) -> Result<SmallVec<[DatasetCase; 4]>> {
         let config_wire = CompactString::from(config_path.to_string_lossy().as_ref());
         let config = client.parse_config_file(config_wire.as_str()).await?;
         let primary_file = pick_primary_file(&config.file_names).ok_or_else(|| {
-            TsgoError::Protocol(CompactString::from(
+            CorsaError::Protocol(CompactString::from(
                 "dataset does not contain any source files",
             ))
         })?;

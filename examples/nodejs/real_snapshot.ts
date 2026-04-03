@@ -1,12 +1,12 @@
-import { TsgoApiClient } from "@corsa-bind/node";
+import { CorsaApiClient } from "@corsa-bind/node";
 
 import { assertExists, isMain, realBinary, realDataset, workspaceRoot } from "../shared.ts";
 
 export function runRealSnapshotExample() {
-  assertExists(realBinary, "real tsgo binary", "run `vp run -w build_tsgo` first");
-  assertExists(realDataset, "pinned tsgo dataset", "run `vp run -w sync_origin` first");
+  assertExists(realBinary, "real Corsa binary", "run `vp run -w build_corsa` first");
+  assertExists(realDataset, "pinned Corsa dataset", "run `vp run -w sync_origin` first");
 
-  const client = TsgoApiClient.spawn({
+  const client = CorsaApiClient.spawn({
     executable: realBinary,
     cwd: workspaceRoot,
     mode: "msgpack",

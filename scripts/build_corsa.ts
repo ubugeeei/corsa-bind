@@ -6,7 +6,7 @@ import { fail, rootDir, runCommand } from "./shared.ts";
 function main(): void {
   const originDir = resolve(rootDir, "origin/typescript-go");
   const goCacheDir = resolve(rootDir, ".cache/go-build");
-  const outputName = process.platform === "win32" ? "tsgo.exe" : "tsgo";
+  const outputName = process.platform === "win32" ? "corsa.exe" : "corsa";
   const outputPath = resolve(rootDir, ".cache", outputName);
 
   mkdirSync(goCacheDir, { recursive: true });

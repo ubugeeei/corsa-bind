@@ -9,7 +9,7 @@ use corsa_bind_rs::{
 };
 use serde_json::{Value, json};
 
-fn main() -> Result<(), corsa_bind_rs::TsgoError> {
+fn main() -> Result<(), corsa_bind_rs::CorsaError> {
     let result = block_on(async {
         let orchestrator = ApiOrchestrator::default();
         let profile = ApiProfile::new(
@@ -51,12 +51,12 @@ fn main() -> Result<(), corsa_bind_rs::TsgoError> {
                 let echoed = client
                     .raw_json_request("echo", json!({ "value": value }))
                     .await?;
-                Ok::<_, corsa_bind_rs::TsgoError>(echoed["value"].as_u64().unwrap() as u32)
+                Ok::<_, corsa_bind_rs::CorsaError>(echoed["value"].as_u64().unwrap() as u32)
             })
             .await?;
         let stats = orchestrator.stats();
 
-        Ok::<_, corsa_bind_rs::TsgoError>(json!({
+        Ok::<_, corsa_bind_rs::CorsaError>(json!({
             "snapshotCacheHit": Arc::ptr_eq(&snapshot_a, &snapshot_b),
             "snapshotHandle": snapshot_a.handle,
             "cachedPing": ping,

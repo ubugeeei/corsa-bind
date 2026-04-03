@@ -17,9 +17,9 @@ const binding = (
   "default" in nativeModule ? nativeModule.default : nativeModule
 ) as typeof import("../index.js");
 
-type NativeApiClient = InstanceType<typeof binding.TsgoApiClient>;
-type NativeDistributedOrchestrator = InstanceType<typeof binding.TsgoDistributedOrchestrator>;
-type NativeVirtualDocument = InstanceType<typeof binding.TsgoVirtualDocument>;
+type NativeApiClient = InstanceType<typeof binding.CorsaApiClient>;
+type NativeDistributedOrchestrator = InstanceType<typeof binding.CorsaDistributedOrchestrator>;
+type NativeVirtualDocument = InstanceType<typeof binding.CorsaVirtualDocument>;
 
 function fromJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -45,15 +45,15 @@ export const CorsaUtils: CorsaUtilsLike<string, boolean> = Object.freeze({
   isUnsafeReturn,
 });
 
-export class TsgoApiClient {
+export class CorsaApiClient {
   readonly #inner: NativeApiClient;
 
   private constructor(inner: NativeApiClient) {
     this.#inner = inner;
   }
 
-  static spawn(options: ApiClientOptions): TsgoApiClient {
-    return new TsgoApiClient(binding.TsgoApiClient.spawn(toJson(options)));
+  static spawn(options: ApiClientOptions): CorsaApiClient {
+    return new CorsaApiClient(binding.CorsaApiClient.spawn(toJson(options)));
   }
 
   initialize(): InitializeResponse {
@@ -103,15 +103,15 @@ export class TsgoApiClient {
   }
 }
 
-export class TsgoVirtualDocument {
+export class CorsaVirtualDocument {
   readonly #inner: NativeVirtualDocument;
 
   private constructor(inner: NativeVirtualDocument) {
     this.#inner = inner;
   }
 
-  static untitled(path: string, languageId: string, text: string): TsgoVirtualDocument {
-    return new TsgoVirtualDocument(binding.TsgoVirtualDocument.untitled(path, languageId, text));
+  static untitled(path: string, languageId: string, text: string): CorsaVirtualDocument {
+    return new CorsaVirtualDocument(binding.CorsaVirtualDocument.untitled(path, languageId, text));
   }
 
   static inMemory(
@@ -119,9 +119,9 @@ export class TsgoVirtualDocument {
     path: string,
     languageId: string,
     text: string,
-  ): TsgoVirtualDocument {
-    return new TsgoVirtualDocument(
-      binding.TsgoVirtualDocument.inMemory(authority, path, languageId, text),
+  ): CorsaVirtualDocument {
+    return new CorsaVirtualDocument(
+      binding.CorsaVirtualDocument.inMemory(authority, path, languageId, text),
     );
   }
 
@@ -154,11 +154,11 @@ export class TsgoVirtualDocument {
   }
 }
 
-export class TsgoDistributedOrchestrator {
+export class CorsaDistributedOrchestrator {
   readonly #inner: NativeDistributedOrchestrator;
 
   constructor(nodeIds: string[]) {
-    this.#inner = new binding.TsgoDistributedOrchestrator(nodeIds);
+    this.#inner = new binding.CorsaDistributedOrchestrator(nodeIds);
   }
 
   campaign(nodeId: string): number {

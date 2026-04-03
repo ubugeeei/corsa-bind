@@ -1,4 +1,4 @@
-use crate::{Result, TsgoError};
+use crate::{Result, CorsaError};
 use parking_lot::Mutex;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -45,8 +45,8 @@ use super::{
 /// ```no_run
 /// use corsa_bind_client::{ApiClient, ApiSpawnConfig};
 ///
-/// # async fn demo() -> Result<(), corsa_bind_client::TsgoError> {
-/// let client = ApiClient::spawn(ApiSpawnConfig::new("/opt/bin/tsgo")).await?;
+/// # async fn demo() -> Result<(), corsa_bind_client::CorsaError> {
+/// let client = ApiClient::spawn(ApiSpawnConfig::new("/opt/bin/corsa")).await?;
 /// let _initialize = client.initialize().await?;
 /// client.close().await?;
 /// # Ok(())
@@ -122,7 +122,7 @@ impl ApiClient {
             .lock()
             .as_ref()
             .cloned()
-            .ok_or(TsgoError::Closed("api initialize"))
+            .ok_or(CorsaError::Closed("api initialize"))
     }
 
     /// Parses a `tsconfig` file through `tsgo`.
@@ -215,7 +215,7 @@ impl ApiClient {
     /// Closes the client and shuts down the underlying worker process.
     ///
     /// This is idempotent. After closing, further requests return
-    /// [`TsgoError::Closed`].
+    /// [`CorsaError::Closed`].
     pub async fn close(&self) -> Result<()> {
         self.driver.close().await
     }

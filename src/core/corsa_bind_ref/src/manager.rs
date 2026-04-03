@@ -1,12 +1,12 @@
 use crate::git::{canonical_repository_url, fetch_commit, snapshot, switch_detached};
 use crate::status::RepositoryProblem;
-use crate::{CommitMetadata, LockedRepository, RepositoryStatus, TsgoRefLock};
-use corsa_bind_core::{Result, TsgoError, fast::compact_format};
+use crate::{CommitMetadata, LockedRepository, RepositoryStatus, CorsaRefLock};
+use corsa_bind_core::{Result, CorsaError, fast::compact_format};
 use std::path::{Path, PathBuf};
 
 /// High-level manager for the pinned `origin/typescript-go` checkout.
 ///
-/// The manager reads [`TsgoRefLock`](crate::TsgoRefLock), locates the managed
+/// The manager reads [`CorsaRefLock`](crate::CorsaRefLock), locates the managed
 /// repository relative to that lockfile, and provides the small set of
 /// operations needed by CI and contributor workflows:
 ///
@@ -14,11 +14,11 @@ use std::path::{Path, PathBuf};
 /// - [`verify`](Self::verify) fails fast when drift exists
 /// - [`sync`](Self::sync) restores the checkout to the pinned commit
 /// - [`pin_current`](Self::pin_current) intentionally rewrites the lockfile
-pub struct TsgoRefManager {
+pub struct CorsaRefManager {
     lock_path: PathBuf,
 }
 
-impl TsgoRefManager {
+impl CorsaRefManager {
     /// Creates a new manager rooted at the given lockfile path.
     pub fn new(lock_path: impl Into<PathBuf>) -> Self {
         Self {
@@ -31,11 +31,11 @@ impl TsgoRefManager {
     /// The returned [`RepositoryStatus`] describes both the live repository
     /// snapshot and any problems relative to the lockfile pin.
     pub fn status(&self) -> Result<RepositoryStatus> {
-        let lock = TsgoRefLock::load(&self.lock_path)?;
+        let lock = CorsaRefLock::load(&self.lock_path)?;
         let repository = lock.root();
         let repo_path = self.repository_path(repository);
         if !repo_path.exists() {
-            return Err(TsgoError::Protocol(compact_format(format_args!(
+            return Err(CorsaError::Protocol(compact_format(format_args!(
                 "managed origin is missing: {}",
                 repo_path.display()
             ))));
@@ -55,7 +55,7 @@ impl TsgoRefManager {
         if status.exact {
             return Ok(());
         }
-        Err(TsgoError::Protocol(status.describe()))
+        Err(CorsaError::Protocol(status.describe()))
     }
 
     /// Synchronizes the managed checkout to the lockfile pin.
@@ -63,7 +63,7 @@ impl TsgoRefManager {
     /// Existing tracked drift is rejected unless the worktree is clean and the
     /// repository identity still matches the expected upstream.
     pub fn sync(&self) -> Result<()> {
-        let lock = TsgoRefLock::load(&self.lock_path)?;
+        let lock = CorsaRefLock::load(&self.lock_path)?;
         let repository = lock.root();
         let repo_path = self.repository_path(repository);
         if !repo_path.exists() {
@@ -71,7 +71,7 @@ impl TsgoRefManager {
         } else {
             let status = self.status()?;
             if status.snapshot.dirty {
-                return Err(TsgoError::Protocol(compact_format(format_args!(
+                return Err(CorsaError::Protocol(compact_format(format_args!(
                     "managed origin is dirty: {}",
                     repo_path.display()
                 ))));
@@ -81,7 +81,7 @@ impl TsgoRefManager {
                 .iter()
                 .any(|problem| matches!(problem, RepositoryProblem::RepositoryMismatch { .. }))
             {
-                return Err(TsgoError::Protocol(status.describe()));
+                return Err(CorsaError::Protocol(status.describe()));
             }
         }
         fetch_commit(&repo_path, &repository.commit)?;
@@ -94,7 +94,7 @@ impl TsgoRefManager {
     /// This is an intentional action used when updating the workspace's pinned
     /// upstream reference.
     pub fn pin_current(&self) -> Result<()> {
-        let existing = TsgoRefLock::load(&self.lock_path).ok();
+        let existing = CorsaRefLock::load(&self.lock_path).ok();
         let path = existing
             .as_ref()
             .map(|lock| lock.typescript_go.path.clone())
@@ -111,7 +111,7 @@ impl TsgoRefManager {
         let repository = existing
             .map(|lock| lock.typescript_go.repository)
             .unwrap_or_else(|| canonical_repository_url(&snapshot.remote_url));
-        let lock = TsgoRefLock {
+        let lock = CorsaRefLock {
             version: 1,
             typescript_go: LockedRepository {
                 path,
@@ -189,9 +189,9 @@ mod tests {
             .current_dir(&repo)
             .output()
             .unwrap();
-        let lock_path = root.path().join("tsgo_origin.lock.toml");
-        TsgoRefManager::new(&lock_path).pin_current().unwrap();
-        let lock = TsgoRefLock::load(&lock_path).unwrap();
+        let lock_path = root.path().join("corsa_origin.lock.toml");
+        CorsaRefManager::new(&lock_path).pin_current().unwrap();
+        let lock = CorsaRefLock::load(&lock_path).unwrap();
         assert_eq!(lock.typescript_go.path, "origin/typescript-go");
         assert_eq!(
             lock.typescript_go.repository,
@@ -203,8 +203,8 @@ mod tests {
     #[test]
     fn status_errors_when_the_managed_ref_is_missing() {
         let root = tempdir().unwrap();
-        let lock_path = root.path().join("tsgo_origin.lock.toml");
-        TsgoRefLock {
+        let lock_path = root.path().join("corsa_origin.lock.toml");
+        CorsaRefLock {
             version: 1,
             typescript_go: LockedRepository {
                 path: "origin/typescript-go".into(),
@@ -218,9 +218,9 @@ mod tests {
         }
         .save(&lock_path)
         .unwrap();
-        let err = TsgoRefManager::new(&lock_path).status().unwrap_err();
+        let err = CorsaRefManager::new(&lock_path).status().unwrap_err();
         assert!(
-            matches!(err, TsgoError::Protocol(message) if message.contains("managed origin is missing"))
+            matches!(err, CorsaError::Protocol(message) if message.contains("managed origin is missing"))
         );
     }
 
@@ -250,13 +250,13 @@ mod tests {
             .current_dir(&repo)
             .output()
             .unwrap();
-        let lock_path = root.path().join("tsgo_origin.lock.toml");
-        TsgoRefManager::new(&lock_path).pin_current().unwrap();
+        let lock_path = root.path().join("corsa_origin.lock.toml");
+        CorsaRefManager::new(&lock_path).pin_current().unwrap();
         fs::write(repo.join("README.md"), "dirty").unwrap();
 
-        let err = TsgoRefManager::new(&lock_path).verify().unwrap_err();
+        let err = CorsaRefManager::new(&lock_path).verify().unwrap_err();
         assert!(
-            matches!(err, TsgoError::Protocol(message) if message.contains("worktree must be clean"))
+            matches!(err, CorsaError::Protocol(message) if message.contains("worktree must be clean"))
         );
     }
 }

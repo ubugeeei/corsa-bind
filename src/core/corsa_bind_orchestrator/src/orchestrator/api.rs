@@ -1,7 +1,7 @@
 use crate::Result;
 use crate::api::{ApiClient, ApiProfile, ManagedSnapshot, UpdateSnapshotParams};
 use corsa_bind_core::{
-    SharedObserver, TsgoEvent,
+    SharedObserver, CorsaEvent,
     fast::{CompactString, FastMap, SmallVec, compact_format},
     observe,
 };
@@ -155,7 +155,7 @@ impl ApiOrchestrator {
     /// startup cost ahead of the first user request.
     pub async fn prewarm(&self, profile: &ApiProfile, replicas: usize) -> Result<()> {
         if replicas > self.config.max_workers_per_profile {
-            return Err(crate::TsgoError::Protocol(compact_format(format_args!(
+            return Err(crate::CorsaError::Protocol(compact_format(format_args!(
                 "requested {replicas} workers for profile `{}` exceeds the configured maximum of {}",
                 profile.id, self.config.max_workers_per_profile
             ))));
@@ -298,7 +298,7 @@ impl ApiOrchestrator {
                         };
                         let output = block_on(async {
                             let client = self.lease(&profile).await?;
-                            Ok::<_, crate::TsgoError>((index, task(client, input).await?))
+                            Ok::<_, crate::CorsaError>((index, task(client, input).await?))
                         });
                         if result_tx.send(output).is_err() {
                             break;
@@ -310,17 +310,17 @@ impl ApiOrchestrator {
             for (index, input) in inputs.into_iter().enumerate() {
                 work_tx
                     .send((index, input))
-                    .map_err(|_| crate::TsgoError::Closed("orchestrator work"))?;
+                    .map_err(|_| crate::CorsaError::Closed("orchestrator work"))?;
             }
             drop(work_tx);
-            Ok::<_, crate::TsgoError>(())
+            Ok::<_, crate::CorsaError>(())
         })?;
         let mut values = SmallVec::<[(usize, R); 8]>::new();
         for _ in 0..work_count {
             values.push(
                 result_rx
                     .recv()
-                    .map_err(|_| crate::TsgoError::Closed("orchestrator result"))??,
+                    .map_err(|_| crate::CorsaError::Closed("orchestrator result"))??,
             );
         }
         values.sort_by_key(|(index, _)| *index);
@@ -352,7 +352,7 @@ impl ApiOrchestrator {
             if self.snapshots.write().remove(evicted.as_str()).is_some() {
                 observe(
                     self.config.observer.as_ref(),
-                    TsgoEvent::OrchestratorSnapshotEvicted {
+                    CorsaEvent::OrchestratorSnapshotEvicted {
                         key: evicted.clone(),
                     },
                 );
@@ -372,7 +372,7 @@ impl ApiOrchestrator {
             if self.cached.write().remove(evicted.as_str()).is_some() {
                 observe(
                     self.config.observer.as_ref(),
-                    TsgoEvent::OrchestratorResultEvicted {
+                    CorsaEvent::OrchestratorResultEvicted {
                         key: evicted.clone(),
                     },
                 );

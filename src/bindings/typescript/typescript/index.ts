@@ -1,9 +1,9 @@
 export {
-  BrowserTsgoApiClient,
+  BrowserCorsaApiClient,
   createFetchTransport,
-  RemoteTsgoApiClient,
+  RemoteCorsaApiClient,
   type FetchTransportOptions,
-  type TsgoRemoteTransport,
+  type CorsaRemoteTransport,
 } from "./client.ts";
 export {
   DEFAULT_REMOTE_CORSA_UTIL_METHODS,

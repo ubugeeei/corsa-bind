@@ -5,13 +5,13 @@ function fromJson(value) {
 function toJson(value) {
     return JSON.stringify(value ?? null);
 }
-export class TsgoApiClient {
+export class CorsaApiClient {
     #inner;
     constructor(inner) {
         this.#inner = inner;
     }
     static spawn(options) {
-        return new TsgoApiClient(native.TsgoApiClient.spawn(toJson(options)));
+        return new CorsaApiClient(native.CorsaApiClient.spawn(toJson(options)));
     }
     initialize() {
         return fromJson(this.#inner.initializeJson());
@@ -44,16 +44,16 @@ export class TsgoApiClient {
         this.#inner.close();
     }
 }
-export class TsgoVirtualDocument {
+export class CorsaVirtualDocument {
     #inner;
     constructor(inner) {
         this.#inner = inner;
     }
     static untitled(path, languageId, text) {
-        return new TsgoVirtualDocument(native.TsgoVirtualDocument.untitled(path, languageId, text));
+        return new CorsaVirtualDocument(native.CorsaVirtualDocument.untitled(path, languageId, text));
     }
     static inMemory(authority, path, languageId, text) {
-        return new TsgoVirtualDocument(native.TsgoVirtualDocument.inMemory(authority, path, languageId, text));
+        return new CorsaVirtualDocument(native.CorsaVirtualDocument.inMemory(authority, path, languageId, text));
     }
     get uri() {
         return this.#inner.uri;
@@ -77,10 +77,10 @@ export class TsgoVirtualDocument {
         return fromJson(this.#inner.applyChangesJson(toJson(changes)));
     }
 }
-export class TsgoDistributedOrchestrator {
+export class CorsaDistributedOrchestrator {
     #inner;
     constructor(nodeIds) {
-        this.#inner = new native.TsgoDistributedOrchestrator(nodeIds);
+        this.#inner = new native.CorsaDistributedOrchestrator(nodeIds);
     }
     campaign(nodeId) {
         return this.#inner.campaign(nodeId);

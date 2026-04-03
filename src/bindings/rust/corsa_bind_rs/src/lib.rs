@@ -29,7 +29,7 @@
 //!
 //! let value = block_on(async { 21 * 2 });
 //! assert_eq!(value, 42);
-//! # Ok::<(), corsa_bind_rs::TsgoError>(())
+//! # Ok::<(), corsa_bind_rs::CorsaError>(())
 //! ```
 
 /// Re-exports the tsgo stdio API bindings.
@@ -39,7 +39,7 @@ pub mod api {
 
 /// Re-exports shared error types.
 pub mod error {
-    pub use corsa_bind_core::{Result, RpcResponseError, TsgoError};
+    pub use corsa_bind_core::{Result, RpcResponseError, CorsaError};
 }
 
 /// Re-exports performance-oriented building blocks such as `CompactString`.
@@ -64,7 +64,7 @@ pub mod lsp {
 
 /// Re-exports structured operational events used across the workspace.
 pub mod observability {
-    pub use corsa_bind_core::{SharedObserver, TsgoEvent, TsgoObserver};
+    pub use corsa_bind_core::{SharedObserver, CorsaEvent, CorsaObserver};
 }
 
 /// Re-exports client orchestration and replicated-state helpers.
@@ -81,7 +81,7 @@ pub mod orchestrator {
 
 /// Re-exports process spawning primitives.
 pub mod process {
-    pub use corsa_bind_core::{AsyncChildGuard, TsgoCommand};
+    pub use corsa_bind_core::{AsyncChildGuard, CorsaCommand};
 }
 
 /// Re-exports the lightweight in-house runtime.
@@ -90,5 +90,5 @@ pub mod runtime {
 }
 
 pub use corsa_bind_core::{
-    CorsaUtils, Result, SharedObserver, TsgoError, TsgoEvent, TsgoObserver, UnsafeTypeFlowInput,
+    CorsaUtils, Result, SharedObserver, CorsaError, CorsaEvent, CorsaObserver, UnsafeTypeFlowInput,
 };
