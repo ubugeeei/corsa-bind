@@ -1,8 +1,8 @@
 {
-  "name": "@corsa-bind/bench",
+  "name": "@corsa/corsa-bench",
   "private": true,
   "dependencies": {
-    "@corsa-bind/node": "workspace:*",
-    "corsa-oxlint": "workspace:*"
+    "@corsa/node": "workspace:*",
+    "oxlint-plugin-typescript-go": "workspace:*"
   }
 }

@@ -1,15 +1,15 @@
-import { CorsaApiClient } from "@corsa-bind/node";
+import { TsgoApiClient } from "@corsa/node";
 
 import { assertExists, isMain, mockBinary, workspaceRoot } from "../shared.ts";
 
 export function runRawCallsExample() {
   assertExists(
     mockBinary,
-    "mock Corsa binary",
+    "mock tsgo binary",
     "run `vp run -w build_mock` or `vp run -w build` first",
   );
 
-  const client = CorsaApiClient.spawn({
+  const client = TsgoApiClient.spawn({
     executable: mockBinary,
     cwd: workspaceRoot,
     mode: "jsonrpc",

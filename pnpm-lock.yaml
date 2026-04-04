@@ -29,64 +29,35 @@ importers:
 
   bench:
     dependencies:
-      '@corsa-bind/node':
+      '@corsa/node':
         specifier: workspace:*
-        version: link:../src/bindings/nodejs/corsa_bind_node
-      corsa-oxlint:
+        version: link:../npm/corsa_node
+      oxlint-plugin-typescript-go:
         specifier: workspace:*
-        version: link:../src/bindings/nodejs/corsa_oxlint
+        version: link:../npm/typescript_oxlint
 
   examples:
     dependencies:
-      '@corsa-bind/node':
+      '@corsa/node':
         specifier: workspace:*
-        version: link:../src/bindings/nodejs/corsa_bind_node
-      corsa-oxlint:
+        version: link:../npm/corsa_node
+      oxlint-plugin-typescript-go:
         specifier: workspace:*
-        version: link:../src/bindings/nodejs/corsa_oxlint
+        version: link:../npm/typescript_oxlint
 
-  src/bindings/nodejs/corsa_bind_node: {}
+  npm/corsa_node: {}
 
-  src/bindings/nodejs/corsa_oxlint:
+  npm/typescript_oxlint:
     dependencies:
-      '@corsa-bind/node':
-        specifier: workspace:*
-        version: link:../corsa_bind_node
       '@oxlint/plugins':
         specifier: 1.57.0
         version: 1.57.0
+      '@corsa/node':
+        specifier: workspace:*
+        version: link:../corsa_node
       oxlint:
         specifier: 1.57.0
         version: 1.57.0(oxlint-tsgolint@0.17.3)
-
-  src/bindings/typescript/browser:
-    dependencies:
-      '@corsa-bind/typescript':
-        specifier: workspace:*
-        version: link:../typescript
-
-  src/bindings/typescript/bun:
-    dependencies:
-      '@corsa-bind/nodejs':
-        specifier: workspace:*
-        version: link:../nodejs
-
-  src/bindings/typescript/deno:
-    dependencies:
-      '@corsa-bind/typescript':
-        specifier: workspace:*
-        version: link:../typescript
-
-  src/bindings/typescript/nodejs:
-    dependencies:
-      '@corsa-bind/node':
-        specifier: workspace:*
-        version: link:../../nodejs/corsa_bind_node
-      '@corsa-bind/typescript':
-        specifier: workspace:*
-        version: link:../typescript
-
-  src/bindings/typescript/typescript: {}
 
 packages:
 

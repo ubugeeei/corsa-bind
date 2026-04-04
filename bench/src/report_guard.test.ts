@@ -3,12 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   findNativeBenchEntry,
   findTsBenchEntry,
+  hasBenchReports,
   readNativeBenchEntries,
   readTsBenchEntries,
 } from "./report";
 
-const requireReports = process.env.CORSA_REQUIRE_BENCH_REPORTS === "1";
-const benchCase = requireReports ? it : it.skip;
+const requireReports = process.env.TSGO_REQUIRE_BENCH_REPORTS === "1";
+const benchCase = requireReports || hasBenchReports() ? it : it.skip;
 
 const tsScenarios = [
   "spawn+initialize",

@@ -1,15 +1,15 @@
 # Benchmarking Principles, Concepts, and Tips
 
-This document explains how `corsa-bind` thinks about performance work.
+This document explains how `corsa` thinks about performance work.
 It is intentionally more conceptual than [performance.md](./performance.md), which is the place for commands and measured numbers.
 For CI structure, local reproduction, and troubleshooting, see [ci_guide.md](./ci_guide.md).
 
 ## Why This Exists
 
-`corsa-bind` sits on top of upstream `typescript-go`.
+`corsa` sits on top of upstream `typescript-go`.
 That creates an important constraint:
 
-- if `corsa-bind` and `tsgo` do exactly the same work, `corsa-bind` should usually aim for parity, not miracles
+- if `corsa` and `tsgo` do exactly the same work, `corsa` should usually aim for parity, not miracles
 - the realistic place to win is the end-to-end workflow, not the compiler engine itself
 
 That is why this repository keeps benchmark layers separate.
@@ -19,11 +19,11 @@ We want to answer different questions with different tools instead of forcing on
 
 ### 1. No Forks, No Patches, No Fake Wins
 
-`corsa-bind` follows a strict upstream policy:
+`corsa` follows a strict upstream policy:
 
 - use upstream-supported `tsgo` entry points
 - pin an exact upstream commit
-- do not patch `origin/typescript-go`
+- do not patch `ref/typescript-go`
 
 That matters for benchmarking.
 If we changed upstream locally, every performance claim would become harder to trust.
@@ -41,7 +41,7 @@ Examples:
 
 - `tsgo` vs `tsc` is an engine and compiler CLI comparison
 - `msgpack` vs `jsonrpc` is a transport comparison
-- `corsa-bind` warm workflow vs `tsgo --noEmit` is an orchestration comparison
+- `corsa` warm workflow vs `tsgo --noEmit` is an orchestration comparison
 
 If those get mixed together, conclusions become misleading very quickly.
 
@@ -50,7 +50,7 @@ If those get mixed together, conclusions become misleading very quickly.
 Cold runs include process startup, initialization, config loading, and project open cost.
 Warm runs ask a different question: what happens after we already paid those setup costs?
 
-For `corsa-bind`, warm behavior is especially important because session reuse is one of the main reasons to exist.
+For `corsa`, warm behavior is especially important because session reuse is one of the main reasons to exist.
 
 ### 4. Apples-to-Apples First, Then Product Reality
 
@@ -73,7 +73,7 @@ This repository therefore treats process cleanup as part of benchmark correctnes
 
 ## Native Runner
 
-The native runner is [`bench_real_corsa`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/main.rs).
+The native runner is [`bench_real_tsgo`](../crates/corsa/src/bin/bench_real_tsgo/main.rs).
 
 Its purpose:
 
@@ -85,7 +85,7 @@ This is the main source of truth for transport-level questions.
 
 ## Tooling Runner
 
-The tooling runner is [`bench_tooling_compare`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_tooling_compare/main.rs).
+The tooling runner is [`bench_tooling_compare`](../crates/corsa/src/bin/bench_tooling_compare/main.rs).
 
 It has two workloads:
 
@@ -100,7 +100,7 @@ It has two workloads:
 
 on the same dataset and the same effective project configuration.
 
-`editor_workflow` compares a realistic `corsa-bind` session:
+`editor_workflow` compares a realistic `corsa` session:
 
 - open project once
 - reuse a live session
@@ -110,7 +110,7 @@ This is the layer that answers whether orchestration actually changes the user-f
 
 ## Key Concepts
 
-## Why `corsa-bind` Cannot Reliably Beat `tsgo` on Identical Work
+## Why `corsa` Cannot Reliably Beat `tsgo` on Identical Work
 
 If a wrapper talks to the same engine and asks it to do the same work, it usually inherits:
 
@@ -125,7 +125,7 @@ So the healthy target is:
 
 That distinction is the heart of the benchmarking model.
 
-## Where `corsa-bind` Can Win
+## Where `corsa` Can Win
 
 The realistic win conditions are:
 
@@ -136,7 +136,7 @@ The realistic win conditions are:
 - turn one big CLI-shaped operation into a sequence of smaller targeted queries
 
 That is why `editor_workflow` exists.
-It measures the class of work where `corsa-bind` can reasonably outperform rerunning a whole CLI command.
+It measures the class of work where `corsa` can reasonably outperform rerunning a whole CLI command.
 
 ## Why `typescript-eslint` Is Still Useful in Comparisons
 
@@ -165,22 +165,22 @@ The overlays are used to:
 
 There is one subtle but important implementation detail:
 
-- the overlays are created under `origin/typescript-go/.cache/...`, not under the repository root `.cache`
+- the overlays are created under `ref/typescript-go/.cache/...`, not under the repository root `.cache`
 
 This keeps TypeScript's node module resolution behavior aligned with the upstream workspace, especially for packages like `@types/node`.
 
 ## Implementation Walkthrough
 
-## `bench_real_corsa`
+## `bench_real_tsgo`
 
 Main files:
 
-- [`args.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/args.rs)
-- [`dataset.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/dataset.rs)
-- [`scenario.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/scenario.rs)
-- [`measure.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/measure.rs)
-- [`stats.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/stats.rs)
-- [`report.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_real_corsa/report.rs)
+- [`args.rs`](../crates/corsa/src/bin/bench_real_tsgo/args.rs)
+- [`dataset.rs`](../crates/corsa/src/bin/bench_real_tsgo/dataset.rs)
+- [`scenario.rs`](../crates/corsa/src/bin/bench_real_tsgo/scenario.rs)
+- [`measure.rs`](../crates/corsa/src/bin/bench_real_tsgo/measure.rs)
+- [`stats.rs`](../crates/corsa/src/bin/bench_real_tsgo/stats.rs)
+- [`report.rs`](../crates/corsa/src/bin/bench_real_tsgo/report.rs)
 
 Flow:
 
@@ -200,20 +200,20 @@ Important design choices:
 
 Main files:
 
-- [`args.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_tooling_compare/args.rs)
-- [`dataset.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_tooling_compare/dataset.rs)
-- [`runner.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_tooling_compare/runner.rs)
-- [`process.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_tooling_compare/process.rs)
-- [`measure.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_tooling_compare/measure.rs)
-- [`stats.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_tooling_compare/stats.rs)
-- [`report.rs`](../src/bindings/rust/corsa_bind_rs/src/bin/bench_tooling_compare/report.rs)
+- [`args.rs`](../crates/corsa/src/bin/bench_tooling_compare/args.rs)
+- [`dataset.rs`](../crates/corsa/src/bin/bench_tooling_compare/dataset.rs)
+- [`runner.rs`](../crates/corsa/src/bin/bench_tooling_compare/runner.rs)
+- [`process.rs`](../crates/corsa/src/bin/bench_tooling_compare/process.rs)
+- [`measure.rs`](../crates/corsa/src/bin/bench_tooling_compare/measure.rs)
+- [`stats.rs`](../crates/corsa/src/bin/bench_tooling_compare/stats.rs)
+- [`report.rs`](../crates/corsa/src/bin/bench_tooling_compare/report.rs)
 
 Flow:
 
 1. Load datasets through the real pinned `tsgo`.
 2. Build temporary overlay `tsconfig` files.
 3. Run `tsc`, `tsgo`, and `typescript-eslint` as child processes for `project_check`.
-4. Run a live `corsa-bind` msgpack session for `editor_workflow`.
+4. Run a live `corsa` msgpack session for `editor_workflow`.
 5. Emit timing tables and JSON.
 
 Important design choices:
@@ -224,7 +224,7 @@ Important design choices:
 
 ## Process Cleanup and Safety
 
-The core cleanup utilities live in [`process.rs`](../src/core/corsa_bind_core/src/process.rs).
+The core cleanup utilities live in [`process.rs`](../crates/corsa_core/src/process.rs).
 
 Key helpers:
 
@@ -240,7 +240,7 @@ The cleanup policy is:
 
 This avoids leaving zombie processes behind.
 
-The msgpack worker also follows the same policy via [`msgpack_worker.rs`](../src/core/corsa_bind_client/src/api/msgpack_worker.rs).
+The msgpack worker also follows the same policy via [`msgpack_worker.rs`](../crates/corsa_client/src/api/msgpack_worker.rs).
 
 ## Tips
 
@@ -248,7 +248,7 @@ The msgpack worker also follows the same policy via [`msgpack_worker.rs`](../src
 
 Use:
 
-- `bench_real_corsa` for transport and API-path questions
+- `bench_real_tsgo` for transport and API-path questions
 - `bench_tooling_compare` for CLI parity and orchestration questions
 - Node benchmarks for JS binding overhead and consumer-facing Node workflows
 
@@ -256,7 +256,7 @@ Do not use one benchmark layer to answer a different layer's question.
 
 ## Read Workflow Numbers Carefully
 
-If `corsa-bind` beats `tsgo` in `editor_workflow`, it does not mean the wrapper is faster than the engine.
+If `corsa` beats `tsgo` in `editor_workflow`, it does not mean the wrapper is faster than the engine.
 It means the wrapper avoided redundant work by reusing state and narrowing the workload.
 
 That is a good outcome, but it is a different claim.
@@ -309,11 +309,11 @@ The current benchmarks intentionally run on real projects from the pinned upstre
 
 Good claim:
 
-- "`corsa-bind` warm editor workflow is faster than rerunning `tsgo --noEmit` on the same project."
+- "`corsa` warm editor workflow is faster than rerunning `tsgo --noEmit` on the same project."
 
 Bad claim:
 
-- "`corsa-bind` is faster than `tsgo`."
+- "`corsa` is faster than `tsgo`."
 
 The first says what was actually measured.
 The second overstates what the data means.

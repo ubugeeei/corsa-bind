@@ -1,6 +1,6 @@
 import { bench, describe } from "vitest";
 
-import { CorsaApiClient } from "@corsa-bind/node";
+import { TsgoApiClient } from "@corsa/node";
 
 import { benchOptions, ensureBenchInputs, openBenchSession } from "./support";
 
@@ -21,9 +21,9 @@ process.on("exit", () => {
 for (const mode of ["msgpack", "jsonrpc"] as const) {
   const session = sessions[mode];
 
-  describe(`CorsaApiClient ${mode}`, () => {
+  describe(`TsgoApiClient ${mode}`, () => {
     bench("spawn+initialize", () => {
-      const client = CorsaApiClient.spawn(benchOptions(mode));
+      const client = TsgoApiClient.spawn(benchOptions(mode));
       try {
         client.initialize();
       } finally {

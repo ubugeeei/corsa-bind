@@ -1,8 +1,8 @@
 # Performance
 
-`corsa-bind` ships with two benchmark layers:
+`corsa` ships with two benchmark layers:
 
-- Native real-corsa benchmark: `vp run -w bench_native`
+- Native real-tsgo benchmark: `vp run -w bench_native`
 - Native deep benchmark: `vp run -w bench_native_deep`
 - Tooling + orchestration benchmark: `vp run -w bench_tooling_compare`
 - Node binding benchmark: `vp run -w bench_ts`
@@ -26,7 +26,7 @@ For the reasoning behind these benchmark layers, implementation notes, and exten
 The tooling benchmark is the `bench_tooling_compare` binary. It tracks two workloads:
 
 - `project_check`: `tsc`, `tsgo`, and `typescript-eslint` on the same dataset
-- `editor_workflow`: `corsa-bind` msgpack cold and warm orchestration over a representative multi-query API flow
+- `editor_workflow`: `corsa` msgpack cold and warm orchestration over a representative multi-query API flow
 
 Before running it for the first time, install the comparison dependencies:
 
@@ -37,7 +37,7 @@ vp run -w bench_tooling_setup
 Then run:
 
 ```bash
-cargo run --release -p corsa_bind_rs --bin bench_tooling_compare -- \
+cargo run --release -p corsa --bin bench_tooling_compare -- \
   --iterations 10 \
   --warmup-iterations 2 \
   --json-output .cache/bench_tooling_compare.json
@@ -50,10 +50,10 @@ The runner creates temporary overlay `tsconfig` files for CLI parity, enforces p
 
 ## Native Runner
 
-The native benchmark runner is the `bench_real_corsa` binary:
+The native benchmark runner is the `bench_real_tsgo` binary:
 
 ```bash
-cargo run --release -p corsa_bind_rs --bin bench_real_corsa -- \
+cargo run --release -p corsa --bin bench_real_tsgo -- \
   --cold-iterations 5 \
   --warm-iterations 20 \
   --json-output .cache/bench_native.json
@@ -62,7 +62,7 @@ cargo run --release -p corsa_bind_rs --bin bench_real_corsa -- \
 For a heavier pass that is better suited to before/after comparisons, use:
 
 ```bash
-cargo run --release -p corsa_bind_rs --bin bench_real_corsa -- \
+cargo run --release -p corsa --bin bench_real_tsgo -- \
   --cold-iterations 10 \
   --warm-iterations 80 \
   --json-output .cache/bench_native_deep.json
@@ -88,11 +88,11 @@ Default native scenarios now cover both transport and type-query hot paths:
 
 ## Datasets
 
-| dataset      | files |   bytes |  lines | config                                             |
-| ------------ | ----: | ------: | -----: | -------------------------------------------------- |
-| `ast`        |    29 | 630,429 | 14,653 | `origin/typescript-go/_packages/ast/tsconfig.json` |
-| `api`        |    31 | 278,806 |  7,097 | `origin/typescript-go/_packages/api/tsconfig.json` |
-| `_extension` |    13 |  78,255 |  2,022 | `origin/typescript-go/_extension/tsconfig.json`    |
+| dataset      | files |   bytes |  lines | config                                          |
+| ------------ | ----: | ------: | -----: | ----------------------------------------------- |
+| `ast`        |    29 | 630,429 | 14,653 | `ref/typescript-go/_packages/ast/tsconfig.json` |
+| `api`        |    31 | 278,806 |  7,097 | `ref/typescript-go/_packages/api/tsconfig.json` |
+| `_extension` |    13 |  78,255 |  2,022 | `ref/typescript-go/_extension/tsconfig.json`    |
 
 ## 2026-03-31 Tooling Compare
 
@@ -113,15 +113,15 @@ vp run -w bench_tooling_compare
 ### Editor Workflow
 
 These rows are intentionally not the same workload as a full compiler CLI check.
-They model a `corsa-bind` session that opens a project once and then runs a representative query flow (`default project` + `source file` + `symbol` + `type` + `typeToString`).
+They model a `corsa` session that opens a project once and then runs a representative query flow (`default project` + `source file` + `symbol` + `type` + `typeToString`).
 
-| dataset      | `tsgo` CLI project check | `corsa-bind` cold workflow | `corsa-bind` warm workflow |
-| ------------ | -----------------------: | -------------------------: | -------------------------: |
-| `ast`        |                   23.995 |                     19.666 |                      0.376 |
-| `api`        |                   35.783 |                     30.049 |                      0.181 |
-| `_extension` |                   58.801 |                     45.811 |                      0.186 |
+| dataset      | `tsgo` CLI project check | `corsa` cold workflow | `corsa` warm workflow |
+| ------------ | -----------------------: | --------------------: | --------------------: |
+| `ast`        |                   23.995 |                19.666 |                 0.376 |
+| `api`        |                   35.783 |                30.049 |                 0.181 |
+| `_extension` |                   58.801 |                45.811 |                 0.186 |
 
-The interesting part is not that `corsa-bind` somehow beats the underlying engine on identical work.
+The interesting part is not that `corsa` somehow beats the underlying engine on identical work.
 It does not.
 The interesting part is that orchestration plus session reuse can beat rerunning `tsgo --noEmit` when the workload is editor-like rather than a full project check.
 
@@ -151,8 +151,8 @@ The current Vitest bench summary is useful for relative ranking but the JSON fil
 
 ## Notes
 
-- `ApiSpawnConfig::new()` defaults to `SyncMsgpackStdio`, because it is still consistently ahead on the measured real-corsa paths.
+- `ApiSpawnConfig::new()` defaults to `SyncMsgpackStdio`, because it is still consistently ahead on the measured real-tsgo paths.
 - `getSourceFile` benefits strongly from msgpack because async JSON-RPC has to carry binary payloads through JSON framing.
 - `bench/src/report_guard.test.ts` fails when benchmark samples go missing or when the measured hot paths drift past the configured budget.
-- `src/bindings/rust/corsa_bind_rs/tests/real_corsa_baseline.rs` pins the real upstream API summary for the locked `tsgo` commit.
+- `crates/corsa/tests/real_tsgo_baseline.rs` pins the real upstream API summary for the locked `tsgo` commit.
 - `printNode` is intentionally excluded from the default native suite at the pinned upstream commit because the real `tsgo` server can still panic inside `internal/printer` on real project data.

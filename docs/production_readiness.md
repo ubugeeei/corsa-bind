@@ -1,6 +1,6 @@
 # Production Readiness Guide
 
-This document is the short operational checklist for running `corsa-bind` in production-style environments.
+This document is the short operational checklist for running `corsa` in production-style environments.
 
 ## Scope
 
@@ -8,7 +8,6 @@ The current production target is:
 
 - local Rust and Node API clients
 - published Node bindings with prebuilt packages for supported targets
-- published TypeScript runtime packages for shared, browser, Deno, Node.js, and Bun entrypoints
 - LSP stdio integrations
 - local worker orchestration and cache reuse
 
@@ -40,7 +39,7 @@ For long-lived services:
 - keep `request_timeout` enabled
 - reduce `outbound_capacity` if you prefer earlier backpressure
 - tune `max_cached_snapshots` and `max_cached_results` to fit process memory budgets
-- wire a `CorsaObserver` into spawn/orchestrator configs so timeouts and evictions reach your telemetry stack
+- wire a `TsgoObserver` into spawn/orchestrator configs so timeouts and evictions reach your telemetry stack
 - leave unstable upstream endpoints disabled unless you have a concrete need and a rollback plan
 
 For editor-like integrations:
@@ -54,10 +53,10 @@ For editor-like integrations:
 - `vp check`
 - `cargo clippy --workspace --all-targets -- -D warnings`
 - `vp run -w test`
-- `cargo test -p corsa_bind_rs --no-default-features --test orchestrator`
-- `cargo test -p corsa_bind_rs --features experimental-distributed --test orchestrator`
+- `cargo test -p corsa --no-default-features --test orchestrator`
+- `cargo test -p corsa --features experimental-distributed --test orchestrator`
 - `vp run -w bench_verify`
-- `vp run -w verify_origin`
+- `vp run -w verify_ref`
 - `cargo deny check advisories bans licenses sources`
 - `vp run -w release_dry_run`
 
@@ -79,7 +78,7 @@ Published Node prebuild coverage currently targets:
 - `linux-x64-gnu`
 - `win32-x64-msvc`
 
-Release safety rule: do not publish `@corsa-bind/node` for a new version until all
+Release safety rule: do not publish `@corsa/node` for a new version until all
 four native binding packages for that version are built and staged. The root
 package's optional dependencies are versioned, so a partial first publish would
 leave later platforms stranded until the next release.

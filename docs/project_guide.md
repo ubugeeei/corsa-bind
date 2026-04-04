@@ -1,13 +1,7 @@
 # Project Architecture, Strategy, and Implementation Tips
 
-This document is the high-level map for `corsa-bind`.
+This document is the high-level map for `corsa`.
 It explains what the repository is trying to achieve, which constraints shape the design, how the crates fit together, and what patterns are worth following when extending the project.
-
-The repository name intentionally borrows TypeScript's own internal terminology.
-In the TypeScript team's public updates, `Corsa` refers to the native TypeScript
-7 effort and `Strada` refers to the existing JS-based line, so the `corsa-*`
-packages in this repo are meant to read as native-leaning infrastructure around
-`typescript-go`, not wrappers around the older Strada API surface.
 
 If you want measured numbers, go to [performance.md](./performance.md).
 If you want benchmark rationale, go to [benchmarking_guide.md](./benchmarking_guide.md).
@@ -15,7 +9,7 @@ If you want CI and local reproduction details, go to [ci_guide.md](./ci_guide.md
 
 ## Why This Project Exists
 
-`corsa-bind` exists to make `typescript-go` usable from Rust and Node.js in production-style workflows without maintaining a fork of upstream.
+`corsa` exists to make `typescript-go` usable from Rust and Node.js in production-style workflows without maintaining a fork of upstream.
 
 In practical terms, the repository is trying to provide:
 
@@ -45,7 +39,7 @@ That means:
 - benchmark wins have to come from transport and orchestration, not private engine modifications
 - upgrading upstream is work, but it is honest work
 
-This policy is enforced through `origin/typescript-go`, `corsa_origin.lock.toml`, and `corsa_bind_ref`.
+This policy is enforced through `ref/typescript-go`, `tsgo_ref.lock.toml`, and `corsa_ref`.
 
 ### 2. Reproducibility Beats Convenience
 
@@ -63,7 +57,7 @@ Without it, regressions in a fast-moving upstream project become very hard to re
 
 ### 3. Workflow Speed Matters More Than Single-Call Glory
 
-`corsa-bind` sits on top of `tsgo`.
+`corsa` sits on top of `tsgo`.
 If both are asked to do exactly the same work exactly once, parity is the healthy target.
 
 The realistic win conditions are:
@@ -94,21 +88,21 @@ At a high level, the repository looks like this:
 
 ```mermaid
 flowchart LR
-    A["Rust caller"] --> B["corsa-bind facade"]
-    B --> C["corsa_bind_client"]
-    B --> D["corsa_bind_lsp"]
-    C --> E["corsa_bind_jsonrpc"]
+    A["Rust caller"] --> B["corsa facade"]
+    B --> C["corsa_client"]
+    B --> D["corsa_lsp"]
+    C --> E["corsa_jsonrpc"]
     C --> F["msgpack worker"]
     D --> E
-    C --> G["corsa_bind_core"]
+    C --> G["corsa_core"]
     D --> G
     E --> G
     C --> H["tsgo process"]
     D --> H
-    I["corsa_bind_orchestrator"] --> C
+    I["corsa_orchestrator"] --> C
     I --> D
-    J["corsa_bind_node"] --> B
-    K["corsa_oxlint"] --> J
+    J["corsa_node"] --> B
+    K["typescript_oxlint"] --> J
 ```
 
 The mental model is:
@@ -120,11 +114,11 @@ The mental model is:
 - `orchestrator` owns pooling, caching, and replicated state
 - `runtime` keeps async execution lightweight and local to the repository
 - `ref` owns upstream pinning and verification
-- `corsa_bind_node` and `corsa_oxlint` expose the Rust engine to JS and TS consumers
+- `corsa_node` and `typescript_oxlint` expose the Rust engine to JS and TS consumers
 
 ## Workspace Walkthrough
 
-### `corsa_bind_core`
+### `corsa_core`
 
 Role:
 
@@ -144,7 +138,7 @@ Touch this crate when:
 - adjusting process shutdown behavior
 - changing low-level shared performance primitives
 
-### `corsa_bind_jsonrpc`
+### `corsa_jsonrpc`
 
 Role:
 
@@ -163,7 +157,7 @@ Touch this crate when:
 - a callback or event routing issue shows up
 - a transport-level benchmark regression points at JSON-RPC framing or synchronization
 
-### `corsa_bind_client`
+### `corsa_client`
 
 Role:
 
@@ -183,7 +177,7 @@ Touch this crate when:
 - refining Rust-side response or handle modeling
 - changing transport defaults or behavior
 
-### `corsa_bind_lsp`
+### `corsa_lsp`
 
 Role:
 
@@ -202,7 +196,7 @@ Touch this crate when:
 - debugging overlay or UTF-16 position handling
 - replicating virtual state through higher-level orchestration
 
-### `corsa_bind_orchestrator`
+### `corsa_orchestrator`
 
 Role:
 
@@ -223,7 +217,7 @@ Touch this crate when:
 - adding new caching strategies
 - experimenting with replicated editor state
 
-### `corsa_bind_runtime`
+### `corsa_runtime`
 
 Role:
 
@@ -245,7 +239,7 @@ Do not touch it casually:
 
 - every new primitive added here becomes an architectural choice for the whole workspace
 
-### `corsa_bind_ref`
+### `corsa_ref`
 
 Role:
 
@@ -259,9 +253,9 @@ Why it exists:
 Touch this crate when:
 
 - the upstream pinning policy changes
-- CI or local reproduction around `origin/typescript-go` needs stronger guarantees
+- CI or local reproduction around `ref/typescript-go` needs stronger guarantees
 
-### `corsa_bind_rs`
+### `corsa`
 
 Role:
 
@@ -275,7 +269,7 @@ Why it exists:
 - consumers often want one import surface
 - repo-level tests and benchmark runners need a home
 
-### `src/bindings/nodejs/corsa_bind_node`
+### `npm/corsa_node`
 
 Role:
 
@@ -290,11 +284,11 @@ Touch this package when:
 - a Rust capability needs to be surfaced to JS
 - the JS wrapper API shape should change
 
-### `src/bindings/nodejs/corsa_oxlint`
+### `npm/typescript_oxlint`
 
 Role:
 
-- type-aware JS and TS authoring model tailored for `Oxlint`
+- type-aware JS and TS authoring model similar to `typescript-eslint`
 - compatibility layer over the Rust and Node bindings
 
 Why it exists:
@@ -305,7 +299,7 @@ Why it exists:
 Touch this package when:
 
 - parser services, checker shims, or rule ergonomics need to evolve
-- parity with upstream or Oxlint-first authoring workflows matters
+- parity with upstream or `typescript-eslint`-style workflows matters
 
 ## End-to-End Flows
 
@@ -363,7 +357,7 @@ Important properties:
 Typical path:
 
 1. Build Rust code and `napi-rs` bindings.
-2. Import `@corsa-bind/node` or the higher-level compatibility layer.
+2. Import `@corsa/node` or the higher-level compatibility layer.
 3. Use Rust-backed checker or session behavior from JS and TS.
 
 Important properties:
@@ -422,7 +416,7 @@ The repository should decode more only when a real consumer and a stable value c
 
 ### Why the Ref Verification Is Strict
 
-`verify_origin` insists on:
+`verify_ref` insists on:
 
 - exact pinned commit
 - detached `HEAD`
@@ -448,7 +442,7 @@ Recommended pattern:
 4. Add a method on `ApiClient` in the appropriate `methods_*` module.
 5. Prefer names that mirror upstream closely.
 6. Add a mock-server integration test.
-7. Add a real-corsa regression test if the endpoint matters to compatibility.
+7. Add a real-tsgo regression test if the endpoint matters to compatibility.
 
 Good instincts:
 
@@ -500,7 +494,7 @@ Good instincts:
 - keep replicated state deterministic
 - keep live process handles and replicated metadata conceptually separate
 
-### When Touching `corsa_oxlint`
+### When Touching `typescript_oxlint`
 
 Checklist:
 
@@ -517,7 +511,7 @@ Good instincts:
 
 ### Mistaking Wrapper Wins for Engine Wins
 
-If `corsa-bind` wins in an editor-style benchmark, that does not mean it out-compiled `tsgo`.
+If `corsa` wins in an editor-style benchmark, that does not mean it out-compiled `tsgo`.
 It usually means it:
 
 - reused state
@@ -565,7 +559,7 @@ For most work:
 
 1. `vp check`
 2. `cargo test --workspace`
-3. if the change touches the real upstream path, run the real-corsa regression tests
+3. if the change touches the real upstream path, run the real-tsgo regression tests
 4. if the change touches performance-sensitive code, run the relevant benchmark layer
 5. if the change touches docs.rs-facing Rust API, run `RUSTDOCFLAGS='-D warnings' cargo doc --workspace --no-deps`
 
@@ -583,29 +577,29 @@ If you are new to the codebase, this reading order works well:
 
 1. [README.md](../README.md)
 2. this guide
-3. crate roots under `src/core/*/src/lib.rs`
-4. `corsa_bind_client` methods and response types
-5. `corsa_bind_lsp` overlay and virtual document logic
-6. `corsa_bind_orchestrator` pooling, state, and Raft code
-7. benchmark runners under `src/bindings/rust/corsa_bind_rs/src/bin`
+3. crate roots under `crates/*/src/lib.rs`
+4. `corsa_client` methods and response types
+5. `corsa_lsp` overlay and virtual document logic
+6. `corsa_orchestrator` pooling, state, and Raft code
+7. benchmark runners under `crates/corsa/src/bin`
 
 If you are debugging performance:
 
 1. [benchmarking_guide.md](./benchmarking_guide.md)
 2. [performance.md](./performance.md)
-3. `bench_real_corsa`
+3. `bench_real_tsgo`
 4. transport code in `client`, `jsonrpc`, and `runtime`
 
 If you are debugging CI or environment issues:
 
 1. [ci_guide.md](./ci_guide.md)
 2. `vite.config.ts`
-3. `corsa_bind_ref`
-4. the managed upstream checkout under `origin/typescript-go`
+3. `corsa_ref`
+4. the managed upstream checkout under `ref/typescript-go`
 
 ## Final Mental Model
 
-The easiest way to reason about `corsa-bind` is:
+The easiest way to reason about `corsa` is:
 
 - upstream `tsgo` is the compiler engine
 - this repository is the systems layer around that engine

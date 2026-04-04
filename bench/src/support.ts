@@ -1,54 +1,54 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { ApiClientOptions, ApiMode, ConfigResponse } from "@corsa-bind/node";
-import { CorsaApiClient } from "@corsa-bind/node";
+import type { ApiClientOptions, ApiMode, ConfigResponse } from "@corsa/node";
+import { TsgoApiClient } from "@corsa/node";
 
 export const workspaceRoot = resolve(import.meta.dirname, "../..");
-export const corsaPath = resolve(
+export const tsgoPath = resolve(
   workspaceRoot,
-  process.platform === "win32" ? ".cache/corsa.exe" : ".cache/corsa",
+  process.platform === "win32" ? ".cache/tsgo.exe" : ".cache/tsgo",
 );
-export const datasetPath = resolve(
+export const datasetPath = resolve(workspaceRoot, "ref/typescript-go/_packages/api/tsconfig.json");
+export const typescriptOxlintFixtureDir = resolve(
   workspaceRoot,
-  "origin/typescript-go/_packages/api/tsconfig.json",
+  "bench/fixtures/typescript_oxlint",
 );
-export const corsaOxlintFixtureDir = resolve(workspaceRoot, "bench/fixtures/corsa_oxlint");
-export const corsaOxlintConfigPath = resolve(corsaOxlintFixtureDir, "tsconfig.json");
-export const corsaOxlintFilePath = resolve(corsaOxlintFixtureDir, "index.ts");
-export const corsaOxlintSourceText = readFileSync(corsaOxlintFilePath, "utf8");
+export const typescriptOxlintConfigPath = resolve(typescriptOxlintFixtureDir, "tsconfig.json");
+export const typescriptOxlintFilePath = resolve(typescriptOxlintFixtureDir, "index.ts");
+export const typescriptOxlintSourceText = readFileSync(typescriptOxlintFilePath, "utf8");
 
 export function benchOptions(mode: ApiMode): ApiClientOptions {
   return {
-    executable: corsaPath,
+    executable: tsgoPath,
     cwd: workspaceRoot,
     mode,
   };
 }
 
 export function ensureBenchInputs(): void {
-  if (!existsSync(corsaPath)) {
+  if (!existsSync(tsgoPath)) {
     throw new Error(
-      "missing built Corsa binary under .cache; run `vp run -w build` or `vp run -w build_corsa` first",
+      "missing built tsgo binary under .cache; run `vp run -w build` or `vp run -w build_tsgo` first",
     );
   }
   if (!existsSync(datasetPath)) {
-    throw new Error("missing pinned upstream dataset under origin/typescript-go");
+    throw new Error("missing pinned tsgo dataset under ref/typescript-go");
   }
-  if (!existsSync(corsaOxlintConfigPath)) {
-    throw new Error("missing corsa-oxlint fixture tsconfig");
+  if (!existsSync(typescriptOxlintConfigPath)) {
+    throw new Error("missing oxlint-plugin-typescript-go fixture tsconfig");
   }
 }
 
 export function openBenchSession(mode: ApiMode): {
-  client: CorsaApiClient;
+  client: TsgoApiClient;
   config: ConfigResponse;
   configPath: string;
   projectId: string;
   primaryFile: string;
   snapshot: string;
 } {
-  const client = CorsaApiClient.spawn(benchOptions(mode));
+  const client = TsgoApiClient.spawn(benchOptions(mode));
   client.initialize();
   const config = client.parseConfigFile(datasetPath);
   const snapshot = client.updateSnapshot({ openProject: datasetPath });

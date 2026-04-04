@@ -1,5 +1,4 @@
 packages:
   - examples
   - bench
-  - src/bindings/nodejs/*
-  - src/bindings/typescript/*
+  - npm/*

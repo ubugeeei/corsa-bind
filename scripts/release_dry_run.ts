@@ -4,8 +4,7 @@ import { resolve } from "node:path";
 
 import {
   publishPackedTarball,
-  corsaOxlintPackage,
-  typescriptPackages,
+  typescriptOxlintPackage,
   withStagedNodeBindingPackages,
 } from "./npm_release_utils.ts";
 import { fail, rootDir, runCommand } from "./shared.ts";
@@ -18,45 +17,45 @@ interface CrateSpec {
 
 const crates: CrateSpec[] = [
   {
-    name: "corsa_bind_core",
-    path: resolve(rootDir, "src/core/corsa_bind_core"),
+    name: "corsa_core",
+    path: resolve(rootDir, "crates/corsa_core"),
     patches: [],
   },
   {
-    name: "corsa_bind_runtime",
-    path: resolve(rootDir, "src/core/corsa_bind_runtime"),
+    name: "corsa_runtime",
+    path: resolve(rootDir, "crates/corsa_runtime"),
     patches: [],
   },
   {
-    name: "corsa_bind_jsonrpc",
-    path: resolve(rootDir, "src/core/corsa_bind_jsonrpc"),
-    patches: ["corsa_bind_core", "corsa_bind_runtime"],
+    name: "corsa_jsonrpc",
+    path: resolve(rootDir, "crates/corsa_jsonrpc"),
+    patches: ["corsa_core", "corsa_runtime"],
   },
   {
-    name: "corsa_bind_client",
-    path: resolve(rootDir, "src/core/corsa_bind_client"),
-    patches: ["corsa_bind_core", "corsa_bind_jsonrpc", "corsa_bind_runtime"],
+    name: "corsa_client",
+    path: resolve(rootDir, "crates/corsa_client"),
+    patches: ["corsa_core", "corsa_jsonrpc", "corsa_runtime"],
   },
   {
-    name: "corsa_bind_lsp",
-    path: resolve(rootDir, "src/core/corsa_bind_lsp"),
-    patches: ["corsa_bind_core", "corsa_bind_jsonrpc", "corsa_bind_runtime"],
+    name: "corsa_lsp",
+    path: resolve(rootDir, "crates/corsa_lsp"),
+    patches: ["corsa_core", "corsa_jsonrpc", "corsa_runtime"],
   },
   {
-    name: "corsa_bind_orchestrator",
-    path: resolve(rootDir, "src/core/corsa_bind_orchestrator"),
-    patches: ["corsa_bind_client", "corsa_bind_core", "corsa_bind_lsp", "corsa_bind_runtime"],
+    name: "corsa_orchestrator",
+    path: resolve(rootDir, "crates/corsa_orchestrator"),
+    patches: ["corsa_client", "corsa_core", "corsa_lsp", "corsa_runtime"],
   },
   {
-    name: "corsa_bind_rs",
-    path: resolve(rootDir, "src/bindings/rust/corsa_bind_rs"),
+    name: "corsa",
+    path: resolve(rootDir, "crates/corsa"),
     patches: [
-      "corsa_bind_client",
-      "corsa_bind_core",
-      "corsa_bind_jsonrpc",
-      "corsa_bind_lsp",
-      "corsa_bind_orchestrator",
-      "corsa_bind_runtime",
+      "corsa_client",
+      "corsa_core",
+      "corsa_jsonrpc",
+      "corsa_lsp",
+      "corsa_orchestrator",
+      "corsa_runtime",
     ],
   },
 ];
@@ -79,7 +78,7 @@ function patchConfigFor(crateName: string): { configDir: string; configPath: str
     return `${dependency.name} = { path = "${normalizePath(dependency.path)}" }`;
   });
 
-  const configDir = mkdtempSync(resolve(tmpdir(), "corsa-bind-release-dry-run-"));
+  const configDir = mkdtempSync(resolve(tmpdir(), "corsa-release-dry-run-"));
   const configPath = resolve(configDir, "cargo-config.toml");
   const configBody = patchLines.length === 0 ? "" : `[patch.crates-io]\n${patchLines.join("\n")}\n`;
   writeFileSync(configPath, configBody, "utf8");
@@ -103,12 +102,7 @@ async function main(): Promise<void> {
   await withStagedNodeBindingPackages(
     { requireAllTargets: false },
     async ({ binaryPackages, rootPackage }) => {
-      for (const npmPackage of [
-        ...binaryPackages,
-        rootPackage,
-        ...typescriptPackages,
-        corsaOxlintPackage,
-      ]) {
+      for (const npmPackage of [...binaryPackages, rootPackage, typescriptOxlintPackage]) {
         publishPackedTarball(npmPackage, { dryRun: true });
       }
     },

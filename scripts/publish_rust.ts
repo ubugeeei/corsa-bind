@@ -1,18 +1,18 @@
 import { assertCommandSucceeded, fail, rootDir, runCommandCapture, sleep } from "./shared.ts";
 
 const crateNames = [
-  "corsa_bind_core",
-  "corsa_bind_runtime",
-  "corsa_bind_jsonrpc",
-  "corsa_bind_client",
-  "corsa_bind_lsp",
-  "corsa_bind_orchestrator",
-  "corsa_bind_rs",
+  "corsa_core",
+  "corsa_runtime",
+  "corsa_jsonrpc",
+  "corsa_client",
+  "corsa_lsp",
+  "corsa_orchestrator",
+  "corsa",
 ] as const;
 
 const delayMs = Number(process.env.CARGO_PUBLISH_DELAY_MS ?? "30000");
 const startAt = process.env.CARGO_PUBLISH_START_AT?.trim() || undefined;
-const cratesIoUserAgent = "corsa-bind-release-script";
+const cratesIoUserAgent = "corsa-release-script";
 
 interface CargoMetadata {
   packages: Array<{

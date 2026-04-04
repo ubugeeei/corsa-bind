@@ -1,6 +1,6 @@
 mod support;
 
-use corsa_bind_rs::{
+use corsa::{
     jsonrpc::RequestId,
     lsp::{VirtualChange, VirtualDocument},
     runtime::block_on,
@@ -8,7 +8,7 @@ use corsa_bind_rs::{
 use lsp_types::{Position, Range};
 use serde_json::json;
 
-fn main() -> Result<(), corsa_bind_rs::CorsaError> {
+fn main() -> Result<(), corsa::TsgoError> {
     let doubled = block_on(async { 21 * 2 });
     let mut document =
         VirtualDocument::untitled("/examples/minimal.ts", "typescript", "const answer = 41;\n")?;

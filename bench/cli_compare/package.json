@@ -1,5 +1,5 @@
 {
-  "name": "@corsa-bind/cli-compare",
+  "name": "@corsa/cli-compare",
   "private": true,
   "type": "module",
   "dependencies": {

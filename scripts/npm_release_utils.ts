@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process";
 import {
-  existsSync,
   copyFileSync,
   cpSync,
   mkdtempSync,
@@ -58,7 +57,6 @@ interface NodeBindingManifest extends Record<string, unknown> {
   bugs?: Record<string, unknown>;
   description?: string;
   engines?: Record<string, unknown>;
-  exports?: unknown;
   files?: string[];
   homepage?: string;
   keywords?: string[];
@@ -75,7 +73,6 @@ interface NodeBindingManifest extends Record<string, unknown> {
   libc?: string[];
   publishConfig?: Record<string, unknown>;
   repository?: Record<string, unknown>;
-  types?: string;
   version: string;
 }
 
@@ -86,55 +83,17 @@ interface BindingArtifact {
 }
 
 export const nodeBindingPackage: PublishablePackage = {
-  name: "@corsa-bind/node",
-  path: resolve(rootDir, "src/bindings/nodejs/corsa_bind_node"),
+  name: "@corsa/node",
+  path: resolve(rootDir, "npm/corsa_node"),
   access: "public",
 };
 
-export const corsaOxlintPackage: PublishablePackage = {
-  name: "corsa-oxlint",
-  path: resolve(rootDir, "src/bindings/nodejs/corsa_oxlint"),
+export const typescriptOxlintPackage: PublishablePackage = {
+  name: "oxlint-plugin-typescript-go",
+  path: resolve(rootDir, "npm/typescript_oxlint"),
 };
 
-export const typescriptSharedPackage: PublishablePackage = {
-  access: "public",
-  name: "@corsa-bind/typescript",
-  path: resolve(rootDir, "src/bindings/typescript/typescript"),
-};
-
-export const typescriptBrowserPackage: PublishablePackage = {
-  access: "public",
-  name: "@corsa-bind/browser",
-  path: resolve(rootDir, "src/bindings/typescript/browser"),
-};
-
-export const typescriptDenoPackage: PublishablePackage = {
-  access: "public",
-  name: "@corsa-bind/deno",
-  path: resolve(rootDir, "src/bindings/typescript/deno"),
-};
-
-export const typescriptNodeJsPackage: PublishablePackage = {
-  access: "public",
-  name: "@corsa-bind/nodejs",
-  path: resolve(rootDir, "src/bindings/typescript/nodejs"),
-};
-
-export const typescriptBunPackage: PublishablePackage = {
-  access: "public",
-  name: "@corsa-bind/bun",
-  path: resolve(rootDir, "src/bindings/typescript/bun"),
-};
-
-export const typescriptPackages = [
-  typescriptSharedPackage,
-  typescriptBrowserPackage,
-  typescriptDenoPackage,
-  typescriptNodeJsPackage,
-  typescriptBunPackage,
-];
-
-export const npmPackages = [nodeBindingPackage, ...typescriptPackages, corsaOxlintPackage];
+export const npmPackages = [nodeBindingPackage, typescriptOxlintPackage];
 
 const defaultTargetTriples = [
   "x86_64-pc-windows-msvc",
@@ -210,6 +169,22 @@ function getNpmRegistryBase(): string {
   );
 }
 
+export async function doesNpmPackageExist(packageName: string): Promise<boolean> {
+  const response = await fetch(`${getNpmRegistryBase()}/${encodeURIComponent(packageName)}`);
+
+  if (response.status === 404) {
+    return false;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to query npm registry for ${packageName}: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  return true;
+}
+
 export function getPackageVersion(pkg: PublishablePackage): string {
   return getPackageManifest(pkg).version;
 }
@@ -220,45 +195,6 @@ export function assertPublishablePackageManifest(pkg: PublishablePackage): void 
     throw new Error(
       `Publish manifest mismatch for ${pkg.path}: expected ${pkg.name}, found ${manifest.name}`,
     );
-  }
-
-  const entryPaths = new Set<string>();
-  const addEntryPath = (entry: unknown): void => {
-    if (typeof entry === "string") {
-      if (
-        entry.startsWith("node:") ||
-        entry.startsWith("http://") ||
-        entry.startsWith("https://") ||
-        entry.startsWith("#")
-      ) {
-        return;
-      }
-      entryPaths.add(entry.startsWith("./") ? entry.slice(2) : entry);
-      return;
-    }
-
-    if (Array.isArray(entry)) {
-      for (const item of entry) {
-        addEntryPath(item);
-      }
-      return;
-    }
-
-    if (entry && typeof entry === "object") {
-      for (const value of Object.values(entry)) {
-        addEntryPath(value);
-      }
-    }
-  };
-
-  addEntryPath(manifest.main);
-  addEntryPath(manifest.types);
-  addEntryPath(manifest.exports);
-
-  for (const entryPath of entryPaths) {
-    if (entryPath.length === 0 || !existsSync(resolve(pkg.path, entryPath))) {
-      throw new Error(`Publish manifest for ${pkg.name} references a missing file: ${entryPath}`);
-    }
   }
 }
 
@@ -346,6 +282,15 @@ export function getNodeBindingTargets(
       seen.add(target.platformArchABI);
       return true;
     });
+}
+
+export function getNodeBindingBinaryPackageNames(
+  packageJson = readJson<NodeBindingManifest>(resolve(nodeBindingPackage.path, "package.json")),
+): string[] {
+  const rootPackageName = packageJson.name;
+  return getNodeBindingTargets(packageJson).map(
+    (target) => `${rootPackageName}-${target.platformArchABI}`,
+  );
 }
 
 export function createBinaryPackageManifest(
@@ -458,7 +403,7 @@ function copyRootBindingPackage(stagePath: string): void {
       }
 
       const relativePath = relative(nodeBindingPackage.path, sourcePath).replaceAll("\\", "/");
-      if (relativePath.startsWith("src/bindings/nodejs/")) {
+      if (relativePath.startsWith("npm/")) {
         return false;
       }
       if (relativePath.endsWith(".node")) {
@@ -505,8 +450,8 @@ export function stageNodeBindingPackages({
     throw new Error("No native binding artifacts were found for the Node release packages.");
   }
 
-  const stageDir = mkdtempSync(resolve(tmpdir(), "corsa-bind-npm-stage-"));
-  const stageRootPackagePath = resolve(stageDir, "corsa_bind_node");
+  const stageDir = mkdtempSync(resolve(tmpdir(), "corsa-npm-stage-"));
+  const stageRootPackagePath = resolve(stageDir, "corsa_node");
 
   copyRootBindingPackage(stageRootPackagePath);
 
@@ -572,7 +517,7 @@ export function withPackedTarball<T>(
   pkg: PublishablePackage,
   callback: (tarballPath: string) => T,
 ): T {
-  const packDir = mkdtempSync(resolve(tmpdir(), "corsa-bind-npm-pack-"));
+  const packDir = mkdtempSync(resolve(tmpdir(), "corsa-npm-pack-"));
   const packCommand = resolvePackCommand();
   try {
     runCommand(packCommand.command, [...packCommand.args, "pack", "--pack-destination", packDir], {

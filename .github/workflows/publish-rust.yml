@@ -35,7 +35,7 @@ jobs:
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Setup Go for pinned upstream ref
+      - name: Setup Go for pinned tsgo ref
         uses: actions/setup-go@v6
         with:
           go-version: "1.26.0"
@@ -60,8 +60,11 @@ jobs:
       - name: Test
         run: vp run -w test
 
-      - name: Verify pinned upstream checkout
-        run: vp run -w verify_origin
+      - name: Sync pinned tsgo checkout
+        run: vp run -w sync_ref
+
+      - name: Verify pinned tsgo checkout
+        run: vp run -w verify_ref
 
       - name: Benchmark guards
         run: vp run -w bench_verify
@@ -94,13 +97,6 @@ jobs:
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1
-        with:
-          node-version: "24"
-          cache: true
-          run-install: true
-
       - name: Exchange OIDC token for crates.io token
         id: auth
         uses: rust-lang/crates-io-auth-action@v1
@@ -108,4 +104,4 @@ jobs:
       - name: Publish ordered crates
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-        run: vp run -w publish_rust
+        run: node --strip-types ./scripts/publish_rust.ts

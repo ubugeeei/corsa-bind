@@ -1,13 +1,13 @@
 mod support;
 
-use corsa_bind_rs::{
-    CorsaError,
+use corsa::{
+    TsgoError,
     api::{ApiClient, ApiMode, UpdateSnapshotParams},
     runtime::block_on,
 };
 use serde_json::json;
 
-fn main() -> Result<(), corsa_bind_rs::CorsaError> {
+fn main() -> Result<(), corsa::TsgoError> {
     let result = block_on(async {
         let workspace_root = support::workspace_root();
         let dataset = support::real_dataset();
@@ -26,7 +26,7 @@ fn main() -> Result<(), corsa_bind_rs::CorsaError> {
             })
             .await?;
         let project = snapshot.projects.first().ok_or_else(|| {
-            CorsaError::Protocol("real snapshot example did not return a project".into())
+            TsgoError::Protocol("real snapshot example did not return a project".into())
         })?;
         let primary_file = config
             .file_names
@@ -35,7 +35,7 @@ fn main() -> Result<(), corsa_bind_rs::CorsaError> {
             .cloned()
             .or_else(|| config.file_names.first().cloned())
             .ok_or_else(|| {
-                CorsaError::Protocol("real snapshot example did not find a file".into())
+                TsgoError::Protocol("real snapshot example did not find a file".into())
             })?;
         let source = client
             .get_source_file(
@@ -45,7 +45,7 @@ fn main() -> Result<(), corsa_bind_rs::CorsaError> {
             )
             .await?
             .ok_or_else(|| {
-                CorsaError::Protocol("real snapshot example did not return source".into())
+                TsgoError::Protocol("real snapshot example did not return source".into())
             })?;
         let string_type = client
             .get_string_type(snapshot.handle.clone(), project.id.clone())
@@ -71,7 +71,7 @@ fn main() -> Result<(), corsa_bind_rs::CorsaError> {
         });
         snapshot.release().await?;
         client.close().await?;
-        Ok::<_, corsa_bind_rs::CorsaError>(result)
+        Ok::<_, corsa::TsgoError>(result)
     })?;
 
     support::print_json(result);

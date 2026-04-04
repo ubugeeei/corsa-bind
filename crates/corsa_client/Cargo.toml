@@ -1,0 +1,27 @@
+[package]
+name = "corsa_client"
+version = "0.1.0"
+edition = "2024"
+description = "Typed stdio API client bindings for typescript-go"
+publish = ["crates-io"]
+documentation.workspace = true
+homepage.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "corsa_client"
+path = "src/lib.rs"
+
+[dependencies]
+base64 = "0.22"
+log = { workspace = true }
+parking_lot = "0.12"
+phf = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+corsa_core = { version = "0.1.0", path = "../corsa_core" }
+corsa_jsonrpc = { version = "0.1.0", path = "../corsa_jsonrpc" }
+corsa_runtime = { version = "0.1.0", path = "../corsa_runtime" }

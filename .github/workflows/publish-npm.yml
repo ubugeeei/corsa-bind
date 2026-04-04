@@ -35,7 +35,7 @@ jobs:
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Setup Go for pinned upstream ref
+      - name: Setup Go for pinned tsgo ref
         uses: actions/setup-go@v6
         with:
           go-version: "1.26.0"
@@ -60,8 +60,11 @@ jobs:
       - name: Test
         run: vp run -w test
 
-      - name: Verify pinned upstream checkout
-        run: vp run -w verify_origin
+      - name: Sync pinned tsgo checkout
+        run: vp run -w sync_ref
+
+      - name: Verify pinned tsgo checkout
+        run: vp run -w verify_ref
 
       - name: Benchmark guards
         run: vp run -w bench_verify
@@ -112,14 +115,14 @@ jobs:
           run-install: true
 
       - name: Build native binding
-        working-directory: src/bindings/nodejs/corsa_bind_node
-        run: napi build --platform --release --target ${{ matrix.target }}
+        working-directory: npm/corsa_node
+        run: node ../../node_modules/@napi-rs/cli/scripts/index.js build --platform --release --target ${{ matrix.target }}
 
       - name: Upload native binding artifact
         uses: actions/upload-artifact@v4
         with:
           name: native-binding-${{ matrix.target }}
-          path: src/bindings/nodejs/corsa_bind_node/*.node
+          path: npm/corsa_node/*.node
           if-no-files-found: error
 
   publish:
@@ -171,4 +174,5 @@ jobs:
           NAPI_ARTIFACTS_DIR: artifacts
           NAPI_REQUIRE_ALL_TARGETS: "1"
           NPM_CONFIG_PROVENANCE: "true"
-        run: vp run -w publish_npm
+          NPM_TRUSTED_PUBLISH: "1"
+        run: node --strip-types ./scripts/publish_npm.ts

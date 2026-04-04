@@ -1,6 +1,6 @@
 # Support Policy
 
-This document defines what `corsa-bind` treats as supported for production-style
+This document defines what `corsa` treats as supported for production-style
 use and what remains experimental.
 
 ## Supported Surface
@@ -9,7 +9,6 @@ The supported production surface is currently:
 
 - local Rust API clients
 - published Node bindings for the documented prebuilt targets
-- published TypeScript runtime packages for the documented entrypoints
 - LSP stdio integrations
 - local worker orchestration and cache reuse
 
@@ -34,7 +33,7 @@ receives fixes.
 - Rust: `1.85+`
 - Node.js runtime for published packages: `22+`
 - Node.js tooling for repository scripts and examples: `24+`
-- Go: the version declared by `origin/typescript-go/go.mod`
+- Go: the version declared by `ref/typescript-go/go.mod`
 - Operating systems: Linux, macOS, and Windows for the supported local surface
 - Published Node prebuilds: `darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `win32-x64-msvc`
 

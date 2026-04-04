@@ -1,5 +1,5 @@
 {
-  "name": "corsa-bind-workspace",
+  "name": "corsa-workspace",
   "private": true,
   "description": "Rust, Node, and orchestration tooling for production-style typescript-go workflows",
   "homepage": "https://github.com/ubugeeei/corsa-bind",

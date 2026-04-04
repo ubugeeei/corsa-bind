@@ -12,7 +12,7 @@ This repository has a slightly unusual shape:
 - Rust crates
 - Node bindings through `napi-rs`
 - JS and TS code checked through Vite+ and Oxlint
-- a pinned upstream `typescript-go` checkout under `origin/typescript-go`
+- a pinned upstream `typescript-go` checkout under `ref/typescript-go`
 - regression tests and benchmarks that talk to the real pinned upstream binary
 
 That means "CI is green" is not just one compiler succeeding.
@@ -32,8 +32,8 @@ The workflow lives in [`../.github/workflows/ci.yml`](../.github/workflows/ci.ym
 It currently has three CI jobs in the main workflow:
 
 - `quality`
-- `real-corsa-smoke`
-- `bench-corsa-origin`
+- `real-tsgo-smoke`
+- `bench-tsgo-ref`
 
 ## `quality`
 
@@ -56,9 +56,9 @@ vp run -w build
 vp run -w test
 ```
 
-## `real-corsa-smoke`
+## `real-tsgo-smoke`
 
-The `real-corsa-smoke` job answers:
+The `real-tsgo-smoke` job answers:
 
 - is the pinned upstream checkout exactly where the lockfile says it should be?
 - can the pinned upstream `tsgo` binary actually build?
@@ -67,15 +67,15 @@ The `real-corsa-smoke` job answers:
 The important commands are:
 
 ```bash
-vp run -w sync_origin
-vp run -w verify_origin
-vp run -w build_corsa
-cargo test -p corsa_bind_rs --no-default-features --test real_corsa_regression --test real_corsa_typecheck
+vp run -w sync_ref
+vp run -w verify_ref
+vp run -w build_tsgo
+cargo test -p corsa --no-default-features --test real_tsgo_regression --test real_tsgo_typecheck
 ```
 
-## `bench-corsa-origin`
+## `bench-tsgo-ref`
 
-The `bench-corsa-origin` job keeps the heavier Ubuntu-only path:
+The `bench-tsgo-ref` job keeps the heavier Ubuntu-only path:
 
 - baseline validation against the pinned upstream server
 - benchmark report regeneration
@@ -120,10 +120,10 @@ nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'cargo fmt --a
 nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'cargo clippy --workspace --all-targets -- -D warnings'
 nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w build'
 nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w test'
-nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w sync_origin'
-nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w verify_origin'
-nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w build_corsa'
-cargo test -p corsa_bind_rs --test real_corsa_baseline --test real_corsa_regression
+nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w sync_ref'
+nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w verify_ref'
+nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w build_tsgo'
+cargo test -p corsa --test real_tsgo_baseline --test real_tsgo_regression
 nix shell nixpkgs#nodejs_24 nixpkgs#pnpm nixpkgs#go_1_26 -c sh -c 'vp run -w bench_verify'
 ```
 
@@ -140,18 +140,18 @@ The CI work that made this path reliable fell into three buckets:
 
 ## 1. `vp check` Failed Before the Node Wrapper Was Built
 
-The first failure mode came from `corsa_oxlint`.
+The first failure mode came from `typescript_oxlint`.
 
-The original `tsconfig` path mapping for `@corsa-bind/node` pointed at:
+The original `tsconfig` path mapping for `@corsa/node` pointed at:
 
-- `../corsa_bind_node/dist/index.d.mts`
+- `../corsa_node/dist/index.d.mts`
 
 That works after the wrapper package has already been built.
 It is the wrong dependency edge for `vp check`, because `vp check` is supposed to validate source state before build artifacts exist.
 
 The fix was to map the package name to source instead:
 
-- [`../src/bindings/nodejs/corsa_oxlint/tsconfig.json`](../src/bindings/nodejs/corsa_oxlint/tsconfig.json)
+- [`../npm/typescript_oxlint/tsconfig.json`](../npm/typescript_oxlint/tsconfig.json)
 
 This makes `vp check` depend on the checked-in TypeScript source surface rather than on generated output.
 
@@ -162,22 +162,22 @@ That is an important distinction:
 
 If `check` depends on `dist/`, the repository can look broken even when the source is correct.
 
-## 2. `corsa_oxlint` Had Drifted from the Current Type Shape
+## 2. `typescript_oxlint` Had Drifted from the Current Type Shape
 
-After module resolution was fixed, several TypeScript errors remained in `corsa_oxlint`.
+After module resolution was fixed, several TypeScript errors remained in `typescript_oxlint`.
 
 The important ones were:
 
-- `CorsaType` access patterns assuming an `id` path while the checker only knew a narrower local shape
+- `TsgoType` access patterns assuming an `id` path while the checker only knew a narrower local shape
 - an unnecessary cast around `texts`
 - a cached config path that could be inferred as `undefined`
 
 These were corrected in:
 
-- [`../src/bindings/nodejs/corsa_oxlint/ts/session.ts`](../src/bindings/nodejs/corsa_oxlint/ts/session.ts)
-- [`../src/bindings/nodejs/corsa_oxlint/ts/rules/type_utils.ts`](../src/bindings/nodejs/corsa_oxlint/ts/rules/type_utils.ts)
+- [`../npm/typescript_oxlint/ts/session.ts`](../npm/typescript_oxlint/ts/session.ts)
+- [`../npm/typescript_oxlint/ts/rules/type_utils.ts`](../npm/typescript_oxlint/ts/rules/type_utils.ts)
 
-The practical lesson is that `corsa_oxlint` is part compatibility layer and part consumer.
+The practical lesson is that `typescript_oxlint` is part compatibility layer and part consumer.
 It needs to follow the real wrapper API shape closely, otherwise CI fails long before runtime tests do.
 
 ## 3. The Pinned Upstream Checkout Requires Go 1.26
@@ -188,20 +188,20 @@ The pinned upstream ref now declares:
 
 in:
 
-- [`../origin/typescript-go/go.mod`](../origin/typescript-go/go.mod)
+- [`../ref/typescript-go/go.mod`](../ref/typescript-go/go.mod)
 
 That means CI cannot rely on whatever `go` version happens to be preinstalled on a runner.
-Without an explicit setup step, `vp run -w build_corsa` can fail even if the repository itself is otherwise correct.
+Without an explicit setup step, `vp run -w build_tsgo` can fail even if the repository itself is otherwise correct.
 
 The workflow now sets Go explicitly through:
 
 - [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 
-using `actions/setup-go` and `go-version-file: origin/typescript-go/go.mod`.
+using `actions/setup-go` and `go-version-file: ref/typescript-go/go.mod`.
 
 This keeps the workflow aligned with the actual upstream requirement instead of duplicating a version string elsewhere.
 
-## 4. `build_corsa` Needed a Repository-Local Build Cache
+## 4. `build_tsgo` Needed a Repository-Local Build Cache
 
 Once the Go version was correct, another issue appeared locally:
 
@@ -213,7 +213,7 @@ The correct fix was to make the cache explicit and local to the repository:
 
 - [`../vite.config.ts`](../vite.config.ts)
 
-`build_corsa` now creates `.cache/go-build` and passes an absolute `GOCACHE` path to `go build`.
+`build_tsgo` now creates `.cache/go-build` and passes an absolute `GOCACHE` path to `go build`.
 
 That matters for two reasons:
 
@@ -223,11 +223,11 @@ That matters for two reasons:
 One subtle detail here is that `GOCACHE` must be absolute.
 A relative path looks harmless but is rejected by the Go toolchain.
 
-## 5. `verify_origin` Is Supposed to Be Strict
+## 5. `verify_ref` Is Supposed to Be Strict
 
-The `corsa_bind_ref` checks are intentionally unforgiving.
+The `corsa_ref` checks are intentionally unforgiving.
 
-They enforce that `origin/typescript-go` is:
+They enforce that `ref/typescript-go` is:
 
 - on the exact pinned commit
 - detached at `HEAD`
@@ -236,17 +236,17 @@ They enforce that `origin/typescript-go` is:
 This is not overkill.
 It is what makes real regression tests and performance claims auditable.
 
-While reproducing CI locally, `verify_origin` briefly failed because a tracked file inside the managed ref had drifted:
+While reproducing CI locally, `verify_ref` briefly failed because a tracked file inside the managed ref had drifted:
 
-- `origin/typescript-go/package-lock.json`
+- `ref/typescript-go/package-lock.json`
 
 That drift came from local package-manager behavior, not from intended upstream changes.
 The correct response was to restore the tracked file, not to weaken verification.
 
 Ignored files such as these are fine:
 
-- `origin/typescript-go/.cache/`
-- `origin/typescript-go/node_modules/`
+- `ref/typescript-go/.cache/`
+- `ref/typescript-go/node_modules/`
 - generated `*.tsbuildinfo`
 
 Tracked changes are not.
@@ -263,7 +263,7 @@ The benchmark path:
 - regenerated `.cache/bench_ts.json`
 - ran the benchmark guard tests
 
-After the run, no leftover `tsgo`, `bench_real_corsa`, or related benchmark worker processes remained.
+After the run, no leftover `tsgo`, `bench_real_tsgo`, or related benchmark worker processes remained.
 
 That matters because benchmark pipelines that leak processes are not just untidy.
 They are measurement bugs waiting to happen.
@@ -275,7 +275,7 @@ They reflect a few design rules.
 
 ## Source Checks Should Depend on Source, Not Generated Artifacts
 
-This was the core reason to change `corsa_oxlint`'s path mapping.
+This was the core reason to change `typescript_oxlint`'s path mapping.
 
 If `vp check` depends on a generated declaration file, then the logical order becomes:
 
@@ -309,29 +309,29 @@ The most important files for this CI stabilization work are:
 
 - [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 - [`../vite.config.ts`](../vite.config.ts)
-- [`../src/bindings/nodejs/corsa_oxlint/tsconfig.json`](../src/bindings/nodejs/corsa_oxlint/tsconfig.json)
-- [`../src/bindings/nodejs/corsa_oxlint/ts/session.ts`](../src/bindings/nodejs/corsa_oxlint/ts/session.ts)
-- [`../src/bindings/nodejs/corsa_oxlint/ts/rules/type_utils.ts`](../src/bindings/nodejs/corsa_oxlint/ts/rules/type_utils.ts)
-- [`../origin/typescript-go/go.mod`](../origin/typescript-go/go.mod)
+- [`../npm/typescript_oxlint/tsconfig.json`](../npm/typescript_oxlint/tsconfig.json)
+- [`../npm/typescript_oxlint/ts/session.ts`](../npm/typescript_oxlint/ts/session.ts)
+- [`../npm/typescript_oxlint/ts/rules/type_utils.ts`](../npm/typescript_oxlint/ts/rules/type_utils.ts)
+- [`../ref/typescript-go/go.mod`](../ref/typescript-go/go.mod)
 
 ## Troubleshooting
 
-## `vp check` says `@corsa-bind/node` cannot be found
+## `vp check` says `@corsa/node` cannot be found
 
-Check whether `corsa_oxlint` is resolving the package to source or to `dist/`.
+Check whether `typescript_oxlint` is resolving the package to source or to `dist/`.
 For source validation, it should resolve to the source TypeScript entrypoint, not to generated declarations.
 
-## `build_corsa` fails with a Go version error
+## `build_tsgo` fails with a Go version error
 
 Check:
 
 - `go version`
 - whether the shell actually exposes Go 1.26
-- whether CI is using `actions/setup-go` with `origin/typescript-go/go.mod`
+- whether CI is using `actions/setup-go` with `ref/typescript-go/go.mod`
 
 If a login shell is overriding the toolchain, prefer the `nix shell ... -c sh -c '...'` pattern.
 
-## `build_corsa` fails with a cache permission error
+## `build_tsgo` fails with a cache permission error
 
 Check whether `GOCACHE` is:
 
@@ -341,13 +341,13 @@ Check whether `GOCACHE` is:
 
 This repository now uses `.cache/go-build` under the workspace for that reason.
 
-## `verify_origin` fails even though `sync_origin` just ran
+## `verify_ref` fails even though `sync_ref` just ran
 
-Look specifically for tracked file drift inside `origin/typescript-go`:
+Look specifically for tracked file drift inside `ref/typescript-go`:
 
 ```bash
-git -C origin/typescript-go status --short
-git -C origin/typescript-go diff --stat
+git -C ref/typescript-go status --short
+git -C ref/typescript-go diff --stat
 ```
 
 Ignored files are usually not the problem.
@@ -366,7 +366,7 @@ The slowest part is usually rebuilding or rerunning the real pinned upstream bin
 ## Practical Tips
 
 - Run CI repro commands in a non-login shell when you need deterministic tool resolution.
-- Treat `origin/typescript-go` as managed state, not as a normal workspace directory.
+- Treat `ref/typescript-go` as managed state, not as a normal workspace directory.
 - Keep generated outputs out of source-time type checking.
 - Use repo-local caches when external cache directories may be sandboxed or permission-sensitive.
 - If benchmark jobs pass but leave child processes behind, treat that as a bug, not as cleanup debt.

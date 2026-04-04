@@ -3,12 +3,11 @@ node_modules
 dist
 **/*.node
 /npm/*/index.js
-/npm/corsa_bind_node/ts/*.d.ts
-/npm/corsa_bind_node/ts/*.js
-/npm/corsa_bind_node/ts/*.js.map
+/npm/corsa_node/ts/*.d.ts
+/npm/corsa_node/ts/*.js
+/npm/corsa_node/ts/*.js.map
 
-/origin/tsgo-rs-upstream/
-/origin/corsa-bind-upstream/
-/origin/typescript-go/
+/ref/corsa-upstream/
+/ref/typescript-go/
 .DS_Store
 .cache

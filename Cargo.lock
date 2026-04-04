@@ -81,22 +81,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "corsa_bind_c"
-version = "0.1.0"
-dependencies = [
- "corsa_bind_rs",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "corsa_bind_client"
+name = "corsa"
 version = "0.1.0"
 dependencies = [
  "base64",
- "corsa_bind_core",
- "corsa_bind_jsonrpc",
- "corsa_bind_runtime",
+ "corsa_client",
+ "corsa_core",
+ "corsa_jsonrpc",
+ "corsa_lsp",
+ "corsa_orchestrator",
+ "corsa_runtime",
+ "lsp-types",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "corsa_client"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "corsa_core",
+ "corsa_jsonrpc",
+ "corsa_runtime",
  "log",
  "parking_lot",
  "phf",
@@ -105,7 +112,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "corsa_bind_core"
+name = "corsa_core"
 version = "0.1.0"
 dependencies = [
  "base64",
@@ -120,11 +127,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "corsa_bind_jsonrpc"
+name = "corsa_jsonrpc"
 version = "0.1.0"
 dependencies = [
- "corsa_bind_core",
- "corsa_bind_runtime",
+ "corsa_core",
+ "corsa_runtime",
  "log",
  "parking_lot",
  "serde",
@@ -132,12 +139,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "corsa_bind_lsp"
+name = "corsa_lsp"
 version = "0.1.0"
 dependencies = [
- "corsa_bind_core",
- "corsa_bind_jsonrpc",
- "corsa_bind_runtime",
+ "corsa_core",
+ "corsa_jsonrpc",
+ "corsa_runtime",
  "log",
  "lsp-types",
  "parking_lot",
@@ -145,10 +152,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "corsa_bind_node"
+name = "corsa_node"
 version = "0.1.0"
 dependencies = [
- "corsa_bind_rs",
+ "corsa",
  "lsp-types",
  "napi",
  "napi-build",
@@ -158,13 +165,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "corsa_bind_orchestrator"
+name = "corsa_orchestrator"
 version = "0.1.0"
 dependencies = [
- "corsa_bind_client",
- "corsa_bind_core",
- "corsa_bind_lsp",
- "corsa_bind_runtime",
+ "corsa_client",
+ "corsa_core",
+ "corsa_lsp",
+ "corsa_runtime",
  "log",
  "lsp-types",
  "parking_lot",
@@ -173,33 +180,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "corsa_bind_ref"
+name = "corsa_ref"
 version = "0.1.0"
 dependencies = [
- "corsa_bind_core",
+ "corsa_core",
  "serde",
  "tempfile",
  "toml",
 ]
 
 [[package]]
-name = "corsa_bind_rs"
-version = "0.1.0"
-dependencies = [
- "base64",
- "corsa_bind_client",
- "corsa_bind_core",
- "corsa_bind_jsonrpc",
- "corsa_bind_lsp",
- "corsa_bind_orchestrator",
- "corsa_bind_runtime",
- "lsp-types",
- "serde_json",
- "tempfile",
-]
-
-[[package]]
-name = "corsa_bind_runtime"
+name = "corsa_runtime"
 version = "0.1.0"
 dependencies = [
  "smallvec",

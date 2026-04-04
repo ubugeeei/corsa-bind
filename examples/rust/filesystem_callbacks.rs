@@ -2,7 +2,7 @@ mod support;
 
 use std::sync::Arc;
 
-use corsa_bind_rs::{
+use corsa::{
     api::{
         ApiClient, ApiFileSystem, ApiMode, DirectoryEntries, FileSystemCapabilities,
         ReadFileResult, callback_flag, callback_names,
@@ -70,7 +70,7 @@ impl ApiFileSystem for VirtualFs {
     }
 }
 
-fn main() -> Result<(), corsa_bind_rs::CorsaError> {
+fn main() -> Result<(), corsa::TsgoError> {
     let result = block_on(async {
         let filesystem = Arc::new(VirtualFs::new(&[
             ("/virtual/tsconfig.json", "{}"),
@@ -89,7 +89,7 @@ fn main() -> Result<(), corsa_bind_rs::CorsaError> {
             "virtualOption": config.options["virtual"],
         });
         client.close().await?;
-        Ok::<_, corsa_bind_rs::CorsaError>(result)
+        Ok::<_, corsa::TsgoError>(result)
     })?;
 
     support::print_json(result);

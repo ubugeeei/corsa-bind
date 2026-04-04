@@ -5,9 +5,9 @@ use std::{
     time::Duration,
 };
 
-use corsa_bind_rs::{
+use corsa::{
     api::{ApiMode, ApiProfile, UpdateSnapshotParams},
-    observability::{CorsaEvent, CorsaObserver},
+    observability::{TsgoEvent, TsgoObserver},
     orchestrator::{ApiOrchestrator, ApiOrchestratorConfig},
     runtime::block_on,
 };
@@ -15,28 +15,28 @@ use serde_json::{Value, json};
 
 #[derive(Default)]
 struct EventCollector {
-    events: Mutex<Vec<CorsaEvent>>,
+    events: Mutex<Vec<TsgoEvent>>,
 }
 
-impl CorsaObserver for EventCollector {
-    fn on_event(&self, event: &CorsaEvent) {
+impl TsgoObserver for EventCollector {
+    fn on_event(&self, event: &TsgoEvent) {
         self.events.lock().unwrap().push(event.clone());
     }
 }
 
-fn event_to_value(event: &CorsaEvent) -> Value {
+fn event_to_value(event: &TsgoEvent) -> Value {
     match event {
-        CorsaEvent::OrchestratorSnapshotEvicted { key } => {
+        TsgoEvent::OrchestratorSnapshotEvicted { key } => {
             json!({ "kind": "orchestratorSnapshotEvicted", "key": key })
         }
-        CorsaEvent::OrchestratorResultEvicted { key } => {
+        TsgoEvent::OrchestratorResultEvicted { key } => {
             json!({ "kind": "orchestratorResultEvicted", "key": key })
         }
         other => json!({ "kind": "other", "debug": format!("{other:?}") }),
     }
 }
 
-fn main() -> Result<(), corsa_bind_rs::CorsaError> {
+fn main() -> Result<(), corsa::TsgoError> {
     let result = block_on(async {
         let observer = Arc::new(EventCollector::default());
         let orchestrator = ApiOrchestrator::new(
@@ -99,7 +99,7 @@ fn main() -> Result<(), corsa_bind_rs::CorsaError> {
             .map(event_to_value)
             .collect::<Vec<_>>();
 
-        Ok::<_, corsa_bind_rs::CorsaError>(json!({
+        Ok::<_, corsa::TsgoError>(json!({
             "events": events,
             "stats": {
                 "cachedSnapshotCount": stats.cached_snapshot_count,
