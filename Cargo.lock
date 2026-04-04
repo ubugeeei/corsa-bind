@@ -131,6 +131,8 @@ name = "corsa_ffi"
 version = "0.1.0"
 dependencies = [
  "corsa_core",
+ "corsa_lsp",
+ "lsp-types",
  "smallvec",
 ]
 

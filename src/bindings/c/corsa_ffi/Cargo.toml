@@ -16,4 +16,6 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 corsa_core = { version = "0.1.0", path = "../../../core/corsa_core" }
+corsa_lsp = { version = "0.1.0", path = "../../../core/corsa_lsp" }
+lsp-types = "0.97"
 smallvec = { workspace = true }

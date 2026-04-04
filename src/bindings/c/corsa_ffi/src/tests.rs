@@ -1,7 +1,14 @@
 use crate::{
-    corsa_utils_classify_type_text, corsa_utils_has_unsafe_any_flow,
-    corsa_utils_is_error_like_type_texts, corsa_utils_split_type_text,
+    error::corsa_error_message_take,
     types::{CorsaStrRef, corsa_utils_string_free, corsa_utils_string_list_free},
+    utils::{
+        corsa_utils_classify_type_text, corsa_utils_has_unsafe_any_flow,
+        corsa_utils_is_error_like_type_texts, corsa_utils_split_type_text,
+    },
+    virtual_document::{
+        corsa_virtual_document_free, corsa_virtual_document_splice, corsa_virtual_document_text,
+        corsa_virtual_document_untitled, corsa_virtual_document_version,
+    },
 };
 
 fn text_ref(text: &str) -> CorsaStrRef {
@@ -70,4 +77,57 @@ fn evaluates_predicates_over_ffi() {
             target_texts.len(),
         )
     });
+}
+
+#[test]
+fn edits_virtual_documents_over_ffi() {
+    let document = unsafe {
+        corsa_virtual_document_untitled(
+            text_ref("/demo.ts"),
+            text_ref("typescript"),
+            text_ref("const value = 1;"),
+        )
+    };
+    assert!(!document.is_null());
+    assert!(unsafe { corsa_virtual_document_splice(document, 0, 14, 0, 15, text_ref("2")) });
+    let text = unsafe { corsa_virtual_document_text(document) };
+    let rendered = unsafe {
+        std::str::from_utf8(std::slice::from_raw_parts(text.ptr.cast::<u8>(), text.len))
+            .unwrap()
+            .to_owned()
+    };
+    unsafe {
+        corsa_utils_string_free(text);
+    }
+    assert_eq!(rendered, "const value = 2;");
+    assert_eq!(unsafe { corsa_virtual_document_version(document) }, 2);
+    unsafe {
+        corsa_virtual_document_free(document);
+    }
+}
+
+#[test]
+fn reports_virtual_document_errors() {
+    let document = unsafe {
+        corsa_virtual_document_untitled(
+            text_ref("/demo.ts"),
+            text_ref("typescript"),
+            text_ref("const value = 1;"),
+        )
+    };
+    assert!(!unsafe { corsa_virtual_document_splice(document, 9, 0, 9, 1, text_ref("2")) });
+    let error = corsa_error_message_take();
+    let message = unsafe {
+        std::str::from_utf8(std::slice::from_raw_parts(
+            error.ptr.cast::<u8>(),
+            error.len,
+        ))
+        .unwrap()
+        .to_owned()
+    };
+    unsafe {
+        corsa_utils_string_free(error);
+        corsa_virtual_document_free(document);
+    }
+    assert!(message.contains("out of bounds"));
 }

@@ -9,3 +9,4 @@ Currently exposed:
 - `has_unsafe_any_flow`
 - `is_unsafe_assignment`
 - `is_unsafe_return`
+- virtual document helpers backed by Rust `VirtualDocument`

@@ -4,7 +4,7 @@ pub const c = @cImport({
     @cInclude("corsa_utils.h");
 });
 
-fn toRef(text: []const u8) c.CorsaStrRef {
+pub fn toRef(text: []const u8) c.CorsaStrRef {
     return .{
         .ptr = if (text.len == 0) null else text.ptr,
         .len = text.len,
@@ -39,7 +39,7 @@ fn withDualRefs(
     return body(left_refs, right_refs);
 }
 
-fn takeString(allocator: std.mem.Allocator, value: c.CorsaString) ![]u8 {
+pub fn takeString(allocator: std.mem.Allocator, value: c.CorsaString) ![]u8 {
     defer c.corsa_utils_string_free(value);
     if (value.ptr == null or value.len == 0) {
         return allocator.alloc(u8, 0);
@@ -48,7 +48,7 @@ fn takeString(allocator: std.mem.Allocator, value: c.CorsaString) ![]u8 {
     return allocator.dupe(u8, slice);
 }
 
-fn takeStringList(allocator: std.mem.Allocator, value: c.CorsaStringList) ![][]u8 {
+pub fn takeStringList(allocator: std.mem.Allocator, value: c.CorsaStringList) ![][]u8 {
     defer c.corsa_utils_string_list_free(value);
     const out = try allocator.alloc([]u8, value.len);
     for (0..value.len) |index| {

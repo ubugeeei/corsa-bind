@@ -81,10 +81,10 @@ private func isUnsafeReturnNative(
 ) -> Bool
 
 @_silgen_name("corsa_utils_string_free")
-private func freeStringNative(_ value: CorsaString)
+func freeStringNative(_ value: CorsaString)
 
 @_silgen_name("corsa_utils_string_list_free")
-private func freeStringListNative(_ value: CorsaStringList)
+func freeStringListNative(_ value: CorsaStringList)
 
 public enum CorsaUtils {
     public static func classifyTypeText(_ text: String) -> String {
@@ -127,11 +127,11 @@ public enum CorsaUtils {
     }
 }
 
-private func callSingle(_ typeTexts: [String], _ body: (UnsafePointer<CorsaStrRef>?, Int) -> Bool) -> Bool {
+func callSingle(_ typeTexts: [String], _ body: (UnsafePointer<CorsaStrRef>?, Int) -> Bool) -> Bool {
     withRefs(typeTexts) { body($0.baseAddress, $0.count) }
 }
 
-private func callDual(
+func callDual(
     _ typeTexts: [String],
     _ propertyNames: [String],
     _ body: (UnsafePointer<CorsaStrRef>?, Int, UnsafePointer<CorsaStrRef>?, Int) -> Bool
@@ -143,7 +143,7 @@ private func callDual(
     }
 }
 
-private func callFlow(
+func callFlow(
     _ sourceTexts: [String],
     _ targetTexts: [String],
     _ body: (UnsafePointer<CorsaStrRef>?, Int, UnsafePointer<CorsaStrRef>?, Int) -> Bool
@@ -155,17 +155,17 @@ private func callFlow(
     }
 }
 
-private func withStrRef<T>(_ value: String, _ body: (CorsaStrRef) -> T) -> T {
+func withStrRef<T>(_ value: String, _ body: (CorsaStrRef) -> T) -> T {
     let refs = BorrowedRefs([value])
     return refs.refs.withUnsafeBufferPointer { body($0.first ?? CorsaStrRef(ptr: nil, len: 0)) }
 }
 
-private func withRefs<T>(_ values: [String], _ body: (UnsafeBufferPointer<CorsaStrRef>) -> T) -> T {
+func withRefs<T>(_ values: [String], _ body: (UnsafeBufferPointer<CorsaStrRef>) -> T) -> T {
     let refs = BorrowedRefs(values)
     return refs.refs.withUnsafeBufferPointer(body)
 }
 
-private func takeString(_ value: CorsaString) -> String {
+func takeString(_ value: CorsaString) -> String {
     defer { freeStringNative(value) }
     guard let ptr = value.ptr, value.len > 0 else {
         return ""
@@ -173,7 +173,7 @@ private func takeString(_ value: CorsaString) -> String {
     return String(decoding: UnsafeBufferPointer(start: UnsafeRawPointer(ptr).assumingMemoryBound(to: UInt8.self), count: value.len), as: UTF8.self)
 }
 
-private func takeStringList(_ value: CorsaStringList) -> [String] {
+func takeStringList(_ value: CorsaStringList) -> [String] {
     defer { freeStringListNative(value) }
     guard let ptr = value.ptr, value.len > 0 else {
         return []
@@ -186,7 +186,7 @@ private func takeStringList(_ value: CorsaStringList) -> [String] {
     }
 }
 
-private final class BorrowedRefs {
+final class BorrowedRefs {
     private let storage: [UnsafeMutableBufferPointer<UInt8>]
     let refs: [CorsaStrRef]
 

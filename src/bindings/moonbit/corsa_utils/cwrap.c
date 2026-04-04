@@ -2,6 +2,7 @@
 
 #include "../../../c/corsa_ffi/include/corsa_utils.h"
 
+#include <stdint.h>
 #include <string.h>
 
 static CorsaStrRef corsa_moonbit_ref(moonbit_bytes_t bytes) {
@@ -18,6 +19,14 @@ static moonbit_bytes_t corsa_bytes_from_string(CorsaString value) {
   }
   corsa_utils_string_free(value);
   return out;
+}
+
+static int64_t corsa_virtual_document_handle(CorsaVirtualDocument *value) {
+  return (int64_t)(intptr_t)value;
+}
+
+static CorsaVirtualDocument *corsa_virtual_document_from_handle(int64_t value) {
+  return (CorsaVirtualDocument *)(intptr_t)value;
 }
 
 MOONBIT_FFI_EXPORT moonbit_bytes_t corsa_utils_classify_type_text_mbt(moonbit_bytes_t text) {
@@ -97,4 +106,47 @@ MOONBIT_FFI_EXPORT int32_t corsa_utils_is_unsafe_return_mbt(
   CorsaStrRef source_texts[1] = {corsa_moonbit_ref(source_text)};
   CorsaStrRef target_texts[1] = {corsa_moonbit_ref(target_text)};
   return corsa_utils_is_unsafe_return(source_texts, 1, target_texts, 1);
+}
+
+MOONBIT_FFI_EXPORT moonbit_bytes_t corsa_error_message_take_mbt(void) {
+  return corsa_bytes_from_string(corsa_error_message_take());
+}
+
+MOONBIT_FFI_EXPORT int64_t corsa_virtual_document_untitled_mbt(
+    moonbit_bytes_t path,
+    moonbit_bytes_t language_id,
+    moonbit_bytes_t text) {
+  return corsa_virtual_document_handle(corsa_virtual_document_untitled(
+      corsa_moonbit_ref(path),
+      corsa_moonbit_ref(language_id),
+      corsa_moonbit_ref(text)));
+}
+
+MOONBIT_FFI_EXPORT moonbit_bytes_t corsa_virtual_document_text_mbt(int64_t handle) {
+  return corsa_bytes_from_string(
+      corsa_virtual_document_text(corsa_virtual_document_from_handle(handle)));
+}
+
+MOONBIT_FFI_EXPORT int32_t corsa_virtual_document_version_mbt(int64_t handle) {
+  return corsa_virtual_document_version(corsa_virtual_document_from_handle(handle));
+}
+
+MOONBIT_FFI_EXPORT int32_t corsa_virtual_document_splice_mbt(
+    int64_t handle,
+    int32_t start_line,
+    int32_t start_character,
+    int32_t end_line,
+    int32_t end_character,
+    moonbit_bytes_t text) {
+  return corsa_virtual_document_splice(
+      corsa_virtual_document_from_handle(handle),
+      (uint32_t)start_line,
+      (uint32_t)start_character,
+      (uint32_t)end_line,
+      (uint32_t)end_character,
+      corsa_moonbit_ref(text));
+}
+
+MOONBIT_FFI_EXPORT void corsa_virtual_document_free_mbt(int64_t handle) {
+  corsa_virtual_document_free(corsa_virtual_document_from_handle(handle));
 }
