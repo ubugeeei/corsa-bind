@@ -62,6 +62,18 @@ pub fn takeStringList(allocator: std.mem.Allocator, value: c.CorsaStringList) ![
     return out;
 }
 
+pub fn takeOptionalBytes(allocator: std.mem.Allocator, value: c.CorsaBytes) !?[]u8 {
+    defer c.corsa_bytes_free(value);
+    if (!value.present) {
+        return null;
+    }
+    if (value.ptr == null or value.len == 0) {
+        return allocator.alloc(u8, 0);
+    }
+    const slice = @as([*]const u8, @ptrCast(value.ptr))[0..value.len];
+    return allocator.dupe(u8, slice);
+}
+
 pub fn classifyTypeText(allocator: std.mem.Allocator, text: []const u8) ![]u8 {
     return takeString(allocator, c.corsa_utils_classify_type_text(toRef(text)));
 }

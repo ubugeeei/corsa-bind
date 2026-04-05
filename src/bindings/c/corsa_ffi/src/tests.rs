@@ -1,4 +1,5 @@
 use crate::{
+    api_client::corsa_tsgo_api_client_spawn,
     error::corsa_error_message_take,
     types::{CorsaStrRef, corsa_utils_string_free, corsa_utils_string_list_free},
     utils::{
@@ -130,4 +131,25 @@ fn reports_virtual_document_errors() {
         corsa_virtual_document_free(document);
     }
     assert!(message.contains("out of bounds"));
+}
+
+#[test]
+fn reports_api_client_spawn_errors() {
+    let client = unsafe {
+        corsa_tsgo_api_client_spawn(text_ref(r#"{"executable":"./definitely-missing-tsgo"}"#))
+    };
+    assert!(client.is_null());
+    let error = corsa_error_message_take();
+    let message = unsafe {
+        std::str::from_utf8(std::slice::from_raw_parts(
+            error.ptr.cast::<u8>(),
+            error.len,
+        ))
+        .unwrap()
+        .to_owned()
+    };
+    unsafe {
+        corsa_utils_string_free(error);
+    }
+    assert!(!message.is_empty());
 }

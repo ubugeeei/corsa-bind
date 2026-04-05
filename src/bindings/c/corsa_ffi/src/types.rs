@@ -20,6 +20,14 @@ pub struct CorsaString {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct CorsaBytes {
+    pub ptr: *mut u8,
+    pub len: usize,
+    pub present: bool,
+}
+
+#[repr(C)]
 #[derive(Debug, Default)]
 pub struct CorsaStringList {
     pub ptr: *mut CorsaString,
@@ -63,6 +71,19 @@ pub fn into_c_string_list(values: Vec<String>) -> CorsaStringList {
     }
 }
 
+pub fn into_c_bytes(value: Option<Vec<u8>>) -> CorsaBytes {
+    let Some(value) = value else {
+        return CorsaBytes::default();
+    };
+    let boxed = value.into_boxed_slice();
+    let len = boxed.len();
+    CorsaBytes {
+        ptr: Box::into_raw(boxed) as *mut u8,
+        len,
+        present: true,
+    }
+}
+
 pub unsafe fn collect_strings<'a>(
     ptr: *const CorsaStrRef,
     len: usize,
@@ -99,4 +120,13 @@ pub unsafe extern "C" fn corsa_utils_string_list_free(value: CorsaStringList) {
             corsa_utils_string_free(*item);
         }
     }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn corsa_bytes_free(value: CorsaBytes) {
+    if !value.present || value.ptr.is_null() {
+        return;
+    }
+    let slice = ptr::slice_from_raw_parts_mut(value.ptr, value.len);
+    let _ = unsafe { Box::from_raw(slice) };
 }

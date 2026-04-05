@@ -3,7 +3,7 @@ public enum CorsaFfiError: Error {
 }
 
 @_silgen_name("corsa_error_message_take")
-private func takeErrorMessageNative() -> CorsaString
+func takeErrorMessageNative() -> CorsaString
 
 @_silgen_name("corsa_virtual_document_new")
 private func createVirtualDocumentNative(_ uri: CorsaStrRef, _ languageID: CorsaStrRef, _ text: CorsaStrRef) -> UnsafeMutableRawPointer?
@@ -129,7 +129,7 @@ private func withFourRefs(
     }
 }
 
-private func ffiError() -> CorsaFfiError {
+func ffiError() -> CorsaFfiError {
     let message = takeString(takeErrorMessageNative())
     return .message(message.isEmpty ? "corsa ffi error" : message)
 }

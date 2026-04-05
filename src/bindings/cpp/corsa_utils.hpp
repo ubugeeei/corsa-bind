@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -42,6 +44,19 @@ inline std::vector<std::string> take_string_list(CorsaStringList value) {
     out.emplace_back(item.ptr == nullptr ? "" : std::string(item.ptr, item.len));
   }
   corsa_utils_string_list_free(value);
+  return out;
+}
+
+inline std::optional<std::vector<std::uint8_t>> take_bytes(CorsaBytes value) {
+  if (!value.present) {
+    return std::nullopt;
+  }
+  std::vector<std::uint8_t> out;
+  out.reserve(value.len);
+  for (size_t index = 0; index < value.len; ++index) {
+    out.push_back(value.ptr[index]);
+  }
+  corsa_bytes_free(value);
   return out;
 }
 

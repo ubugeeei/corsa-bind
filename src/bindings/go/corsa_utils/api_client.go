@@ -1,0 +1,190 @@
+package corsautils
+
+/*
+#cgo CFLAGS: -I${SRCDIR}/../../c/corsa_ffi/include
+#cgo LDFLAGS: -L${SRCDIR}/../../../../target/debug -lcorsa_ffi
+#include "corsa_utils.h"
+*/
+import "C"
+
+import (
+	"encoding/json"
+	"unsafe"
+)
+
+type ApiMode string
+
+const (
+	ApiModeJSONRPC ApiMode = "jsonrpc"
+	ApiModeMsgpack ApiMode = "msgpack"
+)
+
+type ApiClientOptions struct {
+	Executable                 string  `json:"executable"`
+	Cwd                        string  `json:"cwd,omitempty"`
+	Mode                       ApiMode `json:"mode,omitempty"`
+	RequestTimeoutMs           uint64  `json:"requestTimeoutMs,omitempty"`
+	ShutdownTimeoutMs          uint64  `json:"shutdownTimeoutMs,omitempty"`
+	OutboundCapacity           int     `json:"outboundCapacity,omitempty"`
+	AllowUnstableUpstreamCalls bool    `json:"allowUnstableUpstreamCalls,omitempty"`
+}
+
+type ApiClient struct {
+	ptr *C.CorsaTsgoApiClient
+}
+
+func NewApiClient(options ApiClientOptions) (*ApiClient, error) {
+	optionsJSON, err := json.Marshal(options)
+	if err != nil {
+		return nil, err
+	}
+	return NewApiClientFromJSON(string(optionsJSON))
+}
+
+func NewApiClientFromJSON(optionsJSON string) (*ApiClient, error) {
+	value := newBorrowedString(optionsJSON)
+	defer value.free()
+	ptr := C.corsa_tsgo_api_client_spawn(value.ref)
+	if ptr == nil {
+		return nil, takeError()
+	}
+	return &ApiClient{ptr: ptr}, nil
+}
+
+func (value *ApiClient) Close() error {
+	if value == nil || value.ptr == nil {
+		return nil
+	}
+	ptr := value.ptr
+	value.ptr = nil
+	ok := bool(C.corsa_tsgo_api_client_close(ptr))
+	C.corsa_tsgo_api_client_free(ptr)
+	if !ok {
+		return takeError()
+	}
+	return nil
+}
+
+func (value *ApiClient) InitializeJSON() (string, error) {
+	return takeCheckedString(C.corsa_tsgo_api_client_initialize_json(value.ptr))
+}
+
+func (value *ApiClient) ParseConfigFileJSON(file string) (string, error) {
+	fileValue := newBorrowedString(file)
+	defer fileValue.free()
+	return takeCheckedString(C.corsa_tsgo_api_client_parse_config_file_json(value.ptr, fileValue.ref))
+}
+
+func (value *ApiClient) UpdateSnapshotJSON(paramsJSON string) (string, error) {
+	paramsValue := newBorrowedString(paramsJSON)
+	defer paramsValue.free()
+	return takeCheckedString(C.corsa_tsgo_api_client_update_snapshot_json(value.ptr, paramsValue.ref))
+}
+
+func (value *ApiClient) GetSourceFile(snapshot string, project string, file string) ([]byte, error) {
+	snapshotValue := newBorrowedString(snapshot)
+	defer snapshotValue.free()
+	projectValue := newBorrowedString(project)
+	defer projectValue.free()
+	fileValue := newBorrowedString(file)
+	defer fileValue.free()
+	payload, present := takeBytes(C.corsa_tsgo_api_client_get_source_file(
+		value.ptr,
+		snapshotValue.ref,
+		projectValue.ref,
+		fileValue.ref,
+	))
+	if !present {
+		return nil, takeError()
+	}
+	return payload, nil
+}
+
+func (value *ApiClient) GetStringTypeJSON(snapshot string, project string) (string, error) {
+	snapshotValue := newBorrowedString(snapshot)
+	defer snapshotValue.free()
+	projectValue := newBorrowedString(project)
+	defer projectValue.free()
+	return takeCheckedString(C.corsa_tsgo_api_client_get_string_type_json(value.ptr, snapshotValue.ref, projectValue.ref))
+}
+
+func (value *ApiClient) TypeToString(snapshot string, project string, typeHandle string, location *string, flags *int32) (string, error) {
+	snapshotValue := newBorrowedString(snapshot)
+	defer snapshotValue.free()
+	projectValue := newBorrowedString(project)
+	defer projectValue.free()
+	typeValue := newBorrowedString(typeHandle)
+	defer typeValue.free()
+	locationValue := optionalBorrowedString(location)
+	defer locationValue.free()
+	nativeFlags := C.int32_t(-1)
+	if flags != nil {
+		nativeFlags = C.int32_t(*flags)
+	}
+	return takeCheckedString(C.corsa_tsgo_api_client_type_to_string(
+		value.ptr,
+		snapshotValue.ref,
+		projectValue.ref,
+		typeValue.ref,
+		locationValue.ref,
+		nativeFlags,
+	))
+}
+
+func (value *ApiClient) CallJSON(method string, paramsJSON string) (string, error) {
+	methodValue := newBorrowedString(method)
+	defer methodValue.free()
+	paramsValue := newBorrowedString(paramsJSON)
+	defer paramsValue.free()
+	return takeCheckedString(C.corsa_tsgo_api_client_call_json(value.ptr, methodValue.ref, paramsValue.ref))
+}
+
+func (value *ApiClient) CallBinary(method string, paramsJSON string) ([]byte, error) {
+	methodValue := newBorrowedString(method)
+	defer methodValue.free()
+	paramsValue := newBorrowedString(paramsJSON)
+	defer paramsValue.free()
+	payload, present := takeBytes(C.corsa_tsgo_api_client_call_binary(value.ptr, methodValue.ref, paramsValue.ref))
+	if !present {
+		return nil, takeError()
+	}
+	return payload, nil
+}
+
+func (value *ApiClient) ReleaseHandle(handle string) error {
+	handleValue := newBorrowedString(handle)
+	defer handleValue.free()
+	if !bool(C.corsa_tsgo_api_client_release_handle(value.ptr, handleValue.ref)) {
+		return takeError()
+	}
+	return nil
+}
+
+func optionalBorrowedString(value *string) borrowedString {
+	if value == nil {
+		return borrowedString{}
+	}
+	return newBorrowedString(*value)
+}
+
+func takeBytes(value C.CorsaBytes) ([]byte, bool) {
+	defer C.corsa_bytes_free(value)
+	if !bool(value.present) {
+		return nil, false
+	}
+	if value.ptr == nil || value.len == 0 {
+		return make([]byte, 0), true
+	}
+	return C.GoBytes(unsafe.Pointer(value.ptr), C.int(value.len)), true
+}
+
+func takeCheckedString(value C.CorsaString) (string, error) {
+	text := takeString(value)
+	if text != "" {
+		return text, nil
+	}
+	if err := takeError(); err != nil {
+		return "", err
+	}
+	return "", nil
+}

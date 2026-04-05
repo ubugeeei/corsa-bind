@@ -130,9 +130,13 @@ dependencies = [
 name = "corsa_ffi"
 version = "0.1.0"
 dependencies = [
+ "corsa_client",
  "corsa_core",
  "corsa_lsp",
+ "corsa_runtime",
  "lsp-types",
+ "serde",
+ "serde_json",
  "smallvec",
 ]
 

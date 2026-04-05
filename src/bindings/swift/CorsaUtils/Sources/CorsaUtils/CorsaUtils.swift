@@ -1,3 +1,5 @@
+import Foundation
+
 public struct CorsaStrRef {
     public let ptr: UnsafePointer<UInt8>?
     public let len: Int
@@ -6,6 +8,12 @@ public struct CorsaStrRef {
 public struct CorsaString {
     public let ptr: UnsafeMutablePointer<CChar>?
     public let len: Int
+}
+
+public struct CorsaBytes {
+    public let ptr: UnsafeMutablePointer<UInt8>?
+    public let len: Int
+    public let present: Bool
 }
 
 public struct CorsaStringList {
@@ -82,6 +90,9 @@ private func isUnsafeReturnNative(
 
 @_silgen_name("corsa_utils_string_free")
 func freeStringNative(_ value: CorsaString)
+
+@_silgen_name("corsa_bytes_free")
+func freeBytesNative(_ value: CorsaBytes)
 
 @_silgen_name("corsa_utils_string_list_free")
 func freeStringListNative(_ value: CorsaStringList)
@@ -184,6 +195,17 @@ func takeStringList(_ value: CorsaStringList) -> [String] {
         }
         return String(decoding: UnsafeBufferPointer(start: UnsafeRawPointer(ptr).assumingMemoryBound(to: UInt8.self), count: item.len), as: UTF8.self)
     }
+}
+
+func takeBytes(_ value: CorsaBytes) -> Data? {
+    defer { freeBytesNative(value) }
+    guard value.present else {
+        return nil
+    }
+    guard let ptr = value.ptr, value.len > 0 else {
+        return Data()
+    }
+    return Data(bytes: ptr, count: value.len)
 }
 
 final class BorrowedRefs {

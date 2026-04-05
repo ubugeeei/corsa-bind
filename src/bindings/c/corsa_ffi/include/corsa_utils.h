@@ -19,12 +19,19 @@ typedef struct CorsaString {
   size_t len;
 } CorsaString;
 
+typedef struct CorsaBytes {
+  uint8_t *ptr;
+  size_t len;
+  bool present;
+} CorsaBytes;
+
 typedef struct CorsaStringList {
   CorsaString *ptr;
   size_t len;
 } CorsaStringList;
 
 typedef struct CorsaVirtualDocument CorsaVirtualDocument;
+typedef struct CorsaTsgoApiClient CorsaTsgoApiClient;
 
 CorsaString corsa_error_message_take(void);
 
@@ -101,6 +108,50 @@ bool corsa_virtual_document_splice(
 );
 void corsa_virtual_document_free(CorsaVirtualDocument *value);
 
+CorsaTsgoApiClient *corsa_tsgo_api_client_spawn(CorsaStrRef options_json);
+CorsaString corsa_tsgo_api_client_initialize_json(const CorsaTsgoApiClient *value);
+CorsaString corsa_tsgo_api_client_parse_config_file_json(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef file
+);
+CorsaString corsa_tsgo_api_client_update_snapshot_json(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef params_json
+);
+CorsaBytes corsa_tsgo_api_client_get_source_file(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef snapshot,
+    CorsaStrRef project,
+    CorsaStrRef file
+);
+CorsaString corsa_tsgo_api_client_get_string_type_json(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef snapshot,
+    CorsaStrRef project
+);
+CorsaString corsa_tsgo_api_client_type_to_string(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef snapshot,
+    CorsaStrRef project,
+    CorsaStrRef type_handle,
+    CorsaStrRef location,
+    int32_t flags
+);
+CorsaString corsa_tsgo_api_client_call_json(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef method,
+    CorsaStrRef params_json
+);
+CorsaBytes corsa_tsgo_api_client_call_binary(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef method,
+    CorsaStrRef params_json
+);
+bool corsa_tsgo_api_client_release_handle(const CorsaTsgoApiClient *value, CorsaStrRef handle);
+bool corsa_tsgo_api_client_close(CorsaTsgoApiClient *value);
+void corsa_tsgo_api_client_free(CorsaTsgoApiClient *value);
+
+void corsa_bytes_free(CorsaBytes value);
 void corsa_utils_string_free(CorsaString value);
 void corsa_utils_string_list_free(CorsaStringList value);
 

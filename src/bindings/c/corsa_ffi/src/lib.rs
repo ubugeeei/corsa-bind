@@ -1,3 +1,4 @@
+mod api_client;
 mod error;
 #[cfg(test)]
 mod tests;
