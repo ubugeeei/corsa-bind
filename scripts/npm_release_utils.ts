@@ -349,9 +349,7 @@ export function getNodeBindingBuildMatrix(
   return getNodeBindingTargets(packageJson).map((target) => {
     const config = nodeBindingBuildTargetConfig[target.raw];
     if (!config) {
-      throw new Error(
-        `No GitHub Actions build config is configured for napi target ${target.raw}`,
-      );
+      throw new Error(`No GitHub Actions build config is configured for napi target ${target.raw}`);
     }
     return {
       os: config.os,

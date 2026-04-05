@@ -21,9 +21,7 @@ describe("release manifest", () => {
 
   it("tracks internal crates separately from public crates", () => {
     expect(
-      rustReleaseCrates
-        .filter((crate) => crate.publish === "internal")
-        .map((crate) => crate.name),
+      rustReleaseCrates.filter((crate) => crate.publish === "internal").map((crate) => crate.name),
     ).toEqual(["corsa_ref", "corsa_node"]);
 
     expect(publicRustCrates.every((crate) => crate.publish === "public")).toBe(true);

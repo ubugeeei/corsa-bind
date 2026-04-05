@@ -22,7 +22,9 @@ describe("publish workflows", () => {
     const workflow = readWorkflow(".github/workflows/publish-npm.yml");
     expect(workflow).toContain("resolve-native-targets:");
     expect(workflow).toContain("node --strip-types ./scripts/print_napi_build_matrix.ts");
-    expect(workflow).toContain("matrix: ${{ fromJSON(needs.resolve-native-targets.outputs.matrix) }}");
+    expect(workflow).toContain(
+      "matrix: ${{ fromJSON(needs.resolve-native-targets.outputs.matrix) }}",
+    );
     expect(workflow).toContain("Setup Zig for cross-built Linux targets");
     expect(workflow).toContain("uses: goto-bus-stop/setup-zig@v2");
     expect(workflow).toContain('args+=(--zig-abi-suffix "${{ matrix.zigAbiSuffix }}")');
