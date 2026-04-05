@@ -43,12 +43,17 @@ fn fast_modules_avoid_std_alloc_shorthands() {
 }
 
 fn workspace_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .to_path_buf()
+    let mut dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    loop {
+        if dir.join("pnpm-workspace.yaml").exists() {
+            return dir;
+        }
+        assert!(
+            dir.pop(),
+            "failed to locate workspace root from {}",
+            env!("CARGO_MANIFEST_DIR")
+        );
+    }
 }
 
 fn contains_word(line: &str, word: &str) -> bool {

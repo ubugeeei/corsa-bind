@@ -71,10 +71,12 @@ export default defineConfig({
   run: {
     tasks: {
       sync_ref: {
+        cache: false,
         command: "cargo run -p corsa_ref -- sync",
       },
       verify_ref: {
         command: "cargo run -p corsa_ref -- verify",
+        dependsOn: ["sync_ref"],
       },
       build: {
         command: noopCommand,
@@ -88,36 +90,45 @@ export default defineConfig({
         command: "cargo build --workspace",
       },
       build_mock: {
+        cache: false,
         command: "cargo build -p corsa --bin mock_tsgo",
       },
       build_tsgo: {
+        cache: false,
         command: "node --strip-types ./scripts/build_tsgo.ts",
+        dependsOn: ["verify_ref"],
       },
       build_node_debug: {
+        cache: false,
         command: "napi build --platform",
         cwd: "src/bindings/nodejs/corsa_node",
         dependsOn: ["build_rust"],
       },
       build_node_release: {
+        cache: false,
         command: "napi build --platform --release",
         cwd: "src/bindings/nodejs/corsa_node",
         dependsOn: ["build_rust"],
       },
       build_typescript_oxlint: {
+        cache: false,
         command: "vp pack",
         dependsOn: ["build_wrapper"],
       },
       build_typescript_oxlint_ci: {
+        cache: false,
         command: "vp pack",
         dependsOn: ["build_wrapper_ci"],
       },
       build_wrapper: {
+        cache: false,
         command:
           "vp pack index.ts types.ts --dts --format esm --out-dir ../dist --sourcemap --tsconfig ../tsconfig.json --root . --deps.neverBundle ../index.js",
         cwd: "src/bindings/nodejs/corsa_node/ts",
         dependsOn: ["build_node_release"],
       },
       build_wrapper_ci: {
+        cache: false,
         command:
           "vp pack index.ts types.ts --dts --format esm --out-dir ../dist --sourcemap --tsconfig ../tsconfig.json --root . --deps.neverBundle ../index.js",
         cwd: "src/bindings/nodejs/corsa_node/ts",
@@ -170,10 +181,12 @@ export default defineConfig({
         dependsOn: ["bench_tooling_setup_ref", "bench_tooling_setup_cli_compare"],
       },
       bench_tooling_setup_ref: {
+        cache: false,
         command: "npm install --no-fund --no-audit",
         cwd: "ref/typescript-go",
       },
       bench_tooling_setup_cli_compare: {
+        cache: false,
         command: "npm install --no-fund --no-audit",
         cwd: "bench/cli_compare",
       },
