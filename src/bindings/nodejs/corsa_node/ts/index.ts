@@ -263,9 +263,11 @@ export class CorsaDistributedOrchestrator {
   }
 }
 
-export const TsgoApiClient = CorsaApiClient;
-export const TsgoVirtualDocument = CorsaVirtualDocument;
-export const TsgoDistributedOrchestrator = CorsaDistributedOrchestrator;
+export {
+  CorsaApiClient as TsgoApiClient,
+  CorsaDistributedOrchestrator as TsgoDistributedOrchestrator,
+  CorsaVirtualDocument as TsgoVirtualDocument,
+};
 
 export default binding;
 export const version = binding.version;
