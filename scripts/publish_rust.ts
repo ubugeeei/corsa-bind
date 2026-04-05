@@ -1,14 +1,5 @@
 import { assertCommandSucceeded, fail, rootDir, runCommandCapture, sleep } from "./shared.ts";
-
-const crateNames = [
-  "corsa_core",
-  "corsa_runtime",
-  "corsa_jsonrpc",
-  "corsa_client",
-  "corsa_lsp",
-  "corsa_orchestrator",
-  "corsa",
-] as const;
+import { publicRustCrates } from "./release_manifest.ts";
 
 const delayMs = Number(process.env.CARGO_PUBLISH_DELAY_MS ?? "30000");
 const startAt = process.env.CARGO_PUBLISH_START_AT?.trim() || undefined;
@@ -22,7 +13,7 @@ interface CargoMetadata {
 }
 
 interface CrateSpec {
-  name: (typeof crateNames)[number];
+  name: string;
   version: string;
 }
 
@@ -35,7 +26,7 @@ function getPublicCrates(): CrateSpec[] {
     }),
   );
   const packages = (JSON.parse(metadata.stdout) as CargoMetadata).packages;
-  return crateNames.map((name) => {
+  return publicRustCrates.map(({ name }) => {
     const pkg = packages.find((candidate) => candidate.name === name);
     if (!pkg) {
       throw new Error(`Unable to find cargo metadata for ${name}`);

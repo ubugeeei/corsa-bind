@@ -47,7 +47,7 @@ Current focus:
 - Fast-path bias: `CompactString`, `SmallVec`, `bumpalo`, `memchr`, `phf`, `FxHash`
 - JS toolchain: `pnpm` + Vite+ (`vp`) with `oxfmt` / `oxlint`
 - Repo automation: `scripts/*.ts` executed directly through Node `24` with `--strip-types`
-- Node bindings: `@corsa/node` (`src/bindings/nodejs/corsa_node`) and `oxlint-plugin-typescript-go` (`src/bindings/nodejs/typescript_oxlint`) (public npm packages that still expect a caller-managed `typescript-go` executable)
+- Node bindings: `@corsa-bind/napi` (`src/bindings/nodejs/corsa_node`) and `oxlint-plugin-typescript-go` (`src/bindings/nodejs/typescript_oxlint`) (public npm packages that still expect a caller-managed `typescript-go` executable)
 - Distributed orchestration: `experimental-distributed` cargo feature
 - TS benchmark project: `bench`
 - Example workspace: `examples`
@@ -75,7 +75,7 @@ Pinned upstream at the time of writing:
 - `corsa`: top-level facade crate, mock server, and native benchmark binaries
 - `src/bindings/c/corsa_ffi`: shared C ABI over the Rust `corsa_client::ApiClient`, `corsa_core::utils`, and `corsa_lsp::VirtualDocument` surfaces
 - `src/bindings/cpp`, `src/bindings/go`, `src/bindings/zig`, `src/bindings/csharp`, `src/bindings/swift`, `src/bindings/moonbit`: thin language bindings layered on top of `corsa_ffi`
-- `src/bindings/nodejs/corsa_node`: `napi-rs` native bindings and the `@corsa/node` TypeScript wrapper package
+- `src/bindings/nodejs/corsa_node`: `napi-rs` native bindings and the `@corsa-bind/napi` TypeScript wrapper package
 - `src/bindings/nodejs/typescript_oxlint`: `typescript-eslint`-style compatibility layer for type-aware Oxlint JS plugins
 - `bench`: Vitest benchmark project for the Node binding
 - `examples`: curated `examples/nodejs`, `examples/rust`, and `examples/typescript_oxlint` flows from minimal start to real-project runs
@@ -115,7 +115,7 @@ still target Node `22+`.
 
 ## Examples
 
-The repository now ships executable examples for Rust, `@corsa/node`, and
+The repository now ships executable examples for Rust, `@corsa-bind/napi`, and
 `oxlint-plugin-typescript-go` under [`examples/`](./examples/README.md), from
 minimal virtual-document edits up through checker-query walkthroughs and
 opt-in upstream printer flows.

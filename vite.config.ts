@@ -28,7 +28,7 @@ export default defineConfig({
   pack: {
     clean: true,
     deps: {
-      neverBundle: ["@corsa/node"],
+      neverBundle: ["@corsa-bind/napi"],
       skipNodeModulesBundle: true,
     },
     dts: true,
@@ -46,7 +46,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@corsa/node": resolve(nodePackageDir, "ts/index.ts"),
+      "@corsa-bind/napi": resolve(nodePackageDir, "ts/index.ts"),
       "oxlint-plugin-typescript-go/ast-utils": resolve(typescriptOxlintDir, "ts/ast_utils.ts"),
       "oxlint-plugin-typescript-go/eslint-utils": resolve(
         typescriptOxlintDir,

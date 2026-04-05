@@ -1,7 +1,16 @@
-# @corsa/node
+# @corsa-bind/napi
 
-`@corsa/node` exposes the `corsa` Rust workspace to Node.js through
+`@corsa-bind/napi` exposes the `corsa` Rust workspace to Node.js through
 `napi-rs`.
+
+## Install
+
+```bash
+npm i @corsa-bind/napi
+```
+
+The published root package stays JS-only and pulls in the matching native
+binary through platform-specific optional dependencies.
 
 ## What it ships
 

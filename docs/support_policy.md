@@ -35,7 +35,7 @@ receives fixes.
 - Node.js tooling for repository scripts and examples: `24+`
 - Go: the version declared by `ref/typescript-go/go.mod`
 - Operating systems: Linux, macOS, and Windows for the supported local surface
-- Published Node prebuilds: `darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `win32-x64-msvc`
+- Published Node prebuilds: `darwin-arm64`, `darwin-x64`, `linux-arm64-gnu`, `linux-arm64-musl`, `linux-x64-gnu`, `linux-x64-musl`, `win32-arm64-msvc`, `win32-x64-msvc`
 
 CI is expected to exercise:
 

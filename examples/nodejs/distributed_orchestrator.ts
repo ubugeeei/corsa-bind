@@ -1,4 +1,4 @@
-import { TsgoDistributedOrchestrator, TsgoVirtualDocument } from "@corsa/node";
+import { TsgoDistributedOrchestrator, TsgoVirtualDocument } from "@corsa-bind/napi";
 
 import { isMain } from "../shared.ts";
 

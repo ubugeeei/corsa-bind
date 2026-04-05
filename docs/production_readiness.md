@@ -75,10 +75,14 @@ Published Node prebuild coverage currently targets:
 
 - `darwin-arm64`
 - `darwin-x64`
+- `linux-arm64-gnu`
+- `linux-arm64-musl`
 - `linux-x64-gnu`
+- `linux-x64-musl`
+- `win32-arm64-msvc`
 - `win32-x64-msvc`
 
-Release safety rule: do not publish `@corsa/node` for a new version until all
-four native binding packages for that version are built and staged. The root
+Release safety rule: do not publish `@corsa-bind/napi` for a new version until all
+eight native binding packages for that version are built and staged. The root
 package's optional dependencies are versioned, so a partial first publish would
 leave later platforms stranded until the next release.

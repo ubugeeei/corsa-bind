@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import type { ApiClientOptions, ApiMode, ConfigResponse } from "@corsa/node";
-import { TsgoApiClient } from "@corsa/node";
+import type { ApiClientOptions, ApiMode, ConfigResponse } from "@corsa-bind/napi";
+import { TsgoApiClient } from "@corsa-bind/napi";
 
 export const workspaceRoot = resolve(import.meta.dirname, "../..");
 export const tsgoPath = resolve(

@@ -7,6 +7,7 @@ import {
   typescriptOxlintPackage,
   withStagedNodeBindingPackages,
 } from "./npm_release_utils.ts";
+import { publicRustCrates } from "./release_manifest.ts";
 import { fail, rootDir, runCommand } from "./shared.ts";
 
 interface CrateSpec {
@@ -15,50 +16,11 @@ interface CrateSpec {
   patches: string[];
 }
 
-const crates: CrateSpec[] = [
-  {
-    name: "corsa_core",
-    path: resolve(rootDir, "src/core/corsa_core"),
-    patches: [],
-  },
-  {
-    name: "corsa_runtime",
-    path: resolve(rootDir, "src/core/corsa_runtime"),
-    patches: [],
-  },
-  {
-    name: "corsa_jsonrpc",
-    path: resolve(rootDir, "src/core/corsa_jsonrpc"),
-    patches: ["corsa_core", "corsa_runtime"],
-  },
-  {
-    name: "corsa_client",
-    path: resolve(rootDir, "src/core/corsa_client"),
-    patches: ["corsa_core", "corsa_jsonrpc", "corsa_runtime"],
-  },
-  {
-    name: "corsa_lsp",
-    path: resolve(rootDir, "src/core/corsa_lsp"),
-    patches: ["corsa_core", "corsa_jsonrpc", "corsa_runtime"],
-  },
-  {
-    name: "corsa_orchestrator",
-    path: resolve(rootDir, "src/core/corsa_orchestrator"),
-    patches: ["corsa_client", "corsa_core", "corsa_lsp", "corsa_runtime"],
-  },
-  {
-    name: "corsa",
-    path: resolve(rootDir, "src/bindings/rust/corsa"),
-    patches: [
-      "corsa_client",
-      "corsa_core",
-      "corsa_jsonrpc",
-      "corsa_lsp",
-      "corsa_orchestrator",
-      "corsa_runtime",
-    ],
-  },
-];
+const crates: CrateSpec[] = publicRustCrates.map((crate) => ({
+  name: crate.name,
+  path: resolve(rootDir, crate.packagePath),
+  patches: [...crate.patches],
+}));
 
 function normalizePath(path: string): string {
   return path.replaceAll("\\", "/");

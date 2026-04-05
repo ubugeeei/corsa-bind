@@ -6,31 +6,95 @@ import { rootDir } from "./shared.ts";
 
 export type ReleaseBump = "major" | "minor" | "patch";
 
-export const publicRustCrateNames = [
-  "corsa_core",
-  "corsa_runtime",
-  "corsa_jsonrpc",
-  "corsa_client",
-  "corsa_lsp",
-  "corsa_orchestrator",
-  "corsa",
+export interface RustReleaseCrate {
+  manifestPath: string;
+  name: string;
+  packagePath: string;
+  patches: readonly string[];
+  publish: "internal" | "public";
+}
+
+export const rustReleaseCrates: readonly RustReleaseCrate[] = [
+  {
+    name: "corsa_core",
+    manifestPath: "src/core/corsa_core/Cargo.toml",
+    packagePath: "src/core/corsa_core",
+    patches: [],
+    publish: "public",
+  },
+  {
+    name: "corsa_runtime",
+    manifestPath: "src/core/corsa_runtime/Cargo.toml",
+    packagePath: "src/core/corsa_runtime",
+    patches: [],
+    publish: "public",
+  },
+  {
+    name: "corsa_jsonrpc",
+    manifestPath: "src/core/corsa_jsonrpc/Cargo.toml",
+    packagePath: "src/core/corsa_jsonrpc",
+    patches: ["corsa_core", "corsa_runtime"],
+    publish: "public",
+  },
+  {
+    name: "corsa_client",
+    manifestPath: "src/core/corsa_client/Cargo.toml",
+    packagePath: "src/core/corsa_client",
+    patches: ["corsa_core", "corsa_jsonrpc", "corsa_runtime"],
+    publish: "public",
+  },
+  {
+    name: "corsa_lsp",
+    manifestPath: "src/core/corsa_lsp/Cargo.toml",
+    packagePath: "src/core/corsa_lsp",
+    patches: ["corsa_core", "corsa_jsonrpc", "corsa_runtime"],
+    publish: "public",
+  },
+  {
+    name: "corsa_orchestrator",
+    manifestPath: "src/core/corsa_orchestrator/Cargo.toml",
+    packagePath: "src/core/corsa_orchestrator",
+    patches: ["corsa_client", "corsa_core", "corsa_lsp", "corsa_runtime"],
+    publish: "public",
+  },
+  {
+    name: "corsa_ref",
+    manifestPath: "src/core/corsa_ref/Cargo.toml",
+    packagePath: "src/core/corsa_ref",
+    patches: [],
+    publish: "internal",
+  },
+  {
+    name: "corsa",
+    manifestPath: "src/bindings/rust/corsa/Cargo.toml",
+    packagePath: "src/bindings/rust/corsa",
+    patches: [
+      "corsa_client",
+      "corsa_core",
+      "corsa_jsonrpc",
+      "corsa_lsp",
+      "corsa_orchestrator",
+      "corsa_runtime",
+    ],
+    publish: "public",
+  },
+  {
+    name: "corsa_node",
+    manifestPath: "src/bindings/nodejs/corsa_node/Cargo.toml",
+    packagePath: "src/bindings/nodejs/corsa_node",
+    patches: [],
+    publish: "internal",
+  },
 ] as const;
 
-const internalRustCrateNames = ["corsa_ref", "corsa_node"] as const;
+export const publicRustCrates = rustReleaseCrates.filter(
+  (crate): crate is RustReleaseCrate & { publish: "public" } => crate.publish === "public",
+);
 
-const cargoManifestPaths = [
-  "src/core/corsa_core/Cargo.toml",
-  "src/core/corsa_runtime/Cargo.toml",
-  "src/core/corsa_jsonrpc/Cargo.toml",
-  "src/core/corsa_client/Cargo.toml",
-  "src/core/corsa_lsp/Cargo.toml",
-  "src/core/corsa_orchestrator/Cargo.toml",
-  "src/core/corsa_ref/Cargo.toml",
-  "src/bindings/rust/corsa/Cargo.toml",
-  "src/bindings/nodejs/corsa_node/Cargo.toml",
-] as const;
+export const publicRustCrateNames = publicRustCrates.map((crate) => crate.name);
 
-const workspaceCrateNames = [...publicRustCrateNames, ...internalRustCrateNames];
+const cargoManifestPaths = rustReleaseCrates.map((crate) => crate.manifestPath);
+const workspaceCrateNames = rustReleaseCrates.map((crate) => crate.name);
 const workspaceNpmPackageNames = npmPackages.map((pkg) => pkg.name);
 
 function readText(path: string): string {

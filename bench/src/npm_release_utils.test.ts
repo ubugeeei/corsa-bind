@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   createBinaryPackageManifest,
   createRootBindingPublishManifest,
+  getNodeBindingBuildMatrix,
   getNodeBindingTargets,
   parseTargetTriple,
 } from "../../scripts/npm_release_utils.ts";
@@ -24,7 +25,16 @@ describe("npm release utils", () => {
       getNodeBindingTargets(nodeBindingManifest).map(
         (target: { platformArchABI: string }) => target.platformArchABI,
       ),
-    ).toEqual(["win32-x64-msvc", "darwin-x64", "linux-x64-gnu", "darwin-arm64"]);
+    ).toEqual([
+      "win32-x64-msvc",
+      "darwin-x64",
+      "linux-x64-gnu",
+      "darwin-arm64",
+      "win32-arm64-msvc",
+      "linux-x64-musl",
+      "linux-arm64-gnu",
+      "linux-arm64-musl",
+    ]);
   });
 
   it("deduplicates repeated native binding targets without changing publish order", () => {
@@ -36,12 +46,48 @@ describe("npm release utils", () => {
             additional: [
               "x86_64-unknown-linux-gnu",
               "aarch64-apple-darwin",
+              "aarch64-pc-windows-msvc",
+              "x86_64-unknown-linux-musl",
+              "aarch64-unknown-linux-gnu",
+              "aarch64-unknown-linux-musl",
               "x86_64-unknown-linux-gnu",
             ],
           },
         },
       }).map((target: { platformArchABI: string }) => target.platformArchABI),
-    ).toEqual(["win32-x64-msvc", "darwin-x64", "linux-x64-gnu", "darwin-arm64"]);
+    ).toEqual([
+      "win32-x64-msvc",
+      "darwin-x64",
+      "linux-x64-gnu",
+      "darwin-arm64",
+      "win32-arm64-msvc",
+      "linux-x64-musl",
+      "linux-arm64-gnu",
+      "linux-arm64-musl",
+    ]);
+  });
+
+  it("derives the GitHub Actions build matrix from the configured native targets", () => {
+    expect(getNodeBindingBuildMatrix(nodeBindingManifest)).toEqual([
+      { os: "windows-latest", target: "x86_64-pc-windows-msvc", useZig: false },
+      { os: "macos-15-intel", target: "x86_64-apple-darwin", useZig: false },
+      {
+        os: "ubuntu-latest",
+        target: "x86_64-unknown-linux-gnu",
+        useZig: true,
+        zigAbiSuffix: "2.17",
+      },
+      { os: "macos-15", target: "aarch64-apple-darwin", useZig: false },
+      { os: "windows-latest", target: "aarch64-pc-windows-msvc", useZig: false },
+      { os: "ubuntu-latest", target: "x86_64-unknown-linux-musl", useZig: true },
+      {
+        os: "ubuntu-latest",
+        target: "aarch64-unknown-linux-gnu",
+        useZig: true,
+        zigAbiSuffix: "2.17",
+      },
+      { os: "ubuntu-latest", target: "aarch64-unknown-linux-musl", useZig: true },
+    ]);
   });
 
   it("creates binary package manifests with libc metadata when needed", () => {

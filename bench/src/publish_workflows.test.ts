@@ -1,0 +1,30 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+const rootDir = process.cwd();
+
+function readWorkflow(path: string): string {
+  return readFileSync(resolve(rootDir, path), "utf8");
+}
+
+describe("publish workflows", () => {
+  it("sets up Node 24 before running the Rust publish script", () => {
+    const workflow = readWorkflow(".github/workflows/publish-rust.yml");
+    expect(workflow).toContain("Setup Node.js for release scripts");
+    expect(workflow).toContain("uses: actions/setup-node@v6");
+    expect(workflow).toContain('node-version: "24"');
+    expect(workflow).toContain("node --strip-types ./scripts/publish_rust.ts");
+  });
+
+  it("derives the napi native build matrix from the package config", () => {
+    const workflow = readWorkflow(".github/workflows/publish-npm.yml");
+    expect(workflow).toContain("resolve-native-targets:");
+    expect(workflow).toContain("node --strip-types ./scripts/print_napi_build_matrix.ts");
+    expect(workflow).toContain("matrix: ${{ fromJSON(needs.resolve-native-targets.outputs.matrix) }}");
+    expect(workflow).toContain("Setup Zig for cross-built Linux targets");
+    expect(workflow).toContain("uses: goto-bus-stop/setup-zig@v2");
+    expect(workflow).toContain('args+=(--zig-abi-suffix "${{ matrix.zigAbiSuffix }}")');
+  });
+});

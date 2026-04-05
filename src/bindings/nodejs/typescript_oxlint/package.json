@@ -59,7 +59,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@corsa/node": "workspace:*",
+    "@corsa-bind/napi": "workspace:*",
     "@oxlint/plugins": "1.57.0",
     "oxlint": "1.57.0"
   },

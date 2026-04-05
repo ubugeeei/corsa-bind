@@ -1,4 +1,4 @@
-import { isUnsafeAssignment, isUnsafeReturn } from "@corsa/node";
+import { isUnsafeAssignment, isUnsafeReturn } from "@corsa-bind/napi";
 
 import { isMain } from "../shared.ts";
 

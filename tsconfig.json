@@ -6,7 +6,7 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "paths": {
-      "@corsa/node": ["./src/bindings/nodejs/corsa_node/ts/index.ts"],
+      "@corsa-bind/napi": ["./src/bindings/nodejs/corsa_node/ts/index.ts"],
       "oxlint-plugin-typescript-go": ["./src/bindings/nodejs/typescript_oxlint/ts/index.ts"],
       "oxlint-plugin-typescript-go/ast-utils": [
         "./src/bindings/nodejs/typescript_oxlint/ts/ast_utils.ts"

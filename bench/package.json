@@ -2,7 +2,7 @@
   "name": "@corsa/corsa-bench",
   "private": true,
   "dependencies": {
-    "@corsa/node": "workspace:*",
+    "@corsa-bind/napi": "workspace:*",
     "oxlint-plugin-typescript-go": "workspace:*"
   }
 }

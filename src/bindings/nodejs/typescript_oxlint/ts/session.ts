@@ -1,6 +1,6 @@
 import { statSync } from "node:fs";
 
-import { type ProjectResponse, TsgoApiClient } from "@corsa/node";
+import { type ProjectResponse, TsgoApiClient } from "@corsa-bind/napi";
 
 import type { TsgoSignature, TsgoSymbol, TsgoType, TsgoTypePredicate } from "./types";
 import type { ResolvedProjectConfig, ResolvedRuntimeOptions } from "./types";

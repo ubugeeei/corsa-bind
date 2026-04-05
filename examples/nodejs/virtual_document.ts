@@ -1,4 +1,4 @@
-import { TsgoVirtualDocument } from "@corsa/node";
+import { TsgoVirtualDocument } from "@corsa-bind/napi";
 
 import { isMain } from "../shared.ts";
 

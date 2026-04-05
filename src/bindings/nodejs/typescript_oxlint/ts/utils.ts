@@ -11,9 +11,9 @@ import {
   isUnknownLikeTypeTexts,
   splitTopLevelTypeText,
   splitTypeText,
-} from "@corsa/node";
+} from "@corsa-bind/napi";
 
-export type { TypeTextKind } from "@corsa/node";
+export type { TypeTextKind } from "@corsa-bind/napi";
 
 export {
   classifyTypeText,

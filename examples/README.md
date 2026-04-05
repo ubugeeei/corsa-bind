@@ -2,7 +2,7 @@
 
 These examples are split into three groups:
 
-- `examples/nodejs/*`: executable `@corsa/node` samples
+- `examples/nodejs/*`: executable `@corsa-bind/napi` samples
 - `examples/rust/*`: executable Rust samples
 - `examples/typescript_oxlint/*`: reusable `oxlint-plugin-typescript-go` rule/plugin/config samples
 
@@ -116,7 +116,7 @@ cargo run -p corsa --example print_node_opt_in
 
 These examples hit the exact upstream-pinned checkout under `ref/typescript-go`.
 
-- `examples/nodejs/real_snapshot.ts`: opens the pinned project through `@corsa/node` and fetches a real source file snapshot
+- `examples/nodejs/real_snapshot.ts`: opens the pinned project through `@corsa-bind/napi` and fetches a real source file snapshot
 - `examples/rust/real_snapshot.rs`: the Rust-side equivalent using the msgpack-first API client
 
 Run one directly with:

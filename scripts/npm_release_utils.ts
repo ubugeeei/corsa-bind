@@ -27,6 +27,13 @@ export interface NodeBindingTarget {
   raw: string;
 }
 
+export interface NodeBindingBuildMatrixEntry {
+  os: string;
+  target: string;
+  useZig: boolean;
+  zigAbiSuffix?: string;
+}
+
 export interface PublishablePackage {
   access?: string;
   name: string;
@@ -83,7 +90,7 @@ interface BindingArtifact {
 }
 
 export const nodeBindingPackage: PublishablePackage = {
-  name: "@corsa/node",
+  name: "@corsa-bind/napi",
   path: resolve(rootDir, "src/bindings/nodejs/corsa_node"),
   access: "public",
 };
@@ -117,6 +124,49 @@ const cpuToNodeArch: Record<string, string> = {
   riscv64: "riscv64",
   universal: "universal",
   x86_64: "x64",
+};
+
+interface NodeBindingBuildTargetConfig {
+  os: string;
+  useZig: boolean;
+  zigAbiSuffix?: string;
+}
+
+const nodeBindingBuildTargetConfig: Record<string, NodeBindingBuildTargetConfig> = {
+  "x86_64-pc-windows-msvc": {
+    os: "windows-latest",
+    useZig: false,
+  },
+  "aarch64-pc-windows-msvc": {
+    os: "windows-latest",
+    useZig: false,
+  },
+  "x86_64-apple-darwin": {
+    os: "macos-15-intel",
+    useZig: false,
+  },
+  "aarch64-apple-darwin": {
+    os: "macos-15",
+    useZig: false,
+  },
+  "x86_64-unknown-linux-gnu": {
+    os: "ubuntu-latest",
+    useZig: true,
+    zigAbiSuffix: "2.17",
+  },
+  "aarch64-unknown-linux-gnu": {
+    os: "ubuntu-latest",
+    useZig: true,
+    zigAbiSuffix: "2.17",
+  },
+  "x86_64-unknown-linux-musl": {
+    os: "ubuntu-latest",
+    useZig: true,
+  },
+  "aarch64-unknown-linux-musl": {
+    os: "ubuntu-latest",
+    useZig: true,
+  },
 };
 
 function readJson<T>(path: string): T {
@@ -291,6 +341,25 @@ export function getNodeBindingBinaryPackageNames(
   return getNodeBindingTargets(packageJson).map(
     (target) => `${rootPackageName}-${target.platformArchABI}`,
   );
+}
+
+export function getNodeBindingBuildMatrix(
+  packageJson = readJson<NodeBindingManifest>(resolve(nodeBindingPackage.path, "package.json")),
+): NodeBindingBuildMatrixEntry[] {
+  return getNodeBindingTargets(packageJson).map((target) => {
+    const config = nodeBindingBuildTargetConfig[target.raw];
+    if (!config) {
+      throw new Error(
+        `No GitHub Actions build config is configured for napi target ${target.raw}`,
+      );
+    }
+    return {
+      os: config.os,
+      target: target.raw,
+      useZig: config.useZig,
+      zigAbiSuffix: config.zigAbiSuffix,
+    };
+  });
 }
 
 export function createBinaryPackageManifest(

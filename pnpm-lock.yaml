@@ -29,7 +29,7 @@ importers:
 
   bench:
     dependencies:
-      '@corsa/node':
+      '@corsa-bind/napi':
         specifier: workspace:*
         version: link:../src/bindings/nodejs/corsa_node
       oxlint-plugin-typescript-go:
@@ -38,7 +38,7 @@ importers:
 
   examples:
     dependencies:
-      '@corsa/node':
+      '@corsa-bind/napi':
         specifier: workspace:*
         version: link:../src/bindings/nodejs/corsa_node
       oxlint-plugin-typescript-go:
@@ -49,12 +49,12 @@ importers:
 
   src/bindings/nodejs/typescript_oxlint:
     dependencies:
+      '@corsa-bind/napi':
+        specifier: workspace:*
+        version: link:../corsa_node
       '@oxlint/plugins':
         specifier: 1.57.0
         version: 1.57.0
-      '@corsa/node':
-        specifier: workspace:*
-        version: link:../corsa_node
       oxlint:
         specifier: 1.57.0
         version: 1.57.0(oxlint-tsgolint@0.17.3)

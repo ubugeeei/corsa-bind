@@ -1,4 +1,4 @@
-import { isUnsafeAssignment } from "@corsa/node";
+import { isUnsafeAssignment } from "@corsa-bind/napi";
 
 import { createNativeRule } from "./rule_creator";
 import { typeTextsAtNode } from "./type_utils";

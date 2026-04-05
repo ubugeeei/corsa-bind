@@ -1,4 +1,4 @@
-import { TsgoApiClient } from "@corsa/node";
+import { TsgoApiClient } from "@corsa-bind/napi";
 
 import { assertExists, isMain, mockBinary, workspaceRoot } from "../shared.ts";
 

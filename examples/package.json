@@ -17,7 +17,7 @@
     "real": "pnpm run real-snapshot && pnpm run rule-tester && pnpm run native-rule-tester"
   },
   "dependencies": {
-    "@corsa/node": "workspace:*",
+    "@corsa-bind/napi": "workspace:*",
     "oxlint-plugin-typescript-go": "workspace:*"
   },
   "engines": {

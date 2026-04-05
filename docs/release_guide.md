@@ -21,22 +21,31 @@ Internal Rust crates:
 
 Public npm packages:
 
-- `@corsa/node` (`src/bindings/nodejs/corsa_node`)
+- `@corsa-bind/napi` (`src/bindings/nodejs/corsa_node`)
 - `oxlint-plugin-typescript-go` (`src/bindings/nodejs/typescript_oxlint`)
 
 The npm packages do not bundle the `typescript-go` executable. Consumers must
 point them at a compatible `tsgo` binary at runtime.
 
-`@corsa/node` is built with `napi-rs`. The publish workflow now ships
+`@corsa-bind/napi` is built with `napi-rs`. The publish workflow now ships
 the root package plus target-specific native binary packages for:
 
 - `darwin-arm64`
 - `darwin-x64`
+- `linux-arm64-gnu`
+- `linux-arm64-musl`
 - `linux-x64-gnu`
+- `linux-x64-musl`
+- `win32-arm64-msvc`
 - `win32-x64-msvc`
 
+That native build matrix is derived from
+[`src/bindings/nodejs/corsa_node/package.json`](../src/bindings/nodejs/corsa_node/package.json)
+via its `napi.triples` config, so target changes should start there rather than
+by editing the workflow matrix directly.
+
 Trusted publishing must be configured for each of those target-specific native
-packages as well as the `@corsa/node` root package.
+packages as well as the `@corsa-bind/napi` root package.
 
 The root package stays JS-only at publish time and resolves the correct native
 binding through optional dependencies.
@@ -57,12 +66,16 @@ Publish crates in dependency order:
 
 Publish npm packages in dependency order:
 
-1. `@corsa/node-win32-x64-msvc`
-2. `@corsa/node-darwin-x64`
-3. `@corsa/node-linux-x64-gnu`
-4. `@corsa/node-darwin-arm64`
-5. `@corsa/node`
-6. `oxlint-plugin-typescript-go`
+1. `@corsa-bind/napi-win32-x64-msvc`
+2. `@corsa-bind/napi-win32-arm64-msvc`
+3. `@corsa-bind/napi-darwin-x64`
+4. `@corsa-bind/napi-darwin-arm64`
+5. `@corsa-bind/napi-linux-x64-gnu`
+6. `@corsa-bind/napi-linux-x64-musl`
+7. `@corsa-bind/napi-linux-arm64-gnu`
+8. `@corsa-bind/napi-linux-arm64-musl`
+9. `@corsa-bind/napi`
+10. `oxlint-plugin-typescript-go`
 
 ## Tag Release Flow
 
@@ -99,7 +112,7 @@ This performs:
 
 - `cargo package` for every public Rust crate
 - a temporary workspace patch overlay so interdependent unpublished crates can be packaged before the first crates.io release
-- staging of the JS-only `@corsa/node` root package plus any locally available native binary packages
+- staging of the JS-only `@corsa-bind/napi` root package plus any locally available native binary packages
 - `pnpm pack` for each publishable npm package so `workspace:*` ranges are rewritten exactly as they will be for publish
 - `npm publish --dry-run <tarball>` for the packed npm tarballs
 
@@ -146,11 +159,15 @@ Publishing for each package with:
 Configure the same trusted publisher on:
 
 - `oxlint-plugin-typescript-go`
-- `@corsa/node`
-- `@corsa/node-darwin-arm64`
-- `@corsa/node-darwin-x64`
-- `@corsa/node-linux-x64-gnu`
-- `@corsa/node-win32-x64-msvc`
+- `@corsa-bind/napi`
+- `@corsa-bind/napi-darwin-arm64`
+- `@corsa-bind/napi-darwin-x64`
+- `@corsa-bind/napi-linux-arm64-gnu`
+- `@corsa-bind/napi-linux-arm64-musl`
+- `@corsa-bind/napi-linux-x64-gnu`
+- `@corsa-bind/napi-linux-x64-musl`
+- `@corsa-bind/napi-win32-arm64-msvc`
+- `@corsa-bind/napi-win32-x64-msvc`
 
 The npm workflow pins Node `24`, which satisfies npm's Trusted Publishing
 minimum (`Node >= 22.14.0`, `npm >= 11.5.1`).
@@ -197,7 +214,7 @@ auth_mode=token
 ```
 
 This manual CI run still builds every supported native artifact through the
-matrix, then publishes the binary packages first, the JS-only `@corsa/node`
+matrix, then publishes the binary packages first, the JS-only `@corsa-bind/napi`
 root package second, and `oxlint-plugin-typescript-go` last.
 
 ### 4. Attach the Trusted Publishers

@@ -94,24 +94,39 @@ jobs:
       - name: Release dry run
         run: vp run -w release_dry_run
 
+  resolve-native-targets:
+    if: ${{ github.event_name == 'push' || inputs.confirm == 'publish-npm' }}
+    name: Resolve native binding targets
+    needs:
+      - release-gates
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Resolve napi build matrix
+        id: matrix
+        shell: bash
+        run: |
+          printf 'matrix=%s\n' "$(node --strip-types ./scripts/print_napi_build_matrix.ts)" >> "$GITHUB_OUTPUT"
+
   build-native-bindings:
     if: ${{ github.event_name == 'push' || inputs.confirm == 'publish-npm' }}
     name: Build native binding (${{ matrix.target }})
     needs:
       - release-gates
+      - resolve-native-targets
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-          - os: macos-latest
-            target: x86_64-apple-darwin
-          - os: macos-latest
-            target: aarch64-apple-darwin
+      matrix: ${{ fromJSON(needs.resolve-native-targets.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -131,9 +146,22 @@ jobs:
           cache: true
           run-install: true
 
+      - name: Setup Zig for cross-built Linux targets
+        if: ${{ matrix.useZig }}
+        uses: goto-bus-stop/setup-zig@v2
+
       - name: Build native binding
+        shell: bash
         working-directory: src/bindings/nodejs/corsa_node
-        run: node ../../../../node_modules/@napi-rs/cli/scripts/index.js build --platform --release --target ${{ matrix.target }}
+        run: |
+          args=(build --platform --release --target "${{ matrix.target }}")
+          if [[ "${{ matrix.useZig }}" == "true" ]]; then
+            args+=(--zig)
+          fi
+          if [[ -n "${{ matrix.zigAbiSuffix }}" ]]; then
+            args+=(--zig-abi-suffix "${{ matrix.zigAbiSuffix }}")
+          fi
+          node ../../../../node_modules/@napi-rs/cli/scripts/index.js "${args[@]}"
 
       - name: Upload native binding artifact
         uses: actions/upload-artifact@v4

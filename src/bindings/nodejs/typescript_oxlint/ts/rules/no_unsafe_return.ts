@@ -1,4 +1,4 @@
-import { isUnsafeReturn } from "@corsa/node";
+import { isUnsafeReturn } from "@corsa-bind/napi";
 
 import { nearestFunctionAncestors } from "./ast";
 import { createNativeRule } from "./rule_creator";

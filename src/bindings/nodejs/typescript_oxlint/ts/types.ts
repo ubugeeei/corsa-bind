@@ -1,5 +1,5 @@
 import type { Context, Node, SourceCode } from "@oxlint/plugins";
-import type { ApiMode, ConfigResponse, ProjectResponse, TypeResponse } from "@corsa/node";
+import type { ApiMode, ConfigResponse, ProjectResponse, TypeResponse } from "@corsa-bind/napi";
 
 export interface TsgoRuntimeOptions {
   executable?: string;

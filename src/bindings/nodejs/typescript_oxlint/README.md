@@ -143,7 +143,7 @@ tracked upstream rule list.
 
 ## Runtime Safety Controls
 
-The underlying `@corsa/node` client now exposes a few production-oriented
+The underlying `@corsa-bind/napi` client now exposes a few production-oriented
 runtime controls:
 
 - `requestTimeoutMs`
