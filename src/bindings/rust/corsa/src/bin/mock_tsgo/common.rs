@@ -10,14 +10,26 @@ pub fn project(config_file_name: &str) -> Value {
     })
 }
 
-pub fn snapshot(config_file_name: &str) -> Value {
+pub fn snapshot_from_update_params(config_file_name: &str, params: &Value) -> Value {
+    let changed_files = extract_changed_files(params);
+    snapshot_with_changed_files(
+        config_file_name,
+        if changed_files.is_empty() {
+            vec!["/workspace/src/index.ts".to_owned()]
+        } else {
+            changed_files
+        },
+    )
+}
+
+fn snapshot_with_changed_files(config_file_name: &str, changed_files: Vec<String>) -> Value {
     json!({
         "snapshot": "n0000000000000001",
         "projects": [project(config_file_name)],
         "changes": {
             "changedProjects": {
                 "p./workspace/tsconfig.json": {
-                    "changedFiles": ["/workspace/src/index.ts"],
+                    "changedFiles": changed_files,
                     "deletedFiles": []
                 }
             },
@@ -77,4 +89,182 @@ pub fn index_info() -> Value {
 
 pub fn encoded(bytes: &[u8]) -> Value {
     json!({ "data": STANDARD.encode(bytes) })
+}
+
+pub fn capabilities() -> Value {
+    json!({
+        "overlay": {
+            "updateSnapshotOverlayChanges": true
+        },
+        "diagnostics": {
+            "snapshot": true,
+            "project": true,
+            "file": true
+        },
+        "editor": {
+            "hover": true,
+            "definition": true,
+            "references": true,
+            "rename": true,
+            "completion": true
+        }
+    })
+}
+
+pub fn file_diagnostics(file: Value) -> Value {
+    json!({
+        "file": file,
+        "syntactic": [diagnostic("TS1005", "expected ';'")],
+        "semantic": [diagnostic("TS2322", "type mismatch")],
+        "suggestion": [diagnostic("TS80006", "convert to shorthand")]
+    })
+}
+
+pub fn project_diagnostics(file: Value) -> Value {
+    json!({
+        "project": "p./workspace/tsconfig.json",
+        "files": [file_diagnostics(file)]
+    })
+}
+
+pub fn snapshot_diagnostics(file: Value) -> Value {
+    json!({
+        "snapshot": "n0000000000000001",
+        "projects": [project_diagnostics(file)]
+    })
+}
+
+pub fn hover() -> Value {
+    json!({
+        "contents": {
+            "kind": "markdown",
+            "value": "`value`: string"
+        },
+        "range": range()
+    })
+}
+
+pub fn definition() -> Value {
+    json!([location()])
+}
+
+pub fn references() -> Value {
+    json!([location(), secondary_location()])
+}
+
+pub fn rename(new_name: &str) -> Value {
+    json!({
+        "changes": {
+            "file:///workspace/src/index.ts": [
+                {
+                    "range": range(),
+                    "newText": new_name
+                }
+            ]
+        }
+    })
+}
+
+pub fn completion() -> Value {
+    json!({
+        "isIncomplete": false,
+        "items": [
+            {
+                "label": "value",
+                "kind": 6,
+                "detail": "const value: string"
+            }
+        ]
+    })
+}
+
+fn extract_changed_files(params: &Value) -> Vec<String> {
+    let mut files = Vec::new();
+    if let Some(file_changes) = params.get("fileChanges") {
+        push_documents(
+            &mut files,
+            file_changes
+                .get("changed")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten(),
+        );
+        push_documents(
+            &mut files,
+            file_changes
+                .get("created")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten(),
+        );
+        push_documents(
+            &mut files,
+            file_changes
+                .get("deleted")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten(),
+        );
+    }
+    if let Some(overlay_changes) = params.get("overlayChanges") {
+        push_documents(
+            &mut files,
+            overlay_changes
+                .get("upsert")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(|entry| entry.get("document")),
+        );
+        push_documents(
+            &mut files,
+            overlay_changes
+                .get("delete")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten(),
+        );
+    }
+    files
+}
+
+fn push_documents<'a>(files: &mut Vec<String>, documents: impl IntoIterator<Item = &'a Value>) {
+    for document in documents {
+        if let Some(path) = document.as_str() {
+            files.push(path.to_owned());
+        } else if let Some(uri) = document.get("uri").and_then(Value::as_str) {
+            files.push(uri.to_owned());
+        }
+    }
+}
+
+fn diagnostic(code: &str, message: &str) -> Value {
+    json!({
+        "range": range(),
+        "severity": 1,
+        "code": code,
+        "source": "mock-tsgo",
+        "message": message
+    })
+}
+
+fn location() -> Value {
+    json!({
+        "uri": "file:///workspace/src/index.ts",
+        "range": range()
+    })
+}
+
+fn secondary_location() -> Value {
+    json!({
+        "uri": "file:///workspace/src/other.ts",
+        "range": range()
+    })
+}
+
+fn range() -> Value {
+    json!({
+        "start": { "line": 0, "character": 0 },
+        "end": { "line": 0, "character": 5 }
+    })
 }

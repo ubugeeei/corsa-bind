@@ -21,10 +21,36 @@ pub fn run(cwd: String, callbacks: Vec<String>) -> Result<()> {
                 "useCaseSensitiveFileNames": true,
                 "currentDirectory": cwd,
             })),
+            "describeCapabilities" => Some(common::capabilities()),
             "parseConfigFile" => Some(parse_config(&mut reader, &mut writer, &callbacks, params)?),
-            "updateSnapshot" => Some(common::snapshot("/workspace/tsconfig.json")),
+            "updateSnapshot" => Some(common::snapshot_from_update_params(
+                "/workspace/tsconfig.json",
+                &params,
+            )),
             "getDefaultProjectForFile" => Some(common::project("/workspace/tsconfig.json")),
             "getSourceFile" => Some(common::encoded(b"source-file")),
+            "getDiagnosticsForSnapshot" => Some(common::snapshot_diagnostics(json!(
+                "/workspace/src/index.ts"
+            ))),
+            "getDiagnosticsForProject" => Some(common::project_diagnostics(json!(
+                "/workspace/src/index.ts"
+            ))),
+            "getDiagnosticsForFile" => Some(common::file_diagnostics(
+                params
+                    .get("file")
+                    .cloned()
+                    .unwrap_or_else(|| json!("/workspace/src/index.ts")),
+            )),
+            "getHoverAtPosition" => Some(common::hover()),
+            "getDefinitionAtPosition" => Some(common::definition()),
+            "getReferencesAtPosition" => Some(common::references()),
+            "getRenameAtPosition" => Some(common::rename(
+                params
+                    .get("newName")
+                    .and_then(Value::as_str)
+                    .unwrap_or("renamedValue"),
+            )),
+            "getCompletionAtPosition" => Some(common::completion()),
             "getSymbolAtPosition" | "getSymbolAtLocation" | "resolveName" => {
                 Some(common::symbol("value"))
             }

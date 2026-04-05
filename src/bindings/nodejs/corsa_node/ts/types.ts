@@ -27,6 +27,8 @@ export interface ProjectResponse {
   rootFiles: string[];
 }
 
+export type DocumentIdentifier = string | { uri: string };
+
 export interface FileChangeSummary {
   changed?: string[];
   created?: string[];
@@ -42,6 +44,7 @@ export type FileChanges =
 export interface UpdateSnapshotParams {
   openProject?: string;
   fileChanges?: FileChanges;
+  overlayChanges?: OverlayChanges;
 }
 
 export interface UpdateSnapshotResponse {
@@ -57,6 +60,67 @@ export interface TypeResponse {
   value?: unknown;
   symbol?: string;
   texts: string[];
+}
+
+export interface OverlayUpdate {
+  document: DocumentIdentifier;
+  text: string;
+  version?: number;
+  languageId?: string;
+}
+
+export interface OverlayChanges {
+  upsert?: OverlayUpdate[];
+  delete?: DocumentIdentifier[];
+}
+
+export interface RuntimeCapabilities {
+  kind?: string;
+  executable?: string;
+  transport?: string;
+  capabilityEndpoint: boolean;
+}
+
+export interface OverlayCapabilities {
+  updateSnapshotOverlayChanges: boolean;
+}
+
+export interface DiagnosticsCapabilities {
+  snapshot: boolean;
+  project: boolean;
+  file: boolean;
+}
+
+export interface EditorCapabilities {
+  hover: boolean;
+  definition: boolean;
+  references: boolean;
+  rename: boolean;
+  completion: boolean;
+}
+
+export interface CapabilitiesResponse {
+  runtime: RuntimeCapabilities;
+  overlay: OverlayCapabilities;
+  diagnostics: DiagnosticsCapabilities;
+  editor: EditorCapabilities;
+}
+
+export interface FileDiagnosticsResponse {
+  file: DocumentIdentifier;
+  syntactic: unknown[];
+  semantic: unknown[];
+  suggestion: unknown[];
+}
+
+export interface ProjectDiagnosticsResponse {
+  project: string;
+  files: FileDiagnosticsResponse[];
+}
+
+export interface SnapshotDiagnosticsResponse {
+  snapshot: string;
+  projects: ProjectDiagnosticsResponse[];
 }
 
 export interface UnsafeTypeFlowInput {

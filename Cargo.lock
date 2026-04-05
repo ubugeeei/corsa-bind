@@ -105,6 +105,7 @@ dependencies = [
  "corsa_jsonrpc",
  "corsa_runtime",
  "log",
+ "lsp-types",
  "parking_lot",
  "phf",
  "serde",

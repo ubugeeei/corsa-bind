@@ -1,6 +1,8 @@
 mod support;
 
-use corsa::api::{ApiClient, ApiMode, UpdateSnapshotParams};
+use corsa::api::{
+    ApiClient, ApiMode, DocumentIdentifier, OverlayChanges, OverlayUpdate, UpdateSnapshotParams,
+};
 use corsa::runtime::block_on;
 use serde_json::json;
 
@@ -16,6 +18,7 @@ fn msgpack_api_roundtrip_core() {
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some("/workspace/tsconfig.json".into()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await
             .unwrap();
@@ -67,6 +70,48 @@ fn msgpack_api_callbacks_work() {
             .await
             .unwrap();
         assert_eq!(config.options["virtual"], json!(true));
+        client.close().await.unwrap();
+    });
+}
+
+#[test]
+fn msgpack_api_supports_capabilities_and_overlay_updates() {
+    block_on(async {
+        let client = ApiClient::spawn(support::api_config(ApiMode::SyncMsgpackStdio))
+            .await
+            .unwrap();
+        let capabilities = client.describe_capabilities().await.unwrap();
+        assert!(capabilities.overlay.update_snapshot_overlay_changes);
+        let snapshot = client
+            .update_snapshot(UpdateSnapshotParams {
+                open_project: Some("/workspace/tsconfig.json".into()),
+                file_changes: None,
+                overlay_changes: Some(OverlayChanges {
+                    upsert: vec![OverlayUpdate {
+                        document: DocumentIdentifier::Uri {
+                            uri: "tsgo://overlay/msgpack.ts".into(),
+                        },
+                        text: "export const value = 1;".into(),
+                        version: Some(1),
+                        language_id: Some("typescript".into()),
+                    }],
+                    delete: Vec::new(),
+                }),
+            })
+            .await
+            .unwrap();
+        assert!(
+            snapshot
+                .changes
+                .as_ref()
+                .unwrap()
+                .changed_projects
+                .get(&snapshot.projects[0].id)
+                .unwrap()
+                .changed_files
+                .iter()
+                .any(|file| file == "tsgo://overlay/msgpack.ts")
+        );
         client.close().await.unwrap();
     });
 }

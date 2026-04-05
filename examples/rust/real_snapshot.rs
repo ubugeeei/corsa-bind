@@ -23,6 +23,7 @@ fn main() -> Result<(), corsa::TsgoError> {
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some(dataset_wire.clone()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await?;
         let project = snapshot.projects.first().ok_or_else(|| {

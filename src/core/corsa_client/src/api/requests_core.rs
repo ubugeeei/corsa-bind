@@ -1,8 +1,8 @@
 use serde::Serialize;
 
 use super::{
-    DocumentIdentifier, FileChanges, NodeHandle, ProjectHandle, SnapshotHandle, SymbolHandle,
-    TypeHandle,
+    DocumentIdentifier, FileChanges, NodeHandle, OverlayChanges, ProjectHandle, SnapshotHandle,
+    SymbolHandle, TypeHandle,
 };
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -12,6 +12,8 @@ pub(crate) struct UpdateSnapshotRequest {
     pub open_project: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_changes: Option<FileChanges>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub overlay_changes: Option<OverlayChanges>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -31,6 +33,13 @@ pub(crate) struct ReleaseRequest<'a> {
 pub(crate) struct SnapshotFileRequest {
     pub snapshot: SnapshotHandle,
     pub file: DocumentIdentifier,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SnapshotProjectRequest {
+    pub snapshot: SnapshotHandle,
+    pub project: ProjectHandle,
 }
 
 #[derive(Clone, Debug, Serialize)]

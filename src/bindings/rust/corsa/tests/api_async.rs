@@ -1,6 +1,9 @@
 mod support;
 
-use corsa::api::{ApiClient, ApiMode, PrintNodeOptions, UpdateSnapshotParams};
+use corsa::api::{
+    ApiClient, ApiMode, DocumentIdentifier, OverlayChanges, OverlayUpdate, PrintNodeOptions,
+    UpdateSnapshotParams,
+};
 use corsa::runtime::block_on;
 use serde_json::json;
 
@@ -27,6 +30,7 @@ fn async_api_roundtrip_core() {
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some("/workspace/tsconfig.json".into()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await
             .unwrap();
@@ -138,6 +142,7 @@ fn async_api_full_surface_methods() {
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some("/workspace/tsconfig.json".into()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await
             .unwrap();
@@ -404,6 +409,159 @@ fn async_api_full_surface_methods() {
                 .await
                 .is_ok()
         );
+        client.close().await.unwrap();
+    });
+}
+
+#[test]
+fn async_api_supports_capabilities_overlay_diagnostics_and_editor_surface() {
+    block_on(async {
+        let client = ApiClient::spawn(support::api_config(ApiMode::AsyncJsonRpcStdio))
+            .await
+            .unwrap();
+        let capabilities = client.describe_capabilities().await.unwrap();
+        assert_eq!(capabilities.runtime.kind.as_deref(), Some("mock-tsgo"));
+        assert!(capabilities.overlay.update_snapshot_overlay_changes);
+        assert!(capabilities.diagnostics.file);
+        assert!(capabilities.editor.hover);
+
+        let snapshot = client
+            .update_snapshot(UpdateSnapshotParams {
+                open_project: Some("/workspace/tsconfig.json".into()),
+                file_changes: None,
+                overlay_changes: Some(OverlayChanges {
+                    upsert: vec![OverlayUpdate {
+                        document: DocumentIdentifier::Uri {
+                            uri: "tsgo://overlay/demo.ts".into(),
+                        },
+                        text: "const value = 1;".into(),
+                        version: Some(3),
+                        language_id: Some("typescript".into()),
+                    }],
+                    delete: Vec::new(),
+                }),
+            })
+            .await
+            .unwrap();
+        let project = snapshot.projects[0].id.clone();
+        let changed_files = &snapshot
+            .changes
+            .as_ref()
+            .unwrap()
+            .changed_projects
+            .get(&project)
+            .unwrap()
+            .changed_files;
+        assert!(
+            changed_files
+                .iter()
+                .any(|file| file == "tsgo://overlay/demo.ts")
+        );
+
+        let file_diagnostics = client
+            .get_diagnostics_for_file(
+                snapshot.handle.clone(),
+                project.clone(),
+                "/workspace/src/index.ts",
+            )
+            .await
+            .unwrap();
+        assert_eq!(file_diagnostics.syntactic.len(), 1);
+        assert_eq!(file_diagnostics.semantic.len(), 1);
+        assert_eq!(file_diagnostics.suggestion.len(), 1);
+
+        let project_diagnostics = client
+            .get_diagnostics_for_project(snapshot.handle.clone(), project.clone())
+            .await
+            .unwrap();
+        assert_eq!(project_diagnostics.files.len(), 1);
+
+        let snapshot_diagnostics = client
+            .get_diagnostics_for_snapshot(snapshot.handle.clone())
+            .await
+            .unwrap();
+        assert_eq!(snapshot_diagnostics.projects.len(), 1);
+
+        let hover = client
+            .get_hover_at_position(
+                snapshot.handle.clone(),
+                project.clone(),
+                "/workspace/src/index.ts",
+                1,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(
+            serde_json::to_value(&hover).unwrap()["contents"]["value"]
+                .as_str()
+                .unwrap()
+                .contains("value")
+        );
+
+        let definition = client
+            .get_definition_at_position(
+                snapshot.handle.clone(),
+                project.clone(),
+                "/workspace/src/index.ts",
+                1,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            serde_json::to_value(&definition)
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+
+        let references = client
+            .get_references_at_position(
+                snapshot.handle.clone(),
+                project.clone(),
+                "/workspace/src/index.ts",
+                1,
+            )
+            .await
+            .unwrap();
+        assert_eq!(references.len(), 2);
+
+        let rename = client
+            .get_rename_at_position(
+                snapshot.handle.clone(),
+                project.clone(),
+                "/workspace/src/index.ts",
+                1,
+                "renamedValue",
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            serde_json::to_value(&rename).unwrap()["changes"]["file:///workspace/src/index.ts"][0]
+                ["newText"],
+            json!("renamedValue")
+        );
+
+        let completion = client
+            .get_completion_at_position(
+                snapshot.handle.clone(),
+                project,
+                "/workspace/src/index.ts",
+                1,
+                None,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            serde_json::to_value(&completion).unwrap()["items"][0]["label"],
+            json!("value")
+        );
+
         client.close().await.unwrap();
     });
 }

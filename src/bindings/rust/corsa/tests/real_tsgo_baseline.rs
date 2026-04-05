@@ -31,6 +31,7 @@ fn real_tsgo_api_summary_matches_pinned_baseline() {
                 .update_snapshot(UpdateSnapshotParams {
                     open_project: Some(dataset_wire),
                     file_changes: None,
+                    overlay_changes: None,
                 })
                 .await
                 .unwrap();

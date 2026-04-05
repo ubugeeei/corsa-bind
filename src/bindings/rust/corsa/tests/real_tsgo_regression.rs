@@ -34,6 +34,7 @@ fn real_tsgo_msgpack_roundtrip_smoke() {
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some(dataset_wire.clone()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await
             .unwrap();
@@ -85,6 +86,7 @@ fn real_tsgo_jsonrpc_roundtrip_smoke() {
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some(dataset_wire),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await
             .unwrap();
@@ -139,6 +141,7 @@ async fn prepare_session(config: ApiSpawnConfig, dataset_wire: &str) -> Session 
         .update_snapshot(UpdateSnapshotParams {
             open_project: Some(dataset_wire.to_owned()),
             file_changes: None,
+            overlay_changes: None,
         })
         .await
         .unwrap();

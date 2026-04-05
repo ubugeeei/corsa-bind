@@ -1,8 +1,9 @@
 use crate::{Result, TsgoError};
+use corsa_core::fast::CompactString;
 use parking_lot::Mutex;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 #[cfg(unix)]
 use crate::jsonrpc::JsonRpcConnection;
@@ -13,6 +14,7 @@ use std::{
 };
 
 use super::{
+    capabilities::{CapabilitiesResponse, RuntimeCapabilities},
     changes::{UpdateSnapshotParams, UpdateSnapshotResponse},
     config::{ApiMode, ApiSpawnConfig},
     document::DocumentIdentifier,
@@ -56,6 +58,8 @@ use super::{
 pub struct ApiClient {
     driver: Arc<ClientDriver>,
     initialized: Arc<Mutex<Option<Arc<InitializeResponse>>>>,
+    capabilities: Arc<Mutex<Option<Arc<CapabilitiesResponse>>>>,
+    runtime_capabilities: RuntimeCapabilities,
     allow_unstable_upstream_calls: bool,
 }
 
@@ -93,6 +97,8 @@ impl ApiClient {
         Ok(Self {
             driver,
             initialized: Arc::new(Mutex::new(None)),
+            capabilities: Arc::new(Mutex::new(None)),
+            runtime_capabilities: RuntimeCapabilities::from_spawn_config(&config),
             allow_unstable_upstream_calls: config.allow_unstable_upstream_calls,
         })
     }
@@ -125,6 +131,42 @@ impl ApiClient {
             .ok_or(TsgoError::Closed("api initialize"))
     }
 
+    /// Returns the advertised runtime capabilities for this client.
+    ///
+    /// When the remote runtime does not implement `describeCapabilities`, this
+    /// falls back to local spawn metadata and marks all proposed endpoints as
+    /// unsupported.
+    pub async fn describe_capabilities(&self) -> Result<Arc<CapabilitiesResponse>> {
+        if self.capabilities.lock().is_none() {
+            let capabilities = match self
+                .raw_json_request("describeCapabilities", Value::Null)
+                .await
+            {
+                Ok(value) => {
+                    let mut parsed: CapabilitiesResponse = serde_json::from_value(value)?;
+                    parsed.runtime = parsed
+                        .runtime
+                        .merge_with_local(self.runtime_capabilities.clone());
+                    parsed.runtime.capability_endpoint = true;
+                    Arc::new(parsed)
+                }
+                Err(TsgoError::Rpc(error)) if error.code == -32601 => Arc::new(
+                    CapabilitiesResponse::fallback(self.runtime_capabilities.clone()),
+                ),
+                Err(error) => return Err(error),
+            };
+            let mut slot = self.capabilities.lock();
+            if slot.is_none() {
+                *slot = Some(capabilities.clone());
+            }
+        }
+        self.capabilities
+            .lock()
+            .as_ref()
+            .cloned()
+            .ok_or(TsgoError::Closed("api describeCapabilities"))
+    }
+
     /// Parses a `tsconfig` file through `tsgo`.
     ///
     /// The returned [`ConfigResponse`] contains the normalized compiler options
@@ -149,10 +191,14 @@ impl ApiClient {
     /// when dropped, but can also be released eagerly via
     /// [`ManagedSnapshot::release`](crate::ManagedSnapshot::release).
     pub async fn update_snapshot(&self, params: UpdateSnapshotParams) -> Result<ManagedSnapshot> {
+        if params.overlay_changes.is_some() {
+            self.require_overlay_update_capability().await?;
+        }
         self.initialize().await?;
         let request = UpdateSnapshotRequest {
             open_project: params.open_project,
             file_changes: params.file_changes,
+            overlay_changes: params.overlay_changes,
         };
         let value = self
             .driver
@@ -297,6 +343,28 @@ impl ApiClient {
         self.raw_binary_request(method, serde_json::to_value(params)?)
             .await
     }
+
+    pub(crate) async fn require_overlay_update_capability(&self) -> Result<()> {
+        let capabilities = self.describe_capabilities().await?;
+        if capabilities.overlay.update_snapshot_overlay_changes {
+            return Ok(());
+        }
+        Err(TsgoError::Unsupported(
+            "updateSnapshot.overlayChanges is not supported by this runtime; check describeCapabilities before sending in-memory overlays",
+        ))
+    }
+
+    pub(crate) fn map_missing_method(
+        error: TsgoError,
+        unsupported_message: &'static str,
+    ) -> TsgoError {
+        match error {
+            TsgoError::Rpc(rpc) if rpc.code == -32601 => {
+                TsgoError::Unsupported(unsupported_message)
+            }
+            other => other,
+        }
+    }
 }
 
 #[cfg(unix)]
@@ -312,6 +380,46 @@ async fn connect_pipe_socket(path: PathBuf) -> Result<ApiClient> {
             shutdown_timeout: std::time::Duration::from_secs(2),
         }),
         initialized: Arc::new(Mutex::new(None)),
+        capabilities: Arc::new(Mutex::new(None)),
+        runtime_capabilities: RuntimeCapabilities {
+            kind: Some(CompactString::from("pipe")),
+            executable: None,
+            transport: Some(CompactString::from("jsonrpc")),
+            capability_endpoint: false,
+        },
         allow_unstable_upstream_calls: false,
     })
+}
+
+impl RuntimeCapabilities {
+    fn from_spawn_config(config: &ApiSpawnConfig) -> Self {
+        let executable = config.command.executable().to_string_lossy().to_string();
+        Self {
+            kind: infer_runtime_kind(config.command.executable()),
+            executable: Some(CompactString::from(executable)),
+            transport: Some(match config.mode {
+                ApiMode::AsyncJsonRpcStdio => CompactString::from("jsonrpc"),
+                ApiMode::SyncMsgpackStdio => CompactString::from("msgpack"),
+            }),
+            capability_endpoint: false,
+        }
+    }
+}
+
+fn infer_runtime_kind(path: &Path) -> Option<CompactString> {
+    let normalized = path.to_string_lossy().to_ascii_lowercase();
+    let kind = if normalized.contains("mock_tsgo") {
+        "mock-tsgo"
+    } else if normalized.contains("native-preview") {
+        "native-preview"
+    } else if normalized.ends_with("/tsgo")
+        || normalized.ends_with("\\tsgo.exe")
+        || normalized.ends_with("\\tsgo")
+        || normalized.ends_with("/tsgo.exe")
+    {
+        "tsgo"
+    } else {
+        "custom"
+    };
+    Some(CompactString::from(kind))
 }

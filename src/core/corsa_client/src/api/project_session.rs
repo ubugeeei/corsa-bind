@@ -1,7 +1,7 @@
 use super::{
     ApiClient, ApiSpawnConfig, DocumentIdentifier, FileChanges, ManagedSnapshot, NodeHandle,
-    ProjectHandle, ProjectResponse, SignatureHandle, SignatureResponse, SymbolHandle,
-    SymbolResponse, TypeHandle, TypeResponse, UpdateSnapshotParams,
+    OverlayChanges, ProjectHandle, ProjectResponse, SignatureHandle, SignatureResponse,
+    SymbolHandle, SymbolResponse, TypeHandle, TypeResponse, UpdateSnapshotParams,
 };
 use crate::{Result, TsgoError};
 
@@ -40,6 +40,7 @@ impl ProjectSession {
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some(open_project.clone()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await?;
         let project = resolve_project(&snapshot, preferred_document.as_ref()).await?;
@@ -55,16 +56,46 @@ impl ProjectSession {
 
     /// Refreshes the snapshot after file changes and re-resolves the project.
     pub async fn refresh(&mut self, file_changes: Option<FileChanges>) -> Result<()> {
+        self.refresh_with_params(UpdateSnapshotParams {
+            open_project: None,
+            file_changes,
+            overlay_changes: None,
+        })
+        .await
+    }
+
+    /// Refreshes the snapshot using explicit update parameters.
+    pub async fn refresh_with_params(&mut self, params: UpdateSnapshotParams) -> Result<()> {
+        let open_project = params
+            .open_project
+            .unwrap_or_else(|| self.open_project.clone());
         let snapshot = self
             .client
             .update_snapshot(UpdateSnapshotParams {
-                open_project: Some(self.open_project.clone()),
-                file_changes,
+                open_project: Some(open_project.clone()),
+                file_changes: params.file_changes,
+                overlay_changes: params.overlay_changes,
             })
             .await?;
         let project = resolve_project(&snapshot, self.preferred_document.as_ref()).await?;
         self.snapshot = snapshot;
         self.project = project;
+        self.open_project = open_project;
+        Ok(())
+    }
+
+    /// Refreshes the snapshot with optional file and overlay changes.
+    pub async fn refresh_with_overlay_changes(
+        &mut self,
+        file_changes: Option<FileChanges>,
+        overlay_changes: Option<OverlayChanges>,
+    ) -> Result<()> {
+        self.refresh_with_params(UpdateSnapshotParams {
+            open_project: None,
+            file_changes,
+            overlay_changes,
+        })
+        .await?;
         Ok(())
     }
 

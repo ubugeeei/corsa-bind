@@ -223,6 +223,7 @@ async fn open_workflow_session(cli: &Cli, dataset: &DatasetCase) -> Result<Workf
         .update_snapshot(UpdateSnapshotParams {
             open_project: Some(dataset.config_wire.to_string()),
             file_changes: None,
+            overlay_changes: None,
         })
         .await?;
     let project = snapshot.projects[0].id.clone();

@@ -32,6 +32,34 @@ pub enum FileChanges {
     },
 }
 
+/// In-memory document update applied through `updateSnapshot`.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlayUpdate {
+    /// File path or URI identifying the virtual document.
+    pub document: DocumentIdentifier,
+    /// Full in-memory document contents.
+    pub text: String,
+    /// Optional monotonic version associated with the overlay.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<i32>,
+    /// Optional language identifier such as `typescript` or `vue`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub language_id: Option<String>,
+}
+
+/// Overlay delta accepted by `updateSnapshot`.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlayChanges {
+    /// Overlay documents whose full contents should be inserted or replaced.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub upsert: Vec<OverlayUpdate>,
+    /// Overlay documents that should be removed from the active snapshot.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub delete: Vec<DocumentIdentifier>,
+}
+
 /// Parameters passed to [`ApiClient::update_snapshot`](crate::ApiClient::update_snapshot).
 ///
 /// # Examples
@@ -46,6 +74,7 @@ pub enum FileChanges {
 ///         created: Vec::new(),
 ///         deleted: Vec::new(),
 ///     })),
+///     overlay_changes: None,
 /// };
 ///
 /// assert_eq!(params.open_project.as_deref(), Some("/workspace/tsconfig.json"));
@@ -59,6 +88,9 @@ pub struct UpdateSnapshotParams {
     /// Incremental file invalidation payload, or `None` for a no-op refresh.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_changes: Option<FileChanges>,
+    /// In-memory document updates applied on top of on-disk state.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub overlay_changes: Option<OverlayChanges>,
 }
 
 /// Snapshot changes scoped to a single project.

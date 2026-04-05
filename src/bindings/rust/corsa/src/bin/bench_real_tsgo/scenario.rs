@@ -178,6 +178,7 @@ async fn update_snapshot_cold(cli: &Cli, dataset: &DatasetCase, mode: ApiMode) -
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some(dataset.config_wire.to_string()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await?;
         snapshot.release().await?;
@@ -194,6 +195,7 @@ async fn update_snapshot_warm(cli: &Cli, dataset: &DatasetCase, mode: ApiMode) -
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some(dataset.config_wire.to_string()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await?;
         snapshot.release().await
@@ -213,6 +215,7 @@ async fn open_project_session(
         .update_snapshot(UpdateSnapshotParams {
             open_project: Some(dataset.config_wire.to_string()),
             file_changes: None,
+            overlay_changes: None,
         })
         .await?;
     let project = snapshot.projects[0].id.clone();

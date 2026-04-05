@@ -71,6 +71,11 @@ impl TsgoCommand {
         &self.cwd
     }
 
+    /// Returns the executable path used for child processes.
+    pub fn executable(&self) -> &PathBuf {
+        &self.executable
+    }
+
     /// Spawns a child process with piped stdin/stdout for request/response flows.
     pub fn spawn_async<I, S>(&self, args: I) -> std::io::Result<Child>
     where

@@ -23,8 +23,33 @@ pub fn run(cwd: String, callbacks: Vec<String>) -> Result<()> {
                 "useCaseSensitiveFileNames": true,
                 "currentDirectory": cwd,
             }),
+            "describeCapabilities" => crate::common::capabilities(),
             "parseConfigFile" => parse_config(&mut reader, &mut writer, &callbacks, params)?,
-            "updateSnapshot" => crate::common::snapshot("/workspace/tsconfig.json"),
+            "updateSnapshot" => {
+                crate::common::snapshot_from_update_params("/workspace/tsconfig.json", &params)
+            }
+            "getDiagnosticsForSnapshot" => {
+                crate::common::snapshot_diagnostics(json!("/workspace/src/index.ts"))
+            }
+            "getDiagnosticsForProject" => {
+                crate::common::project_diagnostics(json!("/workspace/src/index.ts"))
+            }
+            "getDiagnosticsForFile" => crate::common::file_diagnostics(
+                params
+                    .get("file")
+                    .cloned()
+                    .unwrap_or_else(|| json!("/workspace/src/index.ts")),
+            ),
+            "getHoverAtPosition" => crate::common::hover(),
+            "getDefinitionAtPosition" => crate::common::definition(),
+            "getReferencesAtPosition" => crate::common::references(),
+            "getRenameAtPosition" => crate::common::rename(
+                params
+                    .get("newName")
+                    .and_then(Value::as_str)
+                    .unwrap_or("renamedValue"),
+            ),
+            "getCompletionAtPosition" => crate::common::completion(),
             "getSourceFile" => {
                 write_tuple(&mut writer, MSG_RESPONSE, method.as_bytes(), b"source-file")?;
                 continue;

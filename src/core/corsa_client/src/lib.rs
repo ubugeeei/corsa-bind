@@ -43,6 +43,11 @@ pub mod observability {
     pub use corsa_core::{SharedObserver, TsgoEvent, TsgoObserver};
 }
 
+/// Re-exports shared LSP model types used by editor-style API responses.
+pub mod lsp_types {
+    pub use ::lsp_types::*;
+}
+
 pub use corsa_core::{Result, SharedObserver, TsgoError, TsgoEvent, TsgoObserver};
 
 #[path = "api/mod.rs"]

@@ -20,6 +20,7 @@ fn main() -> Result<(), corsa::TsgoError> {
             .update_snapshot(UpdateSnapshotParams {
                 open_project: Some("/workspace/tsconfig.json".into()),
                 file_changes: None,
+                overlay_changes: None,
             })
             .await?;
         let project = snapshot.projects.first().ok_or_else(|| {

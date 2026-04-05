@@ -58,6 +58,7 @@ fn orchestrator_caches_snapshots_and_results() {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await
@@ -69,6 +70,7 @@ fn orchestrator_caches_snapshots_and_results() {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await
@@ -295,6 +297,7 @@ fn distributed_orchestrator_replicates_snapshot_records() {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await
@@ -327,6 +330,7 @@ fn orchestrator_enforces_cache_limits() {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/a/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await
@@ -338,6 +342,7 @@ fn orchestrator_enforces_cache_limits() {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/b/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await
@@ -349,6 +354,7 @@ fn orchestrator_enforces_cache_limits() {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/a/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await
@@ -422,6 +428,7 @@ fn orchestrator_emits_eviction_events() {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/a/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await
@@ -433,6 +440,7 @@ fn orchestrator_emits_eviction_events() {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/b/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await

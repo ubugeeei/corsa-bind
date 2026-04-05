@@ -97,6 +97,7 @@ const inferred = numbers.map((value) => value.toFixed(2));
                 .update_snapshot(UpdateSnapshotParams {
                     open_project: Some(config_wire.clone()),
                     file_changes: None,
+                    overlay_changes: None,
                 })
                 .await
                 .unwrap();

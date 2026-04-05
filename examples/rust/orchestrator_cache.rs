@@ -25,6 +25,7 @@ fn main() -> Result<(), corsa::TsgoError> {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await?;
@@ -35,6 +36,7 @@ fn main() -> Result<(), corsa::TsgoError> {
                 UpdateSnapshotParams {
                     open_project: Some("/workspace/tsconfig.json".into()),
                     file_changes: None,
+                    overlay_changes: None,
                 },
             )
             .await?;

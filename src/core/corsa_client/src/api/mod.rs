@@ -12,21 +12,29 @@
 //! and [`ApiClient::update_snapshot`](crate::ApiClient::update_snapshot).
 
 mod callbacks;
+mod capabilities;
 mod changes;
 mod client;
 mod config;
+mod diagnostics;
 mod document;
 mod driver;
 mod encoded;
 mod handles;
+mod methods_diagnostics;
+mod methods_editor;
 mod methods_relations;
 mod methods_symbols;
 mod methods_types;
 mod msgpack_codec;
 mod msgpack_worker;
 mod project_session;
+mod project_session_capabilities;
+mod project_session_diagnostics;
+mod project_session_editor;
 mod project_session_probe;
 mod requests_core;
+mod requests_editor;
 mod requests_symbols;
 mod requests_types;
 mod responses;
@@ -39,12 +47,24 @@ pub use callbacks::{
     ApiFileSystem, DirectoryEntries, FileSystemCapabilities, ReadFileResult, callback_flag,
     callback_names,
 };
+/// Runtime capability descriptors exposed by `describeCapabilities`.
+pub use capabilities::{
+    CapabilitiesResponse, DiagnosticsCapabilities, EditorCapabilities, OverlayCapabilities,
+    RuntimeCapabilities,
+};
 /// Snapshot update inputs and change summaries.
-pub use changes::{FileChangeSummary, FileChanges, SnapshotChanges, UpdateSnapshotParams};
+pub use changes::{
+    FileChangeSummary, FileChanges, OverlayChanges, OverlayUpdate, SnapshotChanges,
+    UpdateSnapshotParams,
+};
 /// High-level `tsgo` API client.
 pub use client::ApiClient;
 /// Spawn-time transport and profile configuration.
 pub use config::{ApiMode, ApiProfile, ApiSpawnConfig};
+/// Snapshot/project/file diagnostics grouped by TypeScript category.
+pub use diagnostics::{
+    FileDiagnosticsResponse, ProjectDiagnosticsResponse, SnapshotDiagnosticsResponse,
+};
 /// Document identifiers and byte/UTF-16 positions used by many endpoints.
 pub use document::{DocumentIdentifier, DocumentPosition};
 /// Binary payload wrappers and print options.
