@@ -11,6 +11,13 @@ export { RuleTester } from "./rule_tester";
 export * as rules from "./rules/index";
 export { oxlintCompat } from "./oxlint_compat";
 export type {
+  CorsaNode,
+  CorsaProgramShape,
+  CorsaRuntimeOptions,
+  CorsaSignature,
+  CorsaSymbol,
+  CorsaType,
+  CorsaTypeCheckerShape,
   ContextWithParserOptions,
   ParserServices,
   ParserServicesWithTypeInformation,

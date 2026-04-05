@@ -10,6 +10,7 @@ import {
   publicRustCrateNames,
   readWorkspaceVersion,
   type ReleaseBump,
+  syncCargoLockfile,
   updateWorkspaceVersion,
   versionToTag,
 } from "./release_manifest.ts";
@@ -228,6 +229,7 @@ async function main(): Promise<void> {
 
   assertTagAbsent(options.remote, tag);
   updateWorkspaceVersion(nextVersion);
+  syncCargoLockfile();
 
   if (!options.skipGates) {
     runReleaseGates();

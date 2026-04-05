@@ -101,15 +101,15 @@ export const Utils = Object.freeze({
   isErrorLikeTypeTexts,
 });
 
-export class TsgoApiClient {
+export class CorsaApiClient {
   readonly #inner: NativeApiClient;
 
   private constructor(inner: NativeApiClient) {
     this.#inner = inner;
   }
 
-  static spawn(options: ApiClientOptions): TsgoApiClient {
-    return new TsgoApiClient(binding.TsgoApiClient.spawn(toJson(options)));
+  static spawn(options: ApiClientOptions): CorsaApiClient {
+    return new CorsaApiClient(binding.TsgoApiClient.spawn(toJson(options)));
   }
 
   initialize(): InitializeResponse {
@@ -159,15 +159,15 @@ export class TsgoApiClient {
   }
 }
 
-export class TsgoVirtualDocument {
+export class CorsaVirtualDocument {
   readonly #inner: NativeVirtualDocument;
 
   private constructor(inner: NativeVirtualDocument) {
     this.#inner = inner;
   }
 
-  static untitled(path: string, languageId: string, text: string): TsgoVirtualDocument {
-    return new TsgoVirtualDocument(binding.TsgoVirtualDocument.untitled(path, languageId, text));
+  static untitled(path: string, languageId: string, text: string): CorsaVirtualDocument {
+    return new CorsaVirtualDocument(binding.TsgoVirtualDocument.untitled(path, languageId, text));
   }
 
   static inMemory(
@@ -175,8 +175,8 @@ export class TsgoVirtualDocument {
     path: string,
     languageId: string,
     text: string,
-  ): TsgoVirtualDocument {
-    return new TsgoVirtualDocument(
+  ): CorsaVirtualDocument {
+    return new CorsaVirtualDocument(
       binding.TsgoVirtualDocument.inMemory(authority, path, languageId, text),
     );
   }
@@ -210,7 +210,7 @@ export class TsgoVirtualDocument {
   }
 }
 
-export class TsgoDistributedOrchestrator {
+export class CorsaDistributedOrchestrator {
   readonly #inner: NativeDistributedOrchestrator;
 
   constructor(nodeIds: string[]) {
@@ -262,6 +262,10 @@ export class TsgoDistributedOrchestrator {
     return leaderId;
   }
 }
+
+export const TsgoApiClient = CorsaApiClient;
+export const TsgoVirtualDocument = CorsaVirtualDocument;
+export const TsgoDistributedOrchestrator = CorsaDistributedOrchestrator;
 
 export default binding;
 export const version = binding.version;

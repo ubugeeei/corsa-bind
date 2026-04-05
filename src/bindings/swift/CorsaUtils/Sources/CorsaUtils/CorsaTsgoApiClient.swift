@@ -5,6 +5,8 @@ public enum CorsaTsgoApiMode: String, Encodable {
     case msgpack
 }
 
+public typealias CorsaApiMode = CorsaTsgoApiMode
+
 public struct CorsaTsgoApiClientOptions: Encodable {
     public let executable: String
     public let cwd: String?
@@ -32,6 +34,8 @@ public struct CorsaTsgoApiClientOptions: Encodable {
         self.allowUnstableUpstreamCalls = allowUnstableUpstreamCalls
     }
 }
+
+public typealias CorsaApiClientOptions = CorsaTsgoApiClientOptions
 
 @_silgen_name("corsa_tsgo_api_client_spawn")
 private func spawnTsgoApiClientNative(_ optionsJSON: CorsaStrRef) -> UnsafeMutableRawPointer?
@@ -99,7 +103,7 @@ public final class CorsaTsgoApiClient {
     public init(options: CorsaTsgoApiClientOptions) throws {
         let data = try JSONEncoder().encode(options)
         guard let json = String(data: data, encoding: .utf8) else {
-            throw CorsaFfiError.message("failed to encode tsgo api client options")
+            throw CorsaFfiError.message("failed to encode corsa api client options")
         }
         self.handle = try CorsaTsgoApiClient.create(json: json)
     }
@@ -211,6 +215,8 @@ public final class CorsaTsgoApiClient {
         }
     }
 }
+
+public typealias CorsaApiClient = CorsaTsgoApiClient
 
 private func withOptionalStrRef<T>(_ value: String?, _ body: (CorsaStrRef) throws -> T) throws -> T {
     if let value {

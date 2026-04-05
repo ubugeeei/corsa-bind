@@ -409,7 +409,7 @@ impl RuntimeCapabilities {
 fn infer_runtime_kind(path: &Path) -> Option<CompactString> {
     let normalized = path.to_string_lossy().to_ascii_lowercase();
     let kind = if normalized.contains("mock_tsgo") {
-        "mock-tsgo"
+        "mock-corsa"
     } else if normalized.contains("native-preview") {
         "native-preview"
     } else if normalized.ends_with("/tsgo")

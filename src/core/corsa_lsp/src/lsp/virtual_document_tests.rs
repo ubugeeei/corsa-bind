@@ -36,7 +36,7 @@ fn untitled_normalizes_relative_paths() {
 #[test]
 fn in_memory_normalizes_relative_paths() {
     let document = VirtualDocument::in_memory("overlay", "demo.ts", "typescript", "").unwrap();
-    assert_eq!(document.uri.as_str(), "tsgo://overlay/demo.ts");
+    assert_eq!(document.uri.as_str(), "corsa://overlay/demo.ts");
 }
 
 #[test]

@@ -66,7 +66,7 @@ fn parse_mode(mode: &str) -> Result<ApiMode, String> {
     match mode {
         "jsonrpc" => Ok(ApiMode::AsyncJsonRpcStdio),
         "msgpack" => Ok(ApiMode::SyncMsgpackStdio),
-        _ => Err("unknown tsgo api mode".to_owned()),
+        _ => Err("unknown corsa api mode".to_owned()),
     }
 }
 
@@ -142,7 +142,7 @@ where
 
 unsafe fn client_ref<'a>(value: *const CorsaTsgoApiClient) -> Option<&'a CorsaTsgoApiClient> {
     let Some(value) = (unsafe { value.as_ref() }) else {
-        set_last_error("tsgo api client handle is null");
+        set_last_error("corsa api client handle is null");
         return None;
     };
     Some(value)
@@ -150,7 +150,7 @@ unsafe fn client_ref<'a>(value: *const CorsaTsgoApiClient) -> Option<&'a CorsaTs
 
 unsafe fn client_mut<'a>(value: *mut CorsaTsgoApiClient) -> Option<&'a mut CorsaTsgoApiClient> {
     let Some(value) = (unsafe { value.as_mut() }) else {
-        set_last_error("tsgo api client handle is null");
+        set_last_error("corsa api client handle is null");
         return None;
     };
     Some(value)
@@ -161,7 +161,7 @@ fn close_client(client: &CorsaTsgoApiClient) -> Result<(), String> {
         &mut *client
             .snapshots
             .lock()
-            .map_err(|_| "tsgo api client state poisoned".to_owned())?,
+            .map_err(|_| "corsa api client state poisoned".to_owned())?,
     );
     for snapshot in snapshots.into_values() {
         block_on(snapshot.release()).map_err(|error| error.to_string())?;
@@ -262,7 +262,7 @@ pub unsafe extern "C" fn corsa_tsgo_api_client_update_snapshot_json(
             };
             let handle = snapshot.handle.clone();
             let Ok(mut snapshots) = client.snapshots.lock() else {
-                set_last_error("tsgo api client state poisoned");
+                set_last_error("corsa api client state poisoned");
                 return CorsaString::default();
             };
             snapshots.insert(handle.as_str().to_owned(), snapshot);
@@ -448,7 +448,7 @@ pub unsafe extern "C" fn corsa_tsgo_api_client_release_handle(
     };
     let snapshot = {
         let Ok(mut snapshots) = client.snapshots.lock() else {
-            set_last_error("tsgo api client state poisoned");
+            set_last_error("corsa api client state poisoned");
             return false;
         };
         snapshots.remove(handle.as_str())

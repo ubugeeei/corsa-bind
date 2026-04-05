@@ -1,7 +1,7 @@
 import type { Context, Node, SourceCode } from "@oxlint/plugins";
 import type { ApiMode, ConfigResponse, ProjectResponse, TypeResponse } from "@corsa-bind/napi";
 
-export interface TsgoRuntimeOptions {
+export interface CorsaRuntimeOptions {
   executable?: string;
   cwd?: string;
   mode?: ApiMode;
@@ -12,6 +12,8 @@ export interface TsgoRuntimeOptions {
   cacheLifetimeMs?: number;
 }
 
+export type TsgoRuntimeOptions = CorsaRuntimeOptions;
+
 export interface ProjectServiceOptions {
   allowDefaultProject?: string[];
   defaultProject?: string;
@@ -21,6 +23,7 @@ export interface TypeAwareParserOptions {
   project?: string | string[];
   projectService?: boolean | ProjectServiceOptions;
   tsconfigRootDir?: string;
+  corsa?: CorsaRuntimeOptions;
   tsgo?: TsgoRuntimeOptions;
 }
 
@@ -146,5 +149,14 @@ export interface SessionProjectState {
   readonly project: ProjectResponse;
   readonly snapshot: string;
 }
+
+export type CorsaNode = TsgoNode;
+export type CorsaProgramShape = TsgoProgramShape;
+export type CorsaRuntimeShape = CorsaRuntimeOptions;
+export type CorsaSignature = TsgoSignature;
+export type CorsaSymbol = TsgoSymbol;
+export type CorsaType = TsgoType;
+export type CorsaTypeCheckerShape = TsgoTypeCheckerShape;
+export type CorsaTypePredicate = TsgoTypePredicate;
 
 export type { ProjectResponse };

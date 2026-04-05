@@ -147,7 +147,7 @@ impl VirtualDocument {
         )
     }
 
-    /// Creates an in-memory `tsgo://` virtual document.
+    /// Creates an in-memory `corsa://` virtual document.
     ///
     /// This scheme is helpful when replicated or synthetic documents should be
     /// clearly distinguishable from user-owned workspace files.
@@ -157,7 +157,7 @@ impl VirtualDocument {
         language_id: impl Into<CompactString>,
         text: impl Into<CompactString>,
     ) -> Result<Self> {
-        let mut raw = CompactString::from("tsgo://");
+        let mut raw = CompactString::from("corsa://");
         raw.push_str(authority.as_ref());
         raw.push_str(normalize_virtual_path(path.as_ref()).as_str());
         Self::parse_uri(raw, language_id, text)

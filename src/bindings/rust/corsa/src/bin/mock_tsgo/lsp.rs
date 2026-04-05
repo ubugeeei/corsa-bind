@@ -29,7 +29,7 @@ pub fn run() -> Result<()> {
                         id,
                         json!({
                             "capabilities": { "textDocumentSync": 1 },
-                            "serverInfo": { "name": "mock-tsgo" }
+                            "serverInfo": { "name": "mock-corsa" }
                         }),
                     ),
                 )?;
@@ -51,7 +51,7 @@ pub fn run() -> Result<()> {
                         id,
                         json!({
                             "sessionId": "session-1",
-                            "pipe": "/tmp/mock-tsgo.sock"
+                            "pipe": "/tmp/mock-corsa.sock"
                         }),
                     ),
                 )?;

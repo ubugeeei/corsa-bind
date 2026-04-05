@@ -4,6 +4,9 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  CorsaApiClient,
+  CorsaDistributedOrchestrator,
+  CorsaVirtualDocument,
   TsgoApiClient,
   TsgoDistributedOrchestrator,
   TsgoVirtualDocument,
@@ -25,7 +28,13 @@ const realBinary = resolve(workspaceRoot, `.cache/tsgo${executableSuffix}`);
 const realDataset = resolve(workspaceRoot, "ref/typescript-go/_packages/api/tsconfig.json");
 const realTsgoReady = existsSync(realBinary) && existsSync(realDataset);
 
-describe("TsgoApiClient", () => {
+describe("CorsaApiClient", () => {
+  it("keeps Tsgo aliases wired to the Corsa wrapper classes", () => {
+    expect(TsgoApiClient).toBe(CorsaApiClient);
+    expect(TsgoVirtualDocument).toBe(CorsaVirtualDocument);
+    expect(TsgoDistributedOrchestrator).toBe(CorsaDistributedOrchestrator);
+  });
+
   it("evaluates Rust-backed unsafe type flow predicates", () => {
     expect(
       isUnsafeAssignment({
@@ -67,7 +76,7 @@ describe("TsgoApiClient", () => {
   });
 
   it("roundtrips through the mock tsgo binary", () => {
-    const client = TsgoApiClient.spawn({
+    const client = CorsaApiClient.spawn({
       executable: mockBinary,
       cwd: workspaceRoot,
       mode: "jsonrpc",
@@ -111,7 +120,7 @@ describe("TsgoApiClient", () => {
     const realCase = realTsgoReady ? it : it.skip;
 
     realCase(`keeps real ${mode} snapshots alive across follow-up calls`, () => {
-      const client = TsgoApiClient.spawn({
+      const client = CorsaApiClient.spawn({
         executable: realBinary,
         cwd: workspaceRoot,
         mode,
@@ -139,9 +148,9 @@ describe("TsgoApiClient", () => {
   }
 });
 
-describe("TsgoVirtualDocument", () => {
+describe("CorsaVirtualDocument", () => {
   it("tracks incremental virtual file changes", () => {
-    const document = TsgoVirtualDocument.untitled(
+    const document = CorsaVirtualDocument.untitled(
       "/virtual/demo.ts",
       "typescript",
       "const value = 1;\n",
@@ -162,12 +171,12 @@ describe("TsgoVirtualDocument", () => {
   });
 });
 
-describe("TsgoDistributedOrchestrator", () => {
+describe("CorsaDistributedOrchestrator", () => {
   it("replicates virtual documents after leader election", () => {
-    const cluster = new TsgoDistributedOrchestrator(["n1", "n2", "n3"]);
+    const cluster = new CorsaDistributedOrchestrator(["n1", "n2", "n3"]);
     expect(cluster.campaign("n1")).toBe(1);
 
-    const document = TsgoVirtualDocument.inMemory(
+    const document = CorsaVirtualDocument.inMemory(
       "cluster",
       "/main.ts",
       "typescript",

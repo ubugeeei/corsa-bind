@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { nodeBindingPackage, npmPackages, typescriptOxlintPackage } from "./npm_release_utils.ts";
-import { rootDir } from "./shared.ts";
+import { rootDir, runCommand } from "./shared.ts";
 
 export type ReleaseBump = "major" | "minor" | "patch";
 
@@ -316,4 +316,8 @@ export function updateWorkspaceVersion(nextVersion: string): string[] {
   }
 
   return changedPaths;
+}
+
+export function syncCargoLockfile(): void {
+  runCommand("cargo", ["update", "--workspace"], { cwd: rootDir });
 }

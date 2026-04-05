@@ -89,7 +89,7 @@ fn msgpack_api_supports_capabilities_and_overlay_updates() {
                 overlay_changes: Some(OverlayChanges {
                     upsert: vec![OverlayUpdate {
                         document: DocumentIdentifier::Uri {
-                            uri: "tsgo://overlay/msgpack.ts".into(),
+                            uri: "corsa://overlay/msgpack.ts".into(),
                         },
                         text: "export const value = 1;".into(),
                         version: Some(1),
@@ -110,7 +110,7 @@ fn msgpack_api_supports_capabilities_and_overlay_updates() {
                 .unwrap()
                 .changed_files
                 .iter()
-                .any(|file| file == "tsgo://overlay/msgpack.ts")
+                .any(|file| file == "corsa://overlay/msgpack.ts")
         );
         client.close().await.unwrap();
     });

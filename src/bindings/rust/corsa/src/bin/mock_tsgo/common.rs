@@ -243,7 +243,7 @@ fn diagnostic(code: &str, message: &str) -> Value {
         "range": range(),
         "severity": 1,
         "code": code,
-        "source": "mock-tsgo",
+        "source": "mock-corsa",
         "message": message
     })
 }

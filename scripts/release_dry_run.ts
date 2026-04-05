@@ -50,6 +50,8 @@ function patchConfigFor(crateName: string): { configDir: string; configPath: str
 }
 
 async function main(): Promise<void> {
+  runCommand("cargo", ["publish", "--locked", "--dry-run", "-p", crates[0].name], { cwd: rootDir });
+
   for (const crate of crates) {
     const { configDir, configPath } = patchConfigFor(crate.name);
     try {

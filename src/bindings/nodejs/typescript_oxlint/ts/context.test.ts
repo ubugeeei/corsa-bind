@@ -5,6 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  defaultCorsaExecutable,
   defaultTsgoExecutable,
   resolveProjectConfig,
   resolveTypeAwareParserOptions,
@@ -27,7 +28,7 @@ describe("context", () => {
       filename: "/repo/src/demo.ts",
       languageOptions: {
         parserOptions: {
-          tsgo: {
+          corsa: {
             mode: "jsonrpc",
           },
         },
@@ -36,7 +37,7 @@ describe("context", () => {
         typescriptOxlint: {
           parserOptions: {
             project: ["tsconfig.json"],
-            tsgo: {
+            corsa: {
               executable: "/repo/.cache/tsgo",
             },
           },
@@ -48,6 +49,10 @@ describe("context", () => {
     } as any);
 
     expect(resolved.project).toEqual(["tsconfig.json"]);
+    expect(resolved.corsa).toEqual({
+      executable: "/repo/.cache/tsgo",
+      mode: "jsonrpc",
+    });
     expect(resolved.tsgo).toEqual({
       executable: "/repo/.cache/tsgo",
       mode: "jsonrpc",
@@ -70,7 +75,7 @@ describe("context", () => {
             projectService: {
               allowDefaultProject: ["*.ts"],
             },
-            tsgo: {
+            corsa: {
               executable: resolve(workspace, ".cache/tsgo"),
             },
           },
@@ -87,7 +92,9 @@ describe("context", () => {
     expect(resolved.runtime.executable).toBe(resolve(workspace, ".cache/tsgo"));
   });
 
-  it("resolves the platform-specific default tsgo executable", () => {
+  it("resolves the platform-specific default corsa executable", () => {
+    expect(defaultCorsaExecutable("/repo", "linux")).toBe(resolve("/repo", ".cache/tsgo"));
+    expect(defaultCorsaExecutable("/repo", "win32")).toBe(resolve("/repo", ".cache/tsgo.exe"));
     expect(defaultTsgoExecutable("/repo", "linux")).toBe(resolve("/repo", ".cache/tsgo"));
     expect(defaultTsgoExecutable("/repo", "win32")).toBe(resolve("/repo", ".cache/tsgo.exe"));
   });

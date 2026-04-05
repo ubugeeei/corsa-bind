@@ -21,7 +21,7 @@ impl TsgoVirtualDocument {
         })
     }
 
-    /// Creates an in-memory `tsgo://` document.
+    /// Creates an in-memory `corsa://` document.
     #[napi(factory, js_name = "inMemory")]
     pub fn in_memory(
         authority: String,

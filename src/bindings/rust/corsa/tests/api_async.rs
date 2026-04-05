@@ -420,7 +420,7 @@ fn async_api_supports_capabilities_overlay_diagnostics_and_editor_surface() {
             .await
             .unwrap();
         let capabilities = client.describe_capabilities().await.unwrap();
-        assert_eq!(capabilities.runtime.kind.as_deref(), Some("mock-tsgo"));
+        assert_eq!(capabilities.runtime.kind.as_deref(), Some("mock-corsa"));
         assert!(capabilities.overlay.update_snapshot_overlay_changes);
         assert!(capabilities.diagnostics.file);
         assert!(capabilities.editor.hover);
@@ -432,7 +432,7 @@ fn async_api_supports_capabilities_overlay_diagnostics_and_editor_surface() {
                 overlay_changes: Some(OverlayChanges {
                     upsert: vec![OverlayUpdate {
                         document: DocumentIdentifier::Uri {
-                            uri: "tsgo://overlay/demo.ts".into(),
+                            uri: "corsa://overlay/demo.ts".into(),
                         },
                         text: "const value = 1;".into(),
                         version: Some(3),
@@ -455,7 +455,7 @@ fn async_api_supports_capabilities_overlay_diagnostics_and_editor_surface() {
         assert!(
             changed_files
                 .iter()
-                .any(|file| file == "tsgo://overlay/demo.ts")
+                .any(|file| file == "corsa://overlay/demo.ts")
         );
 
         let file_diagnostics = client

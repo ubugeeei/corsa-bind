@@ -20,9 +20,11 @@ const DEFAULT_TS_CONFIG = {
   },
 };
 
-export function defaultTsgoExecutable(rootDir: string, platform = process.platform): string {
+export function defaultCorsaExecutable(rootDir: string, platform = process.platform): string {
   return resolve(rootDir, platform === "win32" ? ".cache/tsgo.exe" : ".cache/tsgo");
 }
+
+export const defaultTsgoExecutable = defaultCorsaExecutable;
 
 export function resolveProjectConfig(context: ContextWithParserOptions): ResolvedProjectConfig {
   const filename = resolve(context.filename);
@@ -50,7 +52,7 @@ export function resolveProjectConfig(context: ContextWithParserOptions): Resolve
  * @example
  * ```ts
  * const parserOptions = resolveTypeAwareParserOptions(context);
- * parserOptions.tsgo?.mode;
+ * parserOptions.corsa?.mode;
  * ```
  */
 export function resolveTypeAwareParserOptions(
@@ -66,15 +68,17 @@ function resolveRuntimeOptions(
   rootDir: string,
   parserOptions: TypeAwareParserOptions,
 ): ResolvedRuntimeOptions {
+  const runtime = parserOptions.corsa ?? parserOptions.tsgo;
   return {
     executable: resolve(
-      parserOptions.tsgo?.executable ??
+      runtime?.executable ??
+        process.env.CORSA_EXECUTABLE ??
         process.env.TSGO_EXECUTABLE ??
-        defaultTsgoExecutable(rootDir),
+        defaultCorsaExecutable(rootDir),
     ),
-    cwd: resolve(parserOptions.tsgo?.cwd ?? rootDir),
-    mode: parserOptions.tsgo?.mode ?? "msgpack",
-    cacheLifetimeMs: parserOptions.tsgo?.cacheLifetimeMs ?? DEFAULT_CACHE_LIFETIME_MS,
+    cwd: resolve(runtime?.cwd ?? rootDir),
+    mode: runtime?.mode ?? "msgpack",
+    cacheLifetimeMs: runtime?.cacheLifetimeMs ?? DEFAULT_CACHE_LIFETIME_MS,
   };
 }
 
@@ -173,21 +177,34 @@ export function mergeTypeAwareParserOptions(
   override: TypeAwareParserOptions | undefined,
 ): TypeAwareParserOptions {
   if (!base) {
-    return override ?? {};
+    return normalizeTypeAwareParserOptions(override ?? {});
   }
   if (!override) {
-    return base;
+    return normalizeTypeAwareParserOptions(base);
   }
+  const runtime = {
+    ...(base.corsa ?? base.tsgo),
+    ...(override.corsa ?? override.tsgo),
+  };
   return {
     ...base,
     ...override,
     project: override.project ?? base.project,
     projectService: mergeProjectService(base.projectService, override.projectService),
     tsconfigRootDir: override.tsconfigRootDir ?? base.tsconfigRootDir,
-    tsgo: {
-      ...base.tsgo,
-      ...override.tsgo,
-    },
+    ...(Object.keys(runtime).length > 0 ? { corsa: runtime, tsgo: runtime } : {}),
+  };
+}
+
+function normalizeTypeAwareParserOptions(options: TypeAwareParserOptions): TypeAwareParserOptions {
+  const runtime = options.corsa ?? options.tsgo;
+  if (!runtime) {
+    return options;
+  }
+  return {
+    ...options,
+    corsa: runtime,
+    tsgo: runtime,
   };
 }
 
