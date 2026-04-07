@@ -35,10 +35,11 @@ async fn run(cli: args::Cli) -> corsa::Result<()> {
     println!("cold_iterations: {}", cli.cold_iterations);
     println!("warm_iterations: {}", cli.warm_iterations);
     println!(
-        "run_mode: {}",
-        match cli.run_mode {
-            args::RunMode::Benchmark => "benchmark",
-            args::RunMode::Profiling => "profiling",
+        "profiling: {}",
+        if matches!(cli.run_mode, args::RunMode::Profiling) {
+            "enabled"
+        } else {
+            "disabled"
         }
     );
     println!();

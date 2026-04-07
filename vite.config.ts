@@ -175,7 +175,7 @@ export default defineConfig({
       },
       bench_native_profile: {
         command:
-          "cargo run --release -p corsa --bin bench_real_tsgo -- --run-mode profiling --mode msgpack --cold-iterations 5 --warm-iterations 40 --json-output .cache/bench_native_profile.json",
+          "cargo run --release -p corsa --bin bench_real_tsgo -- --profile --transport msgpack --cold-iterations 5 --warm-iterations 40 --json-output .cache/bench_native_profile.json",
         dependsOn: ["build_tsgo"],
       },
       bench_tooling_setup: {

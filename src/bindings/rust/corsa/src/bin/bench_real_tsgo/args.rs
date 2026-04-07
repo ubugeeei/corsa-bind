@@ -12,8 +12,8 @@ options:
   --tsgo PATH              tsgo executable (default: .cache/tsgo)
   --dataset PATH           tsconfig path to benchmark (repeatable)
   --json-output PATH       write machine-readable benchmark JSON
-  --run-mode MODE          benchmark | profiling (default: benchmark)
-  --mode MODE              jsonrpc | msgpack | both (default: both)
+  --profile                enable detailed per-phase profiling output
+  --transport TRANSPORT    jsonrpc | msgpack | both (default: both)
   --cold-iterations N      cold benchmark iterations (default: 5)
   --warm-iterations N      warm benchmark iterations (default: 20)
   --help                   show this message
@@ -63,11 +63,14 @@ pub fn parse() -> Result<Option<Cli>, CompactString> {
             "--json-output" => {
                 json_output_path = Some(read_path(&mut args, &argument, &root_dir)?);
             }
+            "--profile" => {
+                run_mode = RunMode::Profiling;
+            }
             "--run-mode" => {
                 run_mode = parse_run_mode(read_value(&mut args, &argument)?)?;
             }
-            "--mode" => {
-                modes = parse_mode(read_value(&mut args, &argument)?)?;
+            "--transport" | "--mode" => {
+                modes = parse_transport(read_value(&mut args, &argument)?)?;
             }
             "--cold-iterations" => {
                 cold_iterations = parse_usize(read_value(&mut args, &argument)?, &argument)?;
@@ -180,7 +183,7 @@ fn read_value(
     Ok(CompactString::from(value.to_string_lossy().as_ref()))
 }
 
-fn parse_mode(value: CompactString) -> Result<SmallVec<[ApiMode; 2]>, CompactString> {
+fn parse_transport(value: CompactString) -> Result<SmallVec<[ApiMode; 2]>, CompactString> {
     match value.as_str() {
         "jsonrpc" => {
             let mut modes = SmallVec::<[ApiMode; 2]>::new();
@@ -213,18 +216,18 @@ fn parse_usize(value: CompactString, _flag: &CompactString) -> Result<usize, Com
 
 #[cfg(test)]
 mod tests {
-    use super::{RunMode, both_modes, parse_mode, parse_run_mode, parse_usize};
+    use super::{RunMode, both_modes, parse_run_mode, parse_transport, parse_usize};
     use corsa::api::ApiMode;
 
     #[test]
-    fn parse_mode_supports_both_variants() {
-        assert_eq!(parse_mode("both".into()).unwrap(), both_modes());
+    fn parse_transport_supports_both_variants() {
+        assert_eq!(parse_transport("both".into()).unwrap(), both_modes());
         assert_eq!(
-            parse_mode("jsonrpc".into()).unwrap().as_slice(),
+            parse_transport("jsonrpc".into()).unwrap().as_slice(),
             &[ApiMode::AsyncJsonRpcStdio]
         );
         assert_eq!(
-            parse_mode("msgpack".into()).unwrap().as_slice(),
+            parse_transport("msgpack".into()).unwrap().as_slice(),
             &[ApiMode::SyncMsgpackStdio]
         );
     }
