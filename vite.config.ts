@@ -161,7 +161,7 @@ export default defineConfig({
       },
       bench: {
         command: noopCommand,
-        dependsOn: ["bench_verify"],
+        dependsOn: ["bench_verify", "bench_tooling_compare", "bench_bindings"],
       },
       bench_native: {
         command:
@@ -184,18 +184,22 @@ export default defineConfig({
       },
       bench_tooling_setup_ref: {
         cache: false,
-        command: "npm install --no-fund --no-audit",
+        command: "npm ci --no-fund --no-audit",
         cwd: "ref/typescript-go",
       },
       bench_tooling_setup_cli_compare: {
         cache: false,
-        command: "npm install --no-fund --no-audit",
+        command: "npm ci --no-fund --no-audit",
         cwd: "bench/cli_compare",
       },
       bench_tooling_compare: {
         command:
           "cargo run --release -p corsa --bin bench_tooling_compare -- --iterations 10 --warmup-iterations 2 --json-output .cache/bench_tooling_compare.json",
         dependsOn: ["build_tsgo", "bench_tooling_setup"],
+      },
+      bench_bindings: {
+        command: "node --strip-types ./scripts/bench_bindings.ts",
+        dependsOn: ["build_tsgo"],
       },
       bench_ts: {
         command: "vp test bench --config ./vite.config.ts --outputJson .cache/bench_ts.json",

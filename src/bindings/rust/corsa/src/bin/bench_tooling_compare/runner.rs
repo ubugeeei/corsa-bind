@@ -35,10 +35,11 @@ struct ToolSupport {
     tsc_script: PathBuf,
     eslint_script: PathBuf,
     eslint_config: PathBuf,
+    tsgolint_script: PathBuf,
 }
 
 struct OverlayConfig {
-    _dir: OverlayDir,
+    dir: OverlayDir,
     path: PathBuf,
 }
 
@@ -81,8 +82,8 @@ async fn run_project_check_suite(
     dataset: &DatasetCase,
     support: &ToolSupport,
     overlay: &OverlayConfig,
-) -> Result<SmallVec<[ToolRow; 4]>> {
-    let mut rows = SmallVec::<[ToolRow; 4]>::new();
+) -> Result<SmallVec<[ToolRow; 8]>> {
+    let mut rows = SmallVec::<[ToolRow; 8]>::new();
     let timeout = Duration::from_millis(cli.timeout_ms);
     rows.push(row(
         "project_check",
@@ -111,6 +112,16 @@ async fn run_project_check_suite(
         measure_with_warmup(cli.warmup_iterations, cli.iterations, || async {
             let mut command = eslint_command(dataset, support, overlay);
             run_command(&mut command, timeout, &[0, 1], "typescript-eslint")
+        })
+        .await?,
+    ));
+    rows.push(row(
+        "project_check",
+        dataset,
+        "tsgolint",
+        measure_with_warmup(cli.warmup_iterations, cli.iterations, || async {
+            let mut command = tsgolint_command(support, overlay);
+            run_command(&mut command, timeout, &[0, 1], "tsgolint")
         })
         .await?,
     ));
@@ -184,6 +195,16 @@ fn eslint_command(
     for file in &dataset.source_files {
         command.arg(file.as_str());
     }
+    command
+}
+
+fn tsgolint_command(support: &ToolSupport, overlay: &OverlayConfig) -> Command {
+    let mut command = Command::new(support.node_command.as_str());
+    command
+        .current_dir(&overlay.dir.path)
+        .arg(&support.tsgolint_script)
+        .arg("--tsconfig")
+        .arg(&overlay.path);
     command
 }
 
@@ -411,6 +432,12 @@ impl ToolSupport {
             )));
         }
         let eslint_config = cli_compare_root.join("eslint.config.mjs");
+        let tsgolint_script = cli_compare_root.join("node_modules/oxlint-tsgolint/bin/tsgolint.js");
+        if !tsgolint_script.exists() {
+            return Err(TsgoError::Protocol(CompactString::from(
+                "missing bench/cli_compare/node_modules/oxlint-tsgolint/bin/tsgolint.js; run `vp run -w bench_tooling_setup` first",
+            )));
+        }
         Ok(Self {
             workspace_root,
             typescript_go_root,
@@ -418,6 +445,7 @@ impl ToolSupport {
             tsc_script,
             eslint_script,
             eslint_config,
+            tsgolint_script,
         })
     }
 }
@@ -436,7 +464,22 @@ impl OverlayConfig {
                 }
             }))?,
         )?;
-        Ok(Self { _dir: dir, path })
+        fs::write(
+            dir.path.join(".oxlintrc.json"),
+            serde_json::to_vec_pretty(&json!({
+                "options": {
+                    "typeAware": true,
+                },
+                "rules": {
+                    "typescript/await-thenable": "error",
+                    "typescript/no-floating-promises": "error",
+                    "typescript/no-misused-promises": "error",
+                    "typescript/no-unnecessary-condition": "error",
+                    "typescript/no-unnecessary-type-assertion": "error",
+                }
+            }))?,
+        )?;
+        Ok(Self { dir, path })
     }
 }
 

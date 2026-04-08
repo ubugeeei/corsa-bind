@@ -1,13 +1,15 @@
 # Performance
 
-`corsa` ships with two benchmark layers:
+`corsa` ships with multiple benchmark layers:
 
 - Native real-tsgo benchmark: `vp run -w bench_native`
 - Native deep benchmark: `vp run -w bench_native_deep`
 - Native profiling benchmark: `vp run -w bench_native_profile`
 - Tooling + orchestration benchmark: `vp run -w bench_tooling_compare`
+- Multi-language binding benchmark: `vp run -w bench_bindings`
 - Node binding benchmark: `vp run -w bench_ts`
 - Combined benchmark + budget guard: `vp run -w bench_verify`
+- Combined all-in benchmark entrypoint: `vp run -w bench`
 
 For day-to-day formatting, linting, and testing, prefer `vp fmt`, `vp lint`,
 and `vp check`. Those go through Vite+'s `oxfmt` / `oxlint` toolchain. The
@@ -18,6 +20,7 @@ The native benchmark writes its report to `.cache/bench_native.json`.
 The native deep benchmark writes its report to `.cache/bench_native_deep.json`.
 The native profiling benchmark writes its report to `.cache/bench_native_profile.json`.
 The tooling benchmark writes its report to `.cache/bench_tooling_compare.json`.
+The binding benchmark writes its report to `.cache/bench_bindings.json`.
 
 The native runner is still the main source of truth for transport-level speed because it measures the Rust client directly against the pinned upstream worker.
 
@@ -27,7 +30,7 @@ For the reasoning behind these benchmark layers, implementation notes, and exten
 
 The tooling benchmark is the `bench_tooling_compare` binary. It tracks two workloads:
 
-- `project_check`: `tsc`, `tsgo`, and `typescript-eslint` on the same dataset
+- `project_check`: `tsc`, `tsgo`, `typescript-eslint`, and `tsgolint` on the same dataset
 - `editor_workflow`: `corsa` msgpack cold and warm orchestration over a representative multi-query API flow
 
 Before running it for the first time, install the comparison dependencies:
@@ -49,6 +52,24 @@ cargo run --release -p corsa --bin bench_tooling_compare -- \
 `editor_workflow` is intentionally a different workload: it asks whether session reuse and orchestration can beat rerunning a full `tsgo --noEmit` project check.
 
 The runner creates temporary overlay `tsconfig` files for CLI parity, enforces per-process timeouts, and always kills plus reaps spawned children before returning.
+
+## Binding Runner
+
+`vp run -w bench_bindings` builds small benchmark executables for the non-Node bindings and writes `.cache/bench_bindings.json`.
+
+The current binding runner measures:
+
+- `c`
+- `cpp`
+- `go`
+- `swift`
+
+Each language currently runs two scenarios:
+
+- `classify_type_text`
+- `spawn_initialize`
+
+The goal of this layer is different from `bench_tooling_compare`: it is meant to compare wrapper overhead and end-to-end binding startup behavior across the language surfaces shipped in this repository.
 
 ## Native Runner
 

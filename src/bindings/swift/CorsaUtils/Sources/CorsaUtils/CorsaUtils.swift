@@ -166,14 +166,14 @@ func callFlow(
     }
 }
 
-func withStrRef<T>(_ value: String, _ body: (CorsaStrRef) -> T) -> T {
+func withStrRef<T>(_ value: String, _ body: (CorsaStrRef) throws -> T) rethrows -> T {
     let refs = BorrowedRefs([value])
-    return refs.refs.withUnsafeBufferPointer { body($0.first ?? CorsaStrRef(ptr: nil, len: 0)) }
+    return try refs.refs.withUnsafeBufferPointer { try body($0.first ?? CorsaStrRef(ptr: nil, len: 0)) }
 }
 
-func withRefs<T>(_ values: [String], _ body: (UnsafeBufferPointer<CorsaStrRef>) -> T) -> T {
+func withRefs<T>(_ values: [String], _ body: (UnsafeBufferPointer<CorsaStrRef>) throws -> T) rethrows -> T {
     let refs = BorrowedRefs(values)
-    return refs.refs.withUnsafeBufferPointer(body)
+    return try refs.refs.withUnsafeBufferPointer(body)
 }
 
 func takeString(_ value: CorsaString) -> String {

@@ -38,7 +38,7 @@ pub struct Cli {
 }
 
 pub fn parse() -> Result<Option<Cli>, CompactString> {
-    let root_dir = env::current_dir().map_err(|error| CompactString::from(error.to_string()))?;
+    let root_dir = discover_root_dir()?;
     let mut tsgo_path = default_tsgo_path(&root_dir);
     let mut dataset_paths = SmallVec::<[PathBuf; 4]>::new();
     let mut json_output_path = None;
@@ -104,6 +104,18 @@ pub fn parse() -> Result<Option<Cli>, CompactString> {
         cold_iterations,
         warm_iterations,
     }))
+}
+
+fn discover_root_dir() -> Result<PathBuf, CompactString> {
+    let cwd = env::current_dir().map_err(|error| CompactString::from(error.to_string()))?;
+    for candidate in cwd.ancestors() {
+        if candidate.join("pnpm-workspace.yaml").exists()
+            && candidate.join("vite.config.ts").exists()
+        {
+            return Ok(candidate.to_path_buf());
+        }
+    }
+    Ok(cwd)
 }
 
 fn both_modes() -> SmallVec<[ApiMode; 2]> {
