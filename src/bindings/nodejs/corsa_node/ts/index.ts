@@ -4,6 +4,9 @@ import type {
   ApiClientOptions,
   ConfigResponse,
   InitializeResponse,
+  NativeLintDiagnostic,
+  NativeLintNode,
+  NativeLintRuleMeta,
   SymbolResponse,
   TypeTextKind,
   TypeResponse,
@@ -36,6 +39,14 @@ export function isUnsafeAssignment(input: UnsafeTypeFlowInput): boolean {
 
 export function isUnsafeReturn(input: UnsafeTypeFlowInput): boolean {
   return binding.isUnsafeReturn(toJson(input));
+}
+
+export function runNativeLintRule(ruleName: string, node: NativeLintNode): NativeLintDiagnostic[] {
+  return fromJson(binding.runNativeLintRule(ruleName, toJson(node)));
+}
+
+export function nativeLintRuleMetas(): NativeLintRuleMeta[] {
+  return fromJson(binding.nativeLintRuleMetasJson());
 }
 
 export function classifyTypeText(text?: string): TypeTextKind {
