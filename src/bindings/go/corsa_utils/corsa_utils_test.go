@@ -175,3 +175,81 @@ func TestApiClientTypeArgumentsBinding(t *testing.T) {
 		t.Fatalf("reference type arguments = %#v", reference)
 	}
 }
+
+func TestApiClientSymbolTypeBindings(t *testing.T) {
+	root, err := filepath.Abs("../../../..")
+	if err != nil {
+		t.Fatalf("workspace root: %v", err)
+	}
+	binary := filepath.Join(root, "target", "debug", "mock_tsgo")
+	if _, err := os.Stat(binary); err != nil {
+		t.Skip("mock_tsgo binary is not built")
+	}
+	client, err := NewApiClient(ApiClientOptions{
+		Executable: binary,
+		Cwd:        root,
+		Mode:       ApiModeJSONRPC,
+	})
+	if err != nil {
+		t.Fatalf("new api client: %v", err)
+	}
+	defer client.Close()
+
+	snapshotJSON, err := client.UpdateSnapshotJSON(`{"openProject":"/workspace/tsconfig.json"}`)
+	if err != nil {
+		t.Fatalf("update snapshot: %v", err)
+	}
+	var snapshot struct {
+		Snapshot string `json:"snapshot"`
+		Projects []struct {
+			ID string `json:"id"`
+		} `json:"projects"`
+	}
+	if err := json.Unmarshal([]byte(snapshotJSON), &snapshot); err != nil {
+		t.Fatalf("decode snapshot: %v", err)
+	}
+	project := snapshot.Projects[0].ID
+
+	symbolJSON, err := client.GetSymbolAtPositionJSON(snapshot.Snapshot, project, "/workspace/src/index.ts", 1)
+	if err != nil {
+		t.Fatalf("get symbol at position: %v", err)
+	}
+	var symbol struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(symbolJSON), &symbol); err != nil {
+		t.Fatalf("decode symbol: %v", err)
+	}
+	if symbol.Name != "value" {
+		t.Fatalf("symbol name = %q", symbol.Name)
+	}
+
+	symbolTypeJSON, err := client.GetTypeOfSymbolJSON(snapshot.Snapshot, project, symbol.ID)
+	if err != nil {
+		t.Fatalf("get type of symbol: %v", err)
+	}
+	var symbolType struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal([]byte(symbolTypeJSON), &symbolType); err != nil {
+		t.Fatalf("decode symbol type: %v", err)
+	}
+	if symbolType.ID != "t0000000000000001" {
+		t.Fatalf("symbol type id = %q", symbolType.ID)
+	}
+
+	declaredTypeJSON, err := client.GetDeclaredTypeOfSymbolJSON(snapshot.Snapshot, project, symbol.ID)
+	if err != nil {
+		t.Fatalf("get declared type of symbol: %v", err)
+	}
+	var declaredType struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal([]byte(declaredTypeJSON), &declaredType); err != nil {
+		t.Fatalf("decode declared type: %v", err)
+	}
+	if declaredType.ID != "t0000000000000001" {
+		t.Fatalf("declared type id = %q", declaredType.ID)
+	}
+}

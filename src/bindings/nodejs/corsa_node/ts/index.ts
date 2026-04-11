@@ -168,6 +168,25 @@ export class CorsaApiClient {
     return fromJson(this.#inner.getTypeArgumentsJson(snapshot, project, typeHandle, objectFlags));
   }
 
+  getTypeOfSymbol(snapshot: string, project: string, symbol: string): TypeResponse | undefined {
+    return (
+      fromJson<TypeResponse | null>(this.#inner.getTypeOfSymbolJson(snapshot, project, symbol)) ??
+      undefined
+    );
+  }
+
+  getDeclaredTypeOfSymbol(
+    snapshot: string,
+    project: string,
+    symbol: string,
+  ): TypeResponse | undefined {
+    return (
+      fromJson<TypeResponse | null>(
+        this.#inner.getDeclaredTypeOfSymbolJson(snapshot, project, symbol),
+      ) ?? undefined
+    );
+  }
+
   typeToString(
     snapshot: string,
     project: string,

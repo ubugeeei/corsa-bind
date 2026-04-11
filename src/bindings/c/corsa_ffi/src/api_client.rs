@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Mutex, time::Duration};
 
 use corsa_client::{
     ApiClient, ApiMode, ApiSpawnConfig, ManagedSnapshot, NodeHandle, ProjectHandle, SnapshotHandle,
-    TypeHandle, UpdateSnapshotParams,
+    SymbolHandle, TypeHandle, UpdateSnapshotParams,
 };
 use corsa_runtime::block_on;
 use serde::{Serialize, de::DeserializeOwned};
@@ -435,6 +435,70 @@ pub unsafe extern "C" fn corsa_tsgo_api_client_get_type_arguments_json(
         SnapshotHandle::from(snapshot.as_str()),
         ProjectHandle::from(project.as_str()),
         TypeHandle::from(type_handle.as_str()),
+    )) {
+        Ok(response) => take_json(&response),
+        Err(error) => {
+            set_last_error(error);
+            CorsaString::default()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn corsa_tsgo_api_client_get_type_of_symbol_json(
+    value: *const CorsaTsgoApiClient,
+    snapshot: CorsaStrRef,
+    project: CorsaStrRef,
+    symbol: CorsaStrRef,
+) -> CorsaString {
+    let Some(client) = (unsafe { client_ref(value) }) else {
+        return CorsaString::default();
+    };
+    let Some(snapshot) = read_required_text(snapshot, "snapshot") else {
+        return CorsaString::default();
+    };
+    let Some(project) = read_required_text(project, "project") else {
+        return CorsaString::default();
+    };
+    let Some(symbol) = read_required_text(symbol, "symbol") else {
+        return CorsaString::default();
+    };
+    match block_on(client.inner.get_type_of_symbol(
+        SnapshotHandle::from(snapshot.as_str()),
+        ProjectHandle::from(project.as_str()),
+        SymbolHandle::from(symbol.as_str()),
+    )) {
+        Ok(response) => take_json(&response),
+        Err(error) => {
+            set_last_error(error);
+            CorsaString::default()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn corsa_tsgo_api_client_get_declared_type_of_symbol_json(
+    value: *const CorsaTsgoApiClient,
+    snapshot: CorsaStrRef,
+    project: CorsaStrRef,
+    symbol: CorsaStrRef,
+) -> CorsaString {
+    let Some(client) = (unsafe { client_ref(value) }) else {
+        return CorsaString::default();
+    };
+    let Some(snapshot) = read_required_text(snapshot, "snapshot") else {
+        return CorsaString::default();
+    };
+    let Some(project) = read_required_text(project, "project") else {
+        return CorsaString::default();
+    };
+    let Some(symbol) = read_required_text(symbol, "symbol") else {
+        return CorsaString::default();
+    };
+    match block_on(client.inner.get_declared_type_of_symbol(
+        SnapshotHandle::from(snapshot.as_str()),
+        ProjectHandle::from(project.as_str()),
+        SymbolHandle::from(symbol.as_str()),
     )) {
         Ok(response) => take_json(&response),
         Err(error) => {

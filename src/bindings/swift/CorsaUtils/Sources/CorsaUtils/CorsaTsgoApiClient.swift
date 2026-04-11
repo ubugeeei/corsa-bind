@@ -91,6 +91,22 @@ private func getTypeArgumentsTsgoApiClientNative(
     _ objectFlags: UInt32
 ) -> CorsaString
 
+@_silgen_name("corsa_tsgo_api_client_get_type_of_symbol_json")
+private func getTypeOfSymbolTsgoApiClientNative(
+    _ value: UnsafeMutableRawPointer?,
+    _ snapshot: CorsaStrRef,
+    _ project: CorsaStrRef,
+    _ symbol: CorsaStrRef
+) -> CorsaString
+
+@_silgen_name("corsa_tsgo_api_client_get_declared_type_of_symbol_json")
+private func getDeclaredTypeOfSymbolTsgoApiClientNative(
+    _ value: UnsafeMutableRawPointer?,
+    _ snapshot: CorsaStrRef,
+    _ project: CorsaStrRef,
+    _ symbol: CorsaStrRef
+) -> CorsaString
+
 @_silgen_name("corsa_tsgo_api_client_type_to_string")
 private func typeToStringTsgoApiClientNative(
     _ value: UnsafeMutableRawPointer?,
@@ -188,14 +204,24 @@ public final class CorsaTsgoApiClient {
         }
     }
 
-    public func getTypeAtPositionJSON(snapshot: String, project: String, file: String, position: UInt32) throws -> String {
+    public func getTypeAtPositionJSON(
+        snapshot: String,
+        project: String,
+        file: String,
+        position: UInt32
+    ) throws -> String {
         let refs = BorrowedRefs([snapshot, project, file])
         return try refs.refs.withUnsafeBufferPointer {
             try takeCheckedString(getTypeAtPositionTsgoApiClientNative(handle, $0[0], $0[1], $0[2], position))
         }
     }
 
-    public func getSymbolAtPositionJSON(snapshot: String, project: String, file: String, position: UInt32) throws -> String {
+    public func getSymbolAtPositionJSON(
+        snapshot: String,
+        project: String,
+        file: String,
+        position: UInt32
+    ) throws -> String {
         let refs = BorrowedRefs([snapshot, project, file])
         return try refs.refs.withUnsafeBufferPointer {
             try takeCheckedString(getSymbolAtPositionTsgoApiClientNative(handle, $0[0], $0[1], $0[2], position))
@@ -211,6 +237,20 @@ public final class CorsaTsgoApiClient {
         let refs = BorrowedRefs([snapshot, project, typeHandle])
         return try refs.refs.withUnsafeBufferPointer {
             try takeCheckedString(getTypeArgumentsTsgoApiClientNative(handle, $0[0], $0[1], $0[2], objectFlags))
+        }
+    }
+
+    public func getTypeOfSymbolJSON(snapshot: String, project: String, symbol: String) throws -> String {
+        let refs = BorrowedRefs([snapshot, project, symbol])
+        return try refs.refs.withUnsafeBufferPointer {
+            try takeCheckedString(getTypeOfSymbolTsgoApiClientNative(handle, $0[0], $0[1], $0[2]))
+        }
+    }
+
+    public func getDeclaredTypeOfSymbolJSON(snapshot: String, project: String, symbol: String) throws -> String {
+        let refs = BorrowedRefs([snapshot, project, symbol])
+        return try refs.refs.withUnsafeBufferPointer {
+            try takeCheckedString(getDeclaredTypeOfSymbolTsgoApiClientNative(handle, $0[0], $0[1], $0[2]))
         }
     }
 

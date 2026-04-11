@@ -150,6 +150,18 @@ CorsaString corsa_tsgo_api_client_get_type_arguments_json(
     CorsaStrRef type_handle,
     uint32_t object_flags
 );
+CorsaString corsa_tsgo_api_client_get_type_of_symbol_json(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef snapshot,
+    CorsaStrRef project,
+    CorsaStrRef symbol
+);
+CorsaString corsa_tsgo_api_client_get_declared_type_of_symbol_json(
+    const CorsaTsgoApiClient *value,
+    CorsaStrRef snapshot,
+    CorsaStrRef project,
+    CorsaStrRef symbol
+);
 CorsaString corsa_tsgo_api_client_type_to_string(
     const CorsaTsgoApiClient *value,
     CorsaStrRef snapshot,
