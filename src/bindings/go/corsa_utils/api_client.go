@@ -140,6 +140,22 @@ func (value *ApiClient) GetSymbolAtPositionJSON(snapshot string, project string,
 	))
 }
 
+func (value *ApiClient) GetTypeArgumentsJSON(snapshot string, project string, typeHandle string, objectFlags uint32) (string, error) {
+	snapshotValue := newBorrowedString(snapshot)
+	defer snapshotValue.free()
+	projectValue := newBorrowedString(project)
+	defer projectValue.free()
+	typeValue := newBorrowedString(typeHandle)
+	defer typeValue.free()
+	return takeCheckedString(C.corsa_tsgo_api_client_get_type_arguments_json(
+		value.ptr,
+		snapshotValue.ref,
+		projectValue.ref,
+		typeValue.ref,
+		C.uint32_t(objectFlags),
+	))
+}
+
 func (value *ApiClient) TypeToString(snapshot string, project string, typeHandle string, location *string, flags *int32) (string, error) {
 	snapshotValue := newBorrowedString(snapshot)
 	defer snapshotValue.free()

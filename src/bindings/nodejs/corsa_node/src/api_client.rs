@@ -15,6 +15,8 @@ use crate::util::{
     SpawnOptions, build_spawn_config, into_napi_error, parse_json, parse_optional_json, to_json,
 };
 
+const OBJECT_FLAGS_REFERENCE: u32 = 1 << 2;
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct SnapshotState<'a> {
@@ -141,6 +143,27 @@ impl TsgoApiClient {
             ProjectHandle::from(project.as_str()),
             file,
             position,
+        ))
+        .map_err(into_napi_error)?;
+        to_json(&response)
+    }
+
+    /// Resolves type arguments for type-reference objects and returns [] otherwise.
+    #[napi]
+    pub fn get_type_arguments_json(
+        &self,
+        snapshot: String,
+        project: String,
+        type_handle: String,
+        object_flags: Option<u32>,
+    ) -> Result<String> {
+        if object_flags.unwrap_or_default() & OBJECT_FLAGS_REFERENCE == 0 {
+            return to_json(&Vec::<corsa::api::TypeResponse>::new());
+        }
+        let response = block_on(self.inner.get_type_arguments(
+            SnapshotHandle::from(snapshot.as_str()),
+            ProjectHandle::from(project.as_str()),
+            TypeHandle::from(type_handle.as_str()),
         ))
         .map_err(into_napi_error)?;
         to_json(&response)

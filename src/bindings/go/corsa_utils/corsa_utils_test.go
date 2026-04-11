@@ -102,3 +102,76 @@ func TestApiClientCheckerPositionBindings(t *testing.T) {
 		t.Fatalf("symbol name = %q", symbol.Name)
 	}
 }
+
+func TestApiClientTypeArgumentsBinding(t *testing.T) {
+	root, err := filepath.Abs("../../../..")
+	if err != nil {
+		t.Fatalf("workspace root: %v", err)
+	}
+	binary := filepath.Join(root, "target", "debug", "mock_tsgo")
+	if _, err := os.Stat(binary); err != nil {
+		t.Skip("mock_tsgo binary is not built")
+	}
+	client, err := NewApiClient(ApiClientOptions{
+		Executable: binary,
+		Cwd:        root,
+		Mode:       ApiModeJSONRPC,
+	})
+	if err != nil {
+		t.Fatalf("new api client: %v", err)
+	}
+	defer client.Close()
+
+	snapshotJSON, err := client.UpdateSnapshotJSON(`{"openProject":"/workspace/tsconfig.json"}`)
+	if err != nil {
+		t.Fatalf("update snapshot: %v", err)
+	}
+	var snapshot struct {
+		Snapshot string `json:"snapshot"`
+		Projects []struct {
+			ID string `json:"id"`
+		} `json:"projects"`
+	}
+	if err := json.Unmarshal([]byte(snapshotJSON), &snapshot); err != nil {
+		t.Fatalf("decode snapshot: %v", err)
+	}
+	project := snapshot.Projects[0].ID
+
+	stringTypeJSON, err := client.GetStringTypeJSON(snapshot.Snapshot, project)
+	if err != nil {
+		t.Fatalf("get string type: %v", err)
+	}
+	var stringType struct {
+		ID          string `json:"id"`
+		ObjectFlags uint32 `json:"objectFlags"`
+	}
+	if err := json.Unmarshal([]byte(stringTypeJSON), &stringType); err != nil {
+		t.Fatalf("decode string type: %v", err)
+	}
+
+	nonReferenceJSON, err := client.GetTypeArgumentsJSON(snapshot.Snapshot, project, stringType.ID, stringType.ObjectFlags)
+	if err != nil {
+		t.Fatalf("get non-reference type arguments: %v", err)
+	}
+	var nonReference []any
+	if err := json.Unmarshal([]byte(nonReferenceJSON), &nonReference); err != nil {
+		t.Fatalf("decode non-reference type arguments: %v", err)
+	}
+	if len(nonReference) != 0 {
+		t.Fatalf("non-reference type arguments = %#v", nonReference)
+	}
+
+	referenceJSON, err := client.GetTypeArgumentsJSON(snapshot.Snapshot, project, stringType.ID, 1<<2)
+	if err != nil {
+		t.Fatalf("get reference type arguments: %v", err)
+	}
+	var reference []struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal([]byte(referenceJSON), &reference); err != nil {
+		t.Fatalf("decode reference type arguments: %v", err)
+	}
+	if len(reference) != 1 || reference[0].ID != "t0000000000000001" {
+		t.Fatalf("reference type arguments = %#v", reference)
+	}
+}

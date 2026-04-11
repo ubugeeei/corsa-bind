@@ -143,13 +143,12 @@ export class TsgoProjectSession {
   }
 
   getTypeArguments(type: TsgoType): readonly TsgoType[] {
-    return (
-      this.client().callJson("getTypeArguments", {
-        snapshot: this.#snapshot,
-        project: this.projectId(),
-        type: type.id,
-      }) ?? []
-    );
+    return this.client().getTypeArguments(
+      this.#snapshot!,
+      this.projectId(),
+      type.id,
+      type.objectFlags,
+    ) as unknown as readonly TsgoType[];
   }
 
   private client(): TsgoApiClient {

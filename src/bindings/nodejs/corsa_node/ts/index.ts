@@ -159,6 +159,15 @@ export class CorsaApiClient {
     );
   }
 
+  getTypeArguments(
+    snapshot: string,
+    project: string,
+    typeHandle: string,
+    objectFlags?: number,
+  ): TypeResponse[] {
+    return fromJson(this.#inner.getTypeArgumentsJson(snapshot, project, typeHandle, objectFlags));
+  }
+
   typeToString(
     snapshot: string,
     project: string,

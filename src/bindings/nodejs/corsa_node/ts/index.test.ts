@@ -115,6 +115,17 @@ describe("CorsaApiClient", () => {
         client.getSymbolAtPosition(snapshot.snapshot, project.id, "/workspace/src/index.ts", 1)
           ?.name,
       ).toBe("value");
+      expect(
+        client.getTypeArguments(
+          snapshot.snapshot,
+          project.id,
+          stringType.id,
+          stringType.objectFlags,
+        ),
+      ).toEqual([]);
+      expect(
+        client.getTypeArguments(snapshot.snapshot, project.id, stringType.id, 1 << 2),
+      ).toHaveLength(1);
       expect(client.typeToString(snapshot.snapshot, project.id, stringType.id)).toBe("type:string");
 
       client.releaseHandle(snapshot.snapshot);

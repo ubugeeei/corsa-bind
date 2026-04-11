@@ -44,6 +44,8 @@ export declare class TsgoApiClient {
   getTypeAtPositionJson(snapshot: string, project: string, file: string, position: number): string
   /** Resolves the checker symbol visible at a file position. */
   getSymbolAtPositionJson(snapshot: string, project: string, file: string, position: number): string
+  /** Resolves type arguments for type-reference objects and returns [] otherwise. */
+  getTypeArgumentsJson(snapshot: string, project: string, typeHandle: string, objectFlags?: number | undefined | null): string
   /** Renders a type back to a string representation. */
   typeToString(snapshot: string, project: string, typeHandle: string, location?: string | undefined | null, flags?: number | undefined | null): string
   /** Sends an arbitrary JSON endpoint request. */

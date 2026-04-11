@@ -162,6 +162,28 @@ pub const ApiClient = struct {
         return value;
     }
 
+    pub fn getTypeArgumentsJson(
+        self: ApiClient,
+        allocator: std.mem.Allocator,
+        snapshot: []const u8,
+        project: []const u8,
+        type_handle: []const u8,
+        object_flags: u32,
+    ) ![]u8 {
+        const value = try utils.takeString(
+            allocator,
+            c.corsa_tsgo_api_client_get_type_arguments_json(
+                self.handle,
+                utils.toRef(snapshot),
+                utils.toRef(project),
+                utils.toRef(type_handle),
+                object_flags,
+            ),
+        );
+        if (value.len == 0) return error.CorsaFfiError;
+        return value;
+    }
+
     pub fn typeToString(
         self: ApiClient,
         allocator: std.mem.Allocator,
