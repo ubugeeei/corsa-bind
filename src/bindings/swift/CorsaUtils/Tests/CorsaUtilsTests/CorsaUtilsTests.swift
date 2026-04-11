@@ -52,3 +52,48 @@ import Testing
     let symbol = try JSONSerialization.jsonObject(with: Data(symbolJSON.utf8)) as! [String: Any]
     #expect(symbol["name"] as? String == "value")
 }
+
+@Test func apiClientTypeArgumentsBinding() async throws {
+    let root = URL(fileURLWithPath: "../../../..", relativeTo: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)).standardizedFileURL
+    let binary = root.appending(path: "target/debug/mock_tsgo").path
+    guard FileManager.default.fileExists(atPath: binary) else {
+        return
+    }
+    let client = try CorsaTsgoApiClient(options: CorsaTsgoApiClientOptions(
+        executable: binary,
+        cwd: root.path,
+        mode: .jsonrpc
+    ))
+    defer {
+        try? client.close()
+    }
+
+    let snapshotJSON = try client.updateSnapshotJSON(paramsJSON: #"{"openProject":"/workspace/tsconfig.json"}"#)
+    let snapshot = try JSONSerialization.jsonObject(with: Data(snapshotJSON.utf8)) as! [String: Any]
+    let snapshotID = snapshot["snapshot"] as! String
+    let projects = snapshot["projects"] as! [[String: Any]]
+    let projectID = projects[0]["id"] as! String
+
+    let stringTypeJSON = try client.getStringTypeJSON(snapshot: snapshotID, project: projectID)
+    let stringType = try JSONSerialization.jsonObject(with: Data(stringTypeJSON.utf8)) as! [String: Any]
+    let typeID = stringType["id"] as! String
+    let objectFlags = (stringType["objectFlags"] as! NSNumber).uint32Value
+
+    let nonReferenceJSON = try client.getTypeArgumentsJSON(
+        snapshot: snapshotID,
+        project: projectID,
+        typeHandle: typeID,
+        objectFlags: objectFlags
+    )
+    let nonReference = try JSONSerialization.jsonObject(with: Data(nonReferenceJSON.utf8)) as! [Any]
+    #expect(nonReference.isEmpty)
+
+    let referenceJSON = try client.getTypeArgumentsJSON(
+        snapshot: snapshotID,
+        project: projectID,
+        typeHandle: typeID,
+        objectFlags: 1 << 2
+    )
+    let reference = try JSONSerialization.jsonObject(with: Data(referenceJSON.utf8)) as! [[String: Any]]
+    #expect(reference[0]["id"] as? String == "t0000000000000001")
+}

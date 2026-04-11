@@ -3,7 +3,9 @@ use std::path::PathBuf;
 use crate::{
     api_client::{
         corsa_tsgo_api_client_close, corsa_tsgo_api_client_free,
+        corsa_tsgo_api_client_get_string_type_json,
         corsa_tsgo_api_client_get_symbol_at_position_json,
+        corsa_tsgo_api_client_get_type_arguments_json,
         corsa_tsgo_api_client_get_type_at_position_json, corsa_tsgo_api_client_spawn,
         corsa_tsgo_api_client_update_snapshot_json,
     },
@@ -237,6 +239,73 @@ fn resolves_checker_positions_over_ffi() {
         serde_json::from_str::<serde_json::Value>(&symbol_json).unwrap()["name"],
         "value"
     );
+
+    assert!(unsafe { corsa_tsgo_api_client_close(client) });
+    unsafe {
+        corsa_tsgo_api_client_free(client);
+    }
+}
+
+#[test]
+fn resolves_type_arguments_over_ffi() {
+    let Some(binary) = mock_tsgo_binary() else {
+        return;
+    };
+    let options = serde_json::json!({
+        "executable": binary.display().to_string(),
+        "cwd": workspace_root().display().to_string(),
+        "mode": "jsonrpc",
+    })
+    .to_string();
+    let client = unsafe { corsa_tsgo_api_client_spawn(text_ref(&options)) };
+    assert!(!client.is_null());
+
+    let snapshot_json = take_string(unsafe {
+        corsa_tsgo_api_client_update_snapshot_json(
+            client,
+            text_ref(r#"{"openProject":"/workspace/tsconfig.json"}"#),
+        )
+    });
+    let snapshot: serde_json::Value = serde_json::from_str(&snapshot_json).unwrap();
+    let snapshot_id = snapshot["snapshot"].as_str().unwrap();
+    let project_id = snapshot["projects"][0]["id"].as_str().unwrap();
+
+    let string_type_json = take_string(unsafe {
+        corsa_tsgo_api_client_get_string_type_json(
+            client,
+            text_ref(snapshot_id),
+            text_ref(project_id),
+        )
+    });
+    let string_type: serde_json::Value = serde_json::from_str(&string_type_json).unwrap();
+    let type_id = string_type["id"].as_str().unwrap().to_owned();
+    let object_flags = string_type["objectFlags"].as_u64().unwrap() as u32;
+
+    let non_reference_json = take_string(unsafe {
+        corsa_tsgo_api_client_get_type_arguments_json(
+            client,
+            text_ref(snapshot_id),
+            text_ref(project_id),
+            text_ref(type_id.as_str()),
+            object_flags,
+        )
+    });
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&non_reference_json).unwrap(),
+        serde_json::json!([])
+    );
+
+    let reference_json = take_string(unsafe {
+        corsa_tsgo_api_client_get_type_arguments_json(
+            client,
+            text_ref(snapshot_id),
+            text_ref(project_id),
+            text_ref(type_id.as_str()),
+            1 << 2,
+        )
+    });
+    let reference_arguments: serde_json::Value = serde_json::from_str(&reference_json).unwrap();
+    assert_eq!(reference_arguments[0]["id"], "t0000000000000001");
 
     assert!(unsafe { corsa_tsgo_api_client_close(client) });
     unsafe {
