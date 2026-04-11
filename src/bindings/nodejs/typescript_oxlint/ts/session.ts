@@ -70,19 +70,15 @@ export class TsgoProjectSession {
   }
 
   getTypeOfSymbol(symbol: TsgoSymbol): TsgoType | undefined {
-    return this.client().callJson("getTypeOfSymbol", {
-      snapshot: this.#snapshot,
-      project: this.projectId(),
-      symbol: symbol.id,
-    });
+    return this.client().getTypeOfSymbol(this.#snapshot!, this.projectId(), symbol.id) as
+      | TsgoType
+      | undefined;
   }
 
   getDeclaredTypeOfSymbol(symbol: TsgoSymbol): TsgoType | undefined {
-    return this.client().callJson("getDeclaredTypeOfSymbol", {
-      snapshot: this.#snapshot,
-      project: this.projectId(),
-      symbol: symbol.id,
-    });
+    return this.client().getDeclaredTypeOfSymbol(this.#snapshot!, this.projectId(), symbol.id) as
+      | TsgoType
+      | undefined;
   }
 
   typeToString(type: TsgoType, flags?: number): string {

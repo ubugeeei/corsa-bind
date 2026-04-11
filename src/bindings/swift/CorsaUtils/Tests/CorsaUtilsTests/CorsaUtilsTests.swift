@@ -97,3 +97,43 @@ import Testing
     let reference = try JSONSerialization.jsonObject(with: Data(referenceJSON.utf8)) as! [[String: Any]]
     #expect(reference[0]["id"] as? String == "t0000000000000001")
 }
+
+@Test func apiClientSymbolTypeBindings() async throws {
+    let root = URL(fileURLWithPath: "../../../..", relativeTo: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)).standardizedFileURL
+    let binary = root.appending(path: "target/debug/mock_tsgo").path
+    guard FileManager.default.fileExists(atPath: binary) else {
+        return
+    }
+    let client = try CorsaTsgoApiClient(options: CorsaTsgoApiClientOptions(
+        executable: binary,
+        cwd: root.path,
+        mode: .jsonrpc
+    ))
+    defer {
+        try? client.close()
+    }
+
+    let snapshotJSON = try client.updateSnapshotJSON(paramsJSON: #"{"openProject":"/workspace/tsconfig.json"}"#)
+    let snapshot = try JSONSerialization.jsonObject(with: Data(snapshotJSON.utf8)) as! [String: Any]
+    let snapshotID = snapshot["snapshot"] as! String
+    let projects = snapshot["projects"] as! [[String: Any]]
+    let projectID = projects[0]["id"] as! String
+
+    let symbolJSON = try client.getSymbolAtPositionJSON(
+        snapshot: snapshotID,
+        project: projectID,
+        file: "/workspace/src/index.ts",
+        position: 1
+    )
+    let symbol = try JSONSerialization.jsonObject(with: Data(symbolJSON.utf8)) as! [String: Any]
+    #expect(symbol["name"] as? String == "value")
+    let symbolID = symbol["id"] as! String
+
+    let symbolTypeJSON = try client.getTypeOfSymbolJSON(snapshot: snapshotID, project: projectID, symbol: symbolID)
+    let symbolType = try JSONSerialization.jsonObject(with: Data(symbolTypeJSON.utf8)) as! [String: Any]
+    #expect(symbolType["id"] as? String == "t0000000000000001")
+
+    let declaredTypeJSON = try client.getDeclaredTypeOfSymbolJSON(snapshot: snapshotID, project: projectID, symbol: symbolID)
+    let declaredType = try JSONSerialization.jsonObject(with: Data(declaredTypeJSON.utf8)) as! [String: Any]
+    #expect(declaredType["id"] as? String == "t0000000000000001")
+}

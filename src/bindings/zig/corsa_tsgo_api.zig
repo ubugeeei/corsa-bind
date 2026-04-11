@@ -184,6 +184,46 @@ pub const ApiClient = struct {
         return value;
     }
 
+    pub fn getTypeOfSymbolJson(
+        self: ApiClient,
+        allocator: std.mem.Allocator,
+        snapshot: []const u8,
+        project: []const u8,
+        symbol: []const u8,
+    ) ![]u8 {
+        const value = try utils.takeString(
+            allocator,
+            c.corsa_tsgo_api_client_get_type_of_symbol_json(
+                self.handle,
+                utils.toRef(snapshot),
+                utils.toRef(project),
+                utils.toRef(symbol),
+            ),
+        );
+        if (value.len == 0) return error.CorsaFfiError;
+        return value;
+    }
+
+    pub fn getDeclaredTypeOfSymbolJson(
+        self: ApiClient,
+        allocator: std.mem.Allocator,
+        snapshot: []const u8,
+        project: []const u8,
+        symbol: []const u8,
+    ) ![]u8 {
+        const value = try utils.takeString(
+            allocator,
+            c.corsa_tsgo_api_client_get_declared_type_of_symbol_json(
+                self.handle,
+                utils.toRef(snapshot),
+                utils.toRef(project),
+                utils.toRef(symbol),
+            ),
+        );
+        if (value.len == 0) return error.CorsaFfiError;
+        return value;
+    }
+
     pub fn typeToString(
         self: ApiClient,
         allocator: std.mem.Allocator,

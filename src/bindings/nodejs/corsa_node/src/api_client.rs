@@ -2,7 +2,8 @@ use std::sync::Mutex;
 
 use corsa::{
     api::{
-        ApiClient, ManagedSnapshot, ProjectHandle, SnapshotHandle, TypeHandle, UpdateSnapshotParams,
+        ApiClient, ManagedSnapshot, ProjectHandle, SnapshotHandle, SymbolHandle, TypeHandle,
+        UpdateSnapshotParams,
     },
     fast::{CompactString, FastMap},
     runtime::block_on,
@@ -164,6 +165,40 @@ impl TsgoApiClient {
             SnapshotHandle::from(snapshot.as_str()),
             ProjectHandle::from(project.as_str()),
             TypeHandle::from(type_handle.as_str()),
+        ))
+        .map_err(into_napi_error)?;
+        to_json(&response)
+    }
+
+    /// Resolves the apparent checker type of a symbol.
+    #[napi]
+    pub fn get_type_of_symbol_json(
+        &self,
+        snapshot: String,
+        project: String,
+        symbol: String,
+    ) -> Result<String> {
+        let response = block_on(self.inner.get_type_of_symbol(
+            SnapshotHandle::from(snapshot.as_str()),
+            ProjectHandle::from(project.as_str()),
+            SymbolHandle::from(symbol.as_str()),
+        ))
+        .map_err(into_napi_error)?;
+        to_json(&response)
+    }
+
+    /// Resolves the declared checker type of a symbol.
+    #[napi]
+    pub fn get_declared_type_of_symbol_json(
+        &self,
+        snapshot: String,
+        project: String,
+        symbol: String,
+    ) -> Result<String> {
+        let response = block_on(self.inner.get_declared_type_of_symbol(
+            SnapshotHandle::from(snapshot.as_str()),
+            ProjectHandle::from(project.as_str()),
+            SymbolHandle::from(symbol.as_str()),
         ))
         .map_err(into_napi_error)?;
         to_json(&response)

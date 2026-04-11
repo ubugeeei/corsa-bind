@@ -86,6 +86,17 @@ export function createTypeChecker(context: ContextWithParserOptions): TsgoTypeCh
     getBaseTypes(type) {
       return sessionForContext(context).session.getBaseTypes(type);
     },
+    getImplementedTypes(node) {
+      return implementedClauseNodes(node)
+        .map((clause) => {
+          const expression = implementedClauseChildNode(clause, "expression") ?? clause;
+          const symbol = this.getSymbolAtLocation(expression) ?? this.getSymbolAtLocation(clause);
+          return symbol
+            ? (this.getDeclaredTypeOfSymbol(symbol) ?? this.getTypeOfSymbol(symbol))
+            : (this.getTypeAtLocation(expression) ?? this.getTypeAtLocation(clause));
+        })
+        .filter((type): type is TsgoType => type !== undefined);
+    },
     getTypeArguments(type) {
       return sessionForContext(context).session.getTypeArguments(type);
     },
@@ -108,6 +119,25 @@ function nodeForTypeLookup(node: Node | TsgoNode): Node | TsgoNode {
 }
 
 function childNode(node: Node, key: string): Node | undefined {
+  const value = (node as unknown as Record<string, unknown>)[key];
+  if (isNode(value)) {
+    return value;
+  }
+  return undefined;
+}
+
+function implementedClauseNodes(node: Node | TsgoNode): readonly Node[] {
+  if ("pos" in node) {
+    return [];
+  }
+  const clauses = (node as unknown as { readonly implements?: unknown }).implements;
+  if (!Array.isArray(clauses)) {
+    return [];
+  }
+  return clauses.filter(isNode);
+}
+
+function implementedClauseChildNode(node: Node, key: string): Node | undefined {
   const value = (node as unknown as Record<string, unknown>)[key];
   if (isNode(value)) {
     return value;

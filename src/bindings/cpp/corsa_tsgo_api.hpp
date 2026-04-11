@@ -108,6 +108,28 @@ class tsgo_api_client {
         object_flags));
   }
 
+  std::string get_type_of_symbol_json(
+      std::string_view snapshot,
+      std::string_view project,
+      std::string_view symbol) const {
+    return utils::take_string(corsa_tsgo_api_client_get_type_of_symbol_json(
+        handle_,
+        utils::to_ref(snapshot),
+        utils::to_ref(project),
+        utils::to_ref(symbol)));
+  }
+
+  std::string get_declared_type_of_symbol_json(
+      std::string_view snapshot,
+      std::string_view project,
+      std::string_view symbol) const {
+    return utils::take_string(corsa_tsgo_api_client_get_declared_type_of_symbol_json(
+        handle_,
+        utils::to_ref(snapshot),
+        utils::to_ref(project),
+        utils::to_ref(symbol)));
+  }
+
   std::string type_to_string(
       std::string_view snapshot,
       std::string_view project,
