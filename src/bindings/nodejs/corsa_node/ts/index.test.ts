@@ -15,6 +15,8 @@ import {
   isArrayLikeTypeTexts,
   isErrorLikeTypeTexts,
   isPromiseLikeTypeTexts,
+  nativeLintRuleMetas,
+  runNativeLintRule,
   splitTopLevelTypeText,
   splitTypeText,
   isUnsafeAssignment,
@@ -73,6 +75,55 @@ describe("CorsaApiClient", () => {
     expect(isPromiseLikeTypeTexts([], ["then"])).toBe(true);
     expect(isErrorLikeTypeTexts(["TypeError"])).toBe(true);
     expect(isAnyLikeTypeTexts(["any"])).toBe(true);
+  });
+
+  it("runs Rust-authored native lint rules", () => {
+    const diagnostics = runNativeLintRule("no-array-delete", {
+      kind: "UnaryExpression",
+      range: { start: 0, end: 20 },
+      fields: { operator: "delete" },
+      children: {
+        argument: {
+          kind: "MemberExpression",
+          range: { start: 7, end: 20 },
+          fields: { computed: true },
+          children: {
+            object: {
+              kind: "Identifier",
+              range: { start: 7, end: 13 },
+              text: "values",
+              typeTexts: ["number[]"],
+            },
+            property: {
+              kind: "Identifier",
+              range: { start: 14, end: 19 },
+              text: "index",
+            },
+          },
+        },
+      },
+    });
+
+    expect(nativeLintRuleMetas().map((meta) => meta.name)).toEqual([
+      "no-array-delete",
+      "no-for-in-array",
+      "await-thenable",
+      "no-implied-eval",
+      "no-mixed-enums",
+      "no-unsafe-unary-minus",
+      "only-throw-error",
+      "prefer-find",
+      "prefer-includes",
+      "prefer-regexp-exec",
+      "use-unknown-in-catch-callback-variable",
+    ]);
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0].messageId).toBe("unexpected");
+    expect(diagnostics[0].suggestions?.[0]?.fixes.map((fix) => fix.replacementText)).toEqual([
+      "",
+      ".splice(",
+      ", 1)",
+    ]);
   });
 
   it("roundtrips through the mock tsgo binary", () => {
