@@ -37,12 +37,11 @@ impl RustLintRule for PreferFindRule {
 
     fn check(&self, ctx: &mut RuleContext<'_>, node: &LintNode) {
         match node.kind.as_str() {
-            "MemberExpression" => {
+            "MemberExpression"
                 if member_property_name(node).as_deref() == Some("0")
-                    && callee_property_name(node.child("object")).as_deref() == Some("filter")
-                {
-                    ctx.report("unexpected", node.range);
-                }
+                    && callee_property_name(node.child("object")).as_deref() == Some("filter") =>
+            {
+                ctx.report("unexpected", node.range);
             }
             "CallExpression" => {
                 if callee_property_name(Some(node)).as_deref() != Some("at")

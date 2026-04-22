@@ -14,8 +14,10 @@ const generatedNodeArtifacts = [
   "src/bindings/nodejs/corsa_node/ts/**/*.js",
   "src/bindings/nodejs/corsa_node/ts/**/*.js.map",
 ];
+const upstreamRefPatterns = ["origin/**", "ref/**"];
 const lintIgnorePatterns = [
   ...generatedNodeArtifacts,
+  ...upstreamRefPatterns,
   "bench/fixtures/**",
   "src/bindings/nodejs/corsa_node/ts/**/*.test.ts",
 ];
@@ -23,7 +25,7 @@ const noopCommand = 'node -e "process.exit(0)"';
 
 export default defineConfig({
   fmt: {
-    ignorePatterns: generatedNodeArtifacts,
+    ignorePatterns: [...generatedNodeArtifacts, ...upstreamRefPatterns],
   },
   pack: {
     clean: true,
@@ -256,7 +258,7 @@ export default defineConfig({
     include: ["bench/src/**/*.test.ts", "src/bindings/nodejs/**/ts/**/*.test.ts"],
     benchmark: {
       include: ["bench/src/**/*.bench.ts"],
-      exclude: ["ref/**"],
+      exclude: upstreamRefPatterns,
       includeSamples: true,
     },
   },
